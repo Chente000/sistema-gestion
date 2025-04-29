@@ -7,3 +7,4 @@ def home(request):
 
 def interfaz(request):
     return render(request, 'interfaz.html')
+

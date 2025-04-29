@@ -22,4 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('home/', include('home.urls')),
     path('accounts/', include('accounts.urls')),
+    path('interfaz/', views.interfaz, name='interfaz'),
+    path('', views.home, name='home'),  # URL for the home page
 ]

@@ -1,1 +1,47 @@
-<p>Iniciar Sesion</p>
+{% extends "base.html" %}
+{% load static %} {% block content %}
+<div class="container mt-5 pt-5"> <div class="row justify-content-center"> <div class="col-md-6 col-lg-5"> <div class="card shadow-sm"> <div class="card-body p-4 p-md-5"> <h2 class="card-title text-center mb-4">Iniciar Sesión</h2> {% if error or form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {% if error %}
+                                {{ error }}
+                            {% endif %}
+                            {% if form.non_field_errors %}
+                                {% for err in form.non_field_errors %}
+                                    <p class="mb-0">{{ err }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <form method="POST" action="{% url 'accounts:inicio_sesion' %}" novalidate> {% csrf_token %}
+
+                        <div class="mb-3"> <label for="{{ form.username.id_for_label }}" class="form-label">Usuario</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback d-block"> {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">Contraseña</label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            </div>
+
+                        <div class="d-grid gap-2 mt-4"> <button type="submit" class="btn btn-primary btn-lg">Iniciar Sesión</button>
+                        </div>
+
+                    </form> <hr class="my-4"> <p class="text-center mb-0">
+                        ¿No tienes una cuenta? <a href="{% url 'accounts:registro' %}">Regístrate aquí</a>
+                    </p>
+
+                </div> </div> </div> </div> </div> {% endblock %}

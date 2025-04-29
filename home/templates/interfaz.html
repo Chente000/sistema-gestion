@@ -94,11 +94,11 @@
 <body>
 
     <nav class="sidebar">
-        <a class="navbar-brand" href="#"> <i class="bi bi-buildings"></i> Gestión Uni
+        <a class="navbar-brand" href="{% url 'home:home' %}"> <i class="bi bi-buildings"></i> Gestión Uni
         </a>
         <div class="sidebar-sticky">
             <ul class="nav flex-column"> <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="{% url 'dashboard' %}"> <i class="bi bi-house-door-fill"></i> Panel Principal
+                    <a class="nav-link active" aria-current="page" href=""> <i class="bi bi-house-door-fill"></i> Panel Principal
                     </a>
                 </li>
 
@@ -143,7 +143,7 @@
 
     <div class="user-info">
         <span class="me-3"> Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong> </span>
-        <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm"> <i class="bi bi-box-arrow-right"></i> Salir
+        <a href="{% url 'accounts:cerrar_sesion' %}" class="btn btn-outline-danger btn-sm"> <i class="bi bi-box-arrow-right"></i> Salir
         </a>
     </div>
 
