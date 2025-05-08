@@ -93,19 +93,27 @@
 </head>
 <body>
 
+    <div class="main-content">
+        <div class="main-content-inner">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+    
+
     <nav class="sidebar">
         <a class="navbar-brand" href="{% url 'home:home' %}"> <i class="bi bi-buildings"></i> Gestión Uni
         </a>
         <div class="sidebar-sticky">
             <ul class="nav flex-column"> <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href=""> <i class="bi bi-house-door-fill"></i> Panel Principal
+                    <a class="nav-link active" aria-current="page" href="{% url 'home:panel_principal' %}"> <i class="bi bi-house-door-fill"></i> Panel Principal
                     </a>
                 </li>
 
                 <hr class="text-secondary mx-3">
 
                 <li class="nav-item">
-                    <a class="nav-link" href="#">
+                    <a class="nav-link" href="{% url 'programacion_academica:panel' %}">
                         <i class="bi bi-calendar-check"></i> Prog. y Eval. Académica
                     </a>
                 </li>
@@ -147,45 +155,6 @@
         </a>
     </div>
 
-    <main class="main-content">
-        <div class="main-content-inner"> <h1 class="h2">Panel Principal</h1> <p>Bienvenido al Sistema de Gestión Universitaria. Selecciona un módulo de la barra lateral para comenzar.</p>
-
-            <div class="alert alert-info" role="alert">
-                <i class="bi bi-info-circle-fill"></i>
-                Actualmente, las secciones de los módulos están en desarrollo. Los enlaces de la barra lateral son marcadores de posición.
-            </div>
-
-            <div class="row mt-4">
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h5 class="card-title"><i class="bi bi-calendar-check"></i> Prog. y Eval. Académica</h5>
-                            <p class="card-text small text-muted">Gestiona horarios, calificaciones...</p>
-                            <a href="#" class="btn btn-primary btn-sm">Ir al módulo</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h5 class="card-title"><i class="bi bi-people-fill"></i> Servicio Social</h5>
-                            <p class="card-text small text-muted">Seguimiento de proyectos...</p>
-                            <a href="#" class="btn btn-primary btn-sm">Ir al módulo</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h5 class="card-title"><i class="bi bi-mortarboard-fill"></i> Trabajo de Grado</h5>
-                            <p class="card-text small text-muted">Registro de propuestas...</p>
-                            <a href="#" class="btn btn-primary btn-sm">Ir al módulo</a>
-                        </div>
-                    </div>
-                </div>
-                </div>
-        </div> </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
 </body>
 </html>

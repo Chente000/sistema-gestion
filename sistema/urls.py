@@ -23,5 +23,5 @@ urlpatterns = [
     path('home/', include('home.urls')),
     path('accounts/', include('accounts.urls')),
     path('interfaz/', views.interfaz, name='interfaz'),
-    path('', views.home, name='home'),  # URL for the home page
+    path('programacion_academica/', include('programacion_academica.urls')),
 ]
