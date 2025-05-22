@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h2 class="mb-4 text-center">Solicitudes Pendientes</h2>
+
+    {% if pendientes %}
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Usuario</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for solicitud in pendientes %}
+                    <tr>
+                        <td>{{ solicitud.username }}</td>
+                        <td>{{ solicitud.first_name }} {{ solicitud.last_name }}</td>
+                        <td>{{ solicitud.email }}</td>
+                        <td>
+                            <a href="{% url 'administrador:aprobar_solicitud' solicitud.pk %}" class="btn btn-success btn-sm">Aprobar</a>
+                            <a href="{% url 'administrador:rechazar_solicitud' solicitud.pk %}" class="btn btn-danger btn-sm">Rechazar</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-muted text-center">No hay solicitudes pendientes.</p>
+    {% endif %}
+</div>
+{% endblock %}

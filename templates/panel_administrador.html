@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Panel de Administrador</h2>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Usuarios Registrados</h5>
+                    <p class="card-text">Ver y gestionar los usuarios del sistema.</p>
+                    <a href="{% url 'administrador:usuarios_aprobados' %}" class="btn btn-primary">Ver Usuarios</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Solicitudes Pendientes</h5>
+                    <p class="card-text">Revisa y aprueba nuevas solicitudes de registro.</p>
+                    <a href="{% url 'administrador:revisar_solicitudes' %}" class="btn btn-warning">Revisar</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Configuración de Registro</h5>
+                    <p class="card-text">Controla el horario de registro de nuevos usuarios.</p>
+                    <a href="{% url 'administrador:configurar_registro' %}" class="btn btn-secondary">Configurar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_styles %}
+<style>
+    .border-start { /* Para Bootstrap 5.1+ ya existe, pero por si acaso */
+        border-left-width: 0 !important; /* Reseteamos por si acaso */
+    }
+    .border-primary { border-left-color: var(--bs-primary) !important; }
+    .border-success { border-left-color: var(--bs-success) !important; }
+    .border-info   { border-left-color: var(--bs-info) !important; }
+    .border-warning { border-left-color: var(--bs-warning) !important; }
+
+    .card-custom.border-start.border-4 {
+        border-left-width: 4px !important;
+    }
+
+    .text-xs {
+        font-size: .75rem;
+    }
+    .text-gray-300 { color: #dddfeb !important; } /* Color de icono sutil */
+    .text-gray-800 { color: #5a5c69 !important; } /* Color de texto para números */
+
+    .list-group-item-action:hover, .list-group-item-action:focus {
+        background-color: #f8f9fa; /* Un hover sutil para los items de lista */
+        color: var(--primary-accent-color, var(--bs-primary));
+    }
+    .list-group-item .bi {
+        color: var(--primary-accent-color, var(--bs-primary));
+    }
+</style>
+{% endblock %}

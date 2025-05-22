@@ -24,4 +24,5 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('interfaz/', views.interfaz, name='interfaz'),
     path('programacion_academica/', include('programacion_academica.urls')),
+    path('administrador/', include('administrador.urls')),
 ]

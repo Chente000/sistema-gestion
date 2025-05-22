@@ -1,160 +1,341 @@
-{% load static %} <!DOCTYPE html>
+{% load static %}
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Sistema Gestión Universitaria</title>
+    <title>Sistema Gestión</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body {
-            /* Evita que el contenido principal se solape con la barra lateral fija */
-            padding-left: 280px; /* Debe coincidir con el ancho de .sidebar */
-            background-color: #f8f9fa; /* Un fondo claro para el área de contenido */
+        :root {
+            --sidebar-width: 260px;
+            --topbar-height: 65px; /* Altura de la barra superior */
+            --primary-accent-color: #0d6efd; /* Azul primario de Bootstrap, puedes cambiarlo */
+            --sidebar-bg: #212529; /* Un gris oscuro, casi negro, sofisticado */
+            --sidebar-link-color: #ced4da; /* Color de texto suave para enlaces */
+            --sidebar-link-hover-bg: #343a40; /* Fondo al pasar el mouse */
+            --sidebar-link-active-color: #ffffff; /* Texto activo más brillante */
+            --sidebar-brand-color: #ffffff;
+            --content-bg: #f8f9fa; /* Fondo del contenido principal (Bootstrap light) */
+            --text-color-main: #212529; /* Color de texto principal oscuro */
+            --border-color-soft: #dee2e6; /* Color de borde suave */
         }
 
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--content-bg);
+            padding-left: var(--sidebar-width); /* Espacio para la barra lateral fija */
+            padding-top: var(--topbar-height); /* Espacio para la barra superior fija */
+            color: var(--text-color-main);
+            font-size: 0.925rem; /* Ligeramente más pequeño para un look más denso/profesional */
+            line-height: 1.6;
+        }
+
+        /* --- Barra Lateral (Sidebar) --- */
         .sidebar {
-            position: fixed; /* Fija la barra lateral */
+            position: fixed;
             top: 0;
             left: 0;
             bottom: 0;
-            width: 280px; /* Ancho de la barra lateral */
-            z-index: 100; /* Asegura que esté por encima del contenido */
-            padding: 48px 0 0; /* Espacio superior (puedes ajustar si tienes una barra superior) */
-            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1); /* Sombra sutil a la derecha */
-            background-color: #343a40; /* Fondo oscuro */
-            color: #adb5bd; /* Color de texto suave para la barra lateral */
+            width: var(--sidebar-width);
+            z-index: 1030; /* Por encima de la barra superior */
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-link-color);
+            padding: 0; /* Quitamos padding para control total con sidebar-header y -sticky */
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1); /* Sombra sutil */
+        }
+
+        .sidebar-header {
+            padding: 1.1rem 1.5rem; /* Ajuste de padding */
+            text-align: center;
+            border-bottom: 1px solid #3e5165; /* Separador sutil */
+            height: var(--topbar-height); /* Misma altura que la barra superior */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-header .navbar-brand {
+            font-size: 1.4rem; /* Tamaño ajustado */
+            font-weight: 600;
+            color: var(--sidebar-brand-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        .sidebar-header .navbar-brand .bi {
+            margin-right: 10px;
+            font-size: 1.7rem; /* Icono un poco más grande */
+            vertical-align: middle;
+        }
+        .sidebar-header .navbar-brand span {
+            vertical-align: middle;
         }
 
         .sidebar-sticky {
-            /* Permite el scroll dentro de la barra si el contenido es muy largo */
-            position: relative;
-            top: 0;
-            height: calc(100vh - 48px); /* Altura completa menos el padding superior */
-            padding-top: .5rem;
-            overflow-x: hidden;
-            overflow-y: auto; /* Habilita el scroll vertical */
+            padding-top: 1rem;
+            height: calc(100vh - var(--topbar-height)); /* Altura menos el header de la sidebar */
+            overflow-y: auto;
+            /* Estilo de scrollbar minimalista */
+            scrollbar-width: thin;
+            scrollbar-color: var(--sidebar-link-hover-bg) var(--sidebar-bg);
+        }
+        .sidebar-sticky::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar-sticky::-webkit-scrollbar-track {
+            background: var(--sidebar-bg);
+        }
+        .sidebar-sticky::-webkit-scrollbar-thumb {
+            background-color: var(--sidebar-link-hover-bg);
+            border-radius: 3px;
         }
 
         .nav-link {
+            color: var(--sidebar-link-color);
+            padding: 0.75rem 1.75rem; /* Más padding horizontal */
             font-weight: 500;
-            color: #adb5bd; /* Color de los enlaces */
-            padding: .75rem 1.5rem; /* Espaciado de los enlaces */
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s ease, color 0.2s ease, border-left-color 0.2s ease;
+            border-left: 4px solid transparent; /* Borde para indicar activo/hover */
+            font-size: 0.9rem;
         }
 
-        .nav-link:hover,
-        .nav-link.active { /* Estilo al pasar el mouse o si está activo */
-            color: #fff; /* Texto blanco */
-            background-color: #495057; /* Fondo ligeramente más claro */
+        .nav-link:hover {
+            background-color: var(--sidebar-link-hover-bg);
+            color: var(--sidebar-link-active-color);
+            border-left-color: var(--primary-accent-color); /* Indicador al pasar el mouse */
         }
 
-        .nav-link .bi { /* Estilo para los iconos Bootstrap Icons */
-            margin-right: 8px;
+        .nav-link.active { /* La clase 'active' la puedes poner desde Django o con JS */
+            color: var(--sidebar-link-active-color);
+            background-color: var(--sidebar-link-hover-bg);
+            font-weight: 600;
+            border-left-color: var(--primary-accent-color); /* Indicador activo más prominente */
+        }
+
+        .nav-link .bi {
+            margin-right: 15px; /* Más espacio para el icono */
             font-size: 1.1rem;
-            vertical-align: text-bottom;
-        }
-
-        .sidebar .navbar-brand {
-            /* Estilo para el título/logo en la barra lateral */
-            padding: 1rem 1.5rem;
-            font-size: 1.25rem;
-            color: #fff;
-            display: block; /* Para que ocupe todo el ancho */
+            min-width: 24px; /* Asegura alineación de texto */
             text-align: center;
-            margin-bottom: 1rem;
+            transition: transform 0.2s ease;
+        }
+        .nav-link:hover .bi {
+            transform: scale(1.1); /* Pequeño efecto al icono */
+        }
+        
+        .sidebar hr {
+            border-top: 1px solid #4a627a; /* Separador más oscuro */
+            margin: 1rem 1.5rem;
         }
 
-        .main-content {
-            /* Contenedor principal del contenido */
-            padding: 20px;
-        }
-
-        .user-info {
-            /* Estilo para la información del usuario y logout */
+        /* --- Barra Superior (Topbar) --- */
+        .top-navbar {
             position: fixed;
             top: 0;
             right: 0;
-            left: 280px; /* Empieza después de la barra lateral */
-            background-color: #fff; /* Fondo blanco */
-            padding: 0.75rem 1.5rem;
-            border-bottom: 1px solid #dee2e6; /* Línea divisoria inferior */
-            z-index: 99; /* Por debajo de la sidebar si se solapan */
+            left: var(--sidebar-width); /* Comienza después de la barra lateral */
+            height: var(--topbar-height);
+            background-color: #ffffff; /* Fondo blanco */
+            border-bottom: 1px solid var(--border-color-soft);
+            padding: 0 1.75rem; /* Padding horizontal */
+            z-index: 1020; /* Debajo de la sidebar si hay superposición, encima del contenido */
             display: flex;
-            justify-content: flex-end; /* Alinea el contenido a la derecha */
+            justify-content: flex-end; /* Alinea contenido a la derecha */
             align-items: center;
+            transition: left 0.3s ease; /* Para futuras animaciones de colapso de sidebar */
         }
-        .main-content-inner {
-             /* Añade espacio superior para compensar la barra de user-info */
-            margin-top: 70px;
+        .top-navbar .user-greeting {
+            color: #555;
+            margin-right: 1.25rem;
+            font-size: 0.9rem;
         }
+        .top-navbar .user-greeting strong {
+            color: var(--text-color-main);
+            font-weight: 500;
+        }
+        .top-navbar .btn-logout {
+            font-weight: 500;
+            font-size: 0.85rem; /* Botón un poco más pequeño */
+            padding: 0.3rem 0.75rem;
+        }
+        .top-navbar .btn-logout .bi {
+            margin-right: 5px;
+        }
+
+        /* --- Contenido Principal --- */
+        .main-content {
+            padding: 1.75rem; /* Padding uniforme y generoso */
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Estilo de Tarjeta (Card) sofisticado */
+        .card-custom {
+            background-color: #ffffff;
+            border: none; /* Sin borde por defecto */
+            border-radius: 0.5rem; /* Bordes redondeados sutiles */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06); /* Sombra más suave y difusa */
+            margin-bottom: 1.75rem;
+        }
+        .card-custom .card-header {
+            background-color: transparent; /* Sin fondo para el header de la tarjeta */
+            border-bottom: 1px solid var(--border-color-soft);
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-color-main);
+            padding: 1rem 1.5rem;
+        }
+        .card-custom .card-body {
+            padding: 1.5rem;
+        }
+        .card-custom .card-footer {
+            background-color: transparent;
+            border-top: 1px solid var(--border-color-soft);
+            padding: 1rem 1.5rem;
+        }
+
+        /* Responsive: ejemplo básico para colapsar sidebar (requiere JS para el toggle) */
+        @media (max-width: 992px) { /* Ajusta este breakpoint según necesidad */
+            body {
+                padding-left: 0;
+            }
+            .sidebar {
+                /* transform: translateX(-100%); Para ocultar con JS */
+                width: 0; /* O simplemente ocultar visualmente */
+                /* Para un sidebar que se puede mostrar/ocultar, necesitarías JS y un botón de toggle */
+            }
+            .top-navbar {
+                left: 0; /* Barra superior ocupa todo el ancho */
+            }
+            /* Necesitarías un botón para abrir/cerrar la sidebar en pantallas pequeñas */
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="main-content">
-        <div class="main-content-inner">
-            {% block content %}
-            {% endblock %}
-        </div>
-    </div>
-    
-
     <nav class="sidebar">
-        <a class="navbar-brand" href="{% url 'home:home' %}"> <i class="bi bi-buildings"></i> Gestión Uni
-        </a>
+        <div class="sidebar-header">
+            <a class="navbar-brand" href="{% url 'home:home' %}"> {# Asegúrate que 'home:home' es tu URL del panel principal o logo #}
+                <i class="bi bi-buildings-fill"></i> {# Icono más relleno/sólido #}
+                <span>GestiónUni</span> {# Sin espacio para un look más compacto #}
+            </a>
+        </div>
         <div class="sidebar-sticky">
-            <ul class="nav flex-column"> <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="{% url 'home:panel_principal' %}"> <i class="bi bi-house-door-fill"></i> Panel Principal
+            <ul class="nav flex-column">
+                <li class="nav-item">
+
+                    <a class="nav-link {% if request.resolver_match.url_name == 'panel_principal' %}active{% endif %}" aria-current="page" href="{% url 'home:panel_principal' %}">
+                        <i class="bi bi-grid-1x2-fill"></i> {# Icono de dashboard diferente #}
+                        <span>Panel Principal</span>
                     </a>
                 </li>
 
-                <hr class="text-secondary mx-3">
+                <hr>
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'programacion_academica:panel' %}">
-                        <i class="bi bi-calendar-check"></i> Prog. y Eval. Académica
+                    <a class="nav-link {% if 'programacion_academica' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'programacion_academica:panel' %}">
+                        <i class="bi bi-calendar2-check-fill"></i>
+                        <span>Prog. Académica</span> {# Más corto #}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#"> {# Reemplaza '#' con tu URL #}
+                        <i class="bi bi-people-fill"></i>
+                        <span>Servicio Social</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">
-                        <i class="bi bi-people-fill"></i> Servicio Social Comunitario
+                        <i class="bi bi-mortarboard-fill"></i>
+                        <span>Trabajo de Grado</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">
-                        <i class="bi bi-mortarboard-fill"></i> Trabajo Especial de Grado
+                        <i class="bi bi-briefcase-fill"></i>
+                        <span>Prácticas Pro.</span> {# Más corto #}
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">
-                        <i class="bi bi-briefcase-fill"></i> Prácticas Profesionales
+                        <i class="bi bi-journals"></i> {# Icono diferente #}
+                        <span>Investigación</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">
-                        <i class="bi bi-journal-bookmark-fill"></i> Investigación y Postgrado
+                        <i class="bi bi-diagram-3-fill"></i>
+                        <span>Coordinaciones</span>
                     </a>
                 </li>
+                
+                {% if user.is_superuser or user.is_staff %}
+                <hr>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">
-                        <i class="bi bi-diagram-3-fill"></i> Coordinaciones
-                    </a>
-                </li>
 
-                <hr class="text-secondary mx-3">
-
-                </ul>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-person-plus-fill"></i>
+                        <span>Gestionar Usuarios</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
         </div>
     </nav>
 
-    <div class="user-info">
-        <span class="me-3"> Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong> </span>
-        <a href="{% url 'accounts:cerrar_sesion' %}" class="btn btn-outline-danger btn-sm"> <i class="bi bi-box-arrow-right"></i> Salir
+    <header class="top-navbar">
+        {# Aquí podrías añadir un botón para colapsar/mostrar la sidebar en móvil #}
+        {# <button class="btn btn-link d-lg-none me-auto" type="button" id="sidebarToggle"> <i class="bi bi-list"></i> </button> #}
+        
+        <div class="user-greeting ms-auto"> {# ms-auto si no hay elementos a la izquierda #}
+            Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong>
+        </div>
+        <a href="{% url 'accounts:cerrar_sesion' %}" class="btn btn-outline-danger btn-logout">
+            <i class="bi bi-box-arrow-right"></i> Salir
         </a>
-    </div>
+    </header>
 
-    
+    <main class="main-content">
+        {% block content %}
+        
+        {% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        // Ejemplo básico para activar el link correcto (opcional si lo manejas 100% desde Django)
+        // Esta versión no es necesaria si usas la lógica de 'active' en las clases de los links como se sugiere en los comentarios HTML.
+        /*
+        document.addEventListener("DOMContentLoaded", function() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.sidebar .nav-link');
+
+            navLinks.forEach(link => {
+                link.classList.remove('active'); // Limpia todos primero
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        });
+        */
+
+        // Si decides implementar un toggle para la sidebar en pantallas pequeñas:
+        // const sidebarToggle = document.getElementById('sidebarToggle');
+        // const sidebar = document.querySelector('.sidebar');
+        // const body = document.body;
+        // if (sidebarToggle) {
+        //     sidebarToggle.addEventListener('click', function() {
+        //         sidebar.classList.toggle('collapsed'); // Necesitarías definir .sidebar.collapsed
+        //         body.classList.toggle('sidebar-collapsed'); // Para ajustar paddings, etc.
+        //     });
+        // }
+    </script>
 </body>
 </html>
