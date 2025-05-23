@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h2 class="mb-4">Usuarios Aprobados</h2>
+            {% if usuarios %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Nombre completo</th>
+                                <th>Correo</th>
+                                <th>Rol</th>
+                                <th>Cargo Departamental</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for usuario in usuarios %}
+                                <tr>
+                                    <td>{{ usuario.username }}</td>
+                                    <td>{{ usuario.get_full_name }}</td>
+                                    <td>{{ usuario.email }}</td>
+                                    <td>{{ usuario.get_rol_display }}</td>
+                                    <td>{{ usuario.get_cargo_departamental_display }}</td>
+                                    <td>
+                                        <a href="{% url 'administrador:asignar_rol' usuario.id %}" class="btn btn-sm btn-warning">Asignar Rol</a>
+                                    </td>
+                                        
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">No hay usuarios aprobados.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Asignar Rol y Cargo a {{ user.username }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="rol" class="form-label">Rol</label>
+            <select name="rol" id="rol" class="form-select" required>
+                {% for value, label in roles %}
+                    <option value="{{ value }}" {% if user.rol == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="cargo_departamental" class="form-label">Cargo Departamental</label>
+            <select name="cargo_departamental" id="cargo_departamental" class="form-select">
+                <option value="">---------</option>
+                {% for value, label in cargos %}
+                    <option value="{{ value }}" {% if user.cargo_departamental == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="{% url 'administrador:usuarios_aprobados' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}
