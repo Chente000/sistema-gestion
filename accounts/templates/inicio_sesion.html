@@ -41,7 +41,12 @@
                         </div>
 
                     </form> <hr class="my-4"> <p class="text-center mb-0">
-                        ¿No tienes una cuenta? <a href="{% url 'accounts:solicitar_registro' %}">Regístrate aquí</a>
+                        ¿No tienes una cuenta? <a href="{% url 'accounts:solicitar_registro' %}">Solicita tu regístrate aquí</a>
                     </p>
+                    {% if not registro_activo %}
+    <div class="alert alert-info text-center">
+        El registro de nuevos usuarios está desactivado por el administrador en este momento.
+    </div>
+{% endif %}
 
                 </div> </div> </div> </div> </div> {% endblock %}

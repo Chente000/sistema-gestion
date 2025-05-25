@@ -54,10 +54,9 @@
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center"> <li class="nav-item me-2"> 
                         </li>
                         <li class="nav-item me-2">
-                            <a class="nav-link btn btn-sm btn-outline-light" href="{% url 'accounts:solicitar_registro' %}">Solicitar registro</a>
                         {% if user.is_authenticated %}
                             <li class="nav-item me-2">
-                                <a class="nav-link btn btn-sm btn-outline-light" href="{% url 'home:interfaz' %}">Panel</a>
+                                <a class="nav-link btn btn-sm btn-outline-light" href="{% url 'home:panel_principal' %}">Panel</a>
                             </li>
                             <li class="nav-item me-2">
                                 <a class="nav-link btn btn-sm btn-outline-light" href="{% url 'administrador:panel_administrador' %}">Administrador</a>

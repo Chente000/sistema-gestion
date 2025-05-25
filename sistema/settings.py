@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'home',
     'accounts',
     'administrador',
-    'programacion_academica',
+    'programacion',
     'widget_tweaks',
 ]
 

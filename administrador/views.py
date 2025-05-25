@@ -6,6 +6,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from django.contrib import messages
+from .forms import ConfiguracionRegistroForm
+from accounts.models import SolicitudUsuario
+from administrador.models import ConfiguracionRegistro
 
 User = get_user_model()
 
@@ -27,8 +30,23 @@ def crear_usuario_view(request):
 def gestionar_roles_view(request, user_id):
     return render(request, 'gestionar_roles.html', {'user_id': user_id})
 
+@staff_member_required
 def configurar_registro_view(request):
-    return render(request, 'configurar_registro.html')
+    config = ConfiguracionRegistro.objects.first()
+    if request.method == 'POST':
+        form = ConfiguracionRegistroForm(request.POST, instance=config)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Configuración actualizada correctamente.")
+            return redirect('administrador:configurar_registro')
+    else:
+        # Convierte los días a lista para el formulario
+        if config:
+            initial = {'dias_permitidos': config.dias_permitidos.split(',')}
+            form = ConfiguracionRegistroForm(instance=config, initial=initial)
+        else:
+            form = ConfiguracionRegistroForm()
+    return render(request, 'configurar_registro.html', {'form': form})
 
 @staff_member_required
 def revisar_solicitudes(request):

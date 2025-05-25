@@ -1,0 +1,29 @@
+{% extends "interfaz.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Docentes Registrados</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Dedicación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for docente in docentes %}
+                <tr>
+                    <td>{{ docente.nombre }}</td>
+                    <td>{{ docente.dedicacion }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="text-center">No hay docentes registrados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

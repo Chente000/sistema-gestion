@@ -1,0 +1,43 @@
+{% extends "interfaz.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Programación Académica</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Docente</th>
+                    <th>Dedicación</th>
+                    <th>Asignatura</th>
+                    <th>Carrera</th>
+                    <th>Periodo</th>
+                    <th>Autoevaluación</th>
+                    <th>Juicio de Valor</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prog in programaciones %}
+                <tr>
+                    <td>{{ prog.docente.nombre }}</td>
+                    <td>{{ prog.docente.dedicacion }}</td>
+                    <td>{{ prog.asignatura.nombre }}</td>
+                    <td>{{ prog.asignatura.carrera }}</td>
+                    <td>{{ prog.periodo.nombre }}</td>
+                    <td>{{ prog.autoevaluacion }}</td>
+                    <td>{{ prog.juicio_valor }}</td>
+                    <td>
+                        <a href="{% url 'programacion:editar_programacion' prog.id %}">Editar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">No hay datos de programación académica.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

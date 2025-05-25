@@ -1,0 +1,46 @@
+{% extends "interfaz.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Módulo de Programación Académica</h2>
+    <div class="row mt-4">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Docentes</h5>
+                    <p class="card-text">Gestión de docentes registrados.</p>
+                    <a href="{% url 'programacion:docentes' %}" class="btn btn-primary">Ver Docentes</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Asignaturas</h5>
+                    <p class="card-text">Gestión de asignaturas disponibles.</p>
+                    <a href="{% url 'programacion:asignaturas' %}" class="btn btn-primary">Ver Asignaturas</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Programación Académica</h5>
+                    <p class="card-text">Consulta y gestión de la programación académica.</p>
+                    <a href="{% url 'programacion:programacion_lista' %}" class="btn btn-primary">Ver Programación</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Evaluacion Docente</h5>
+                    <p class="card-text">Consulta y gestión de la relacion de evaluación docente.</p>
+                    <a href="{% url 'programacion:evaluacion_docente' %}" class="btn btn-primary">Ver Evaluación</a>
+                </div>
+            </div>
+        </div>
+        <!-- Puedes agregar más opciones aquí en el futuro -->
+    </div>
+</div>
+{% endblock %}

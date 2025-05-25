@@ -240,7 +240,7 @@
                 <hr>
 
                 <li class="nav-item">
-                    <a class="nav-link {% if 'programacion_academica' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'programacion_academica:panel' %}">
+                    <a class="nav-link {% if 'programacion' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'programacion:menu_programacion' %}">
                         <i class="bi bi-calendar2-check-fill"></i>
                         <span>Prog. Académica</span> {# Más corto #}
                     </a>

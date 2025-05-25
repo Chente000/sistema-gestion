@@ -23,6 +23,6 @@ urlpatterns = [
     path('home/', include('home.urls')),
     path('accounts/', include('accounts.urls')),
     path('interfaz/', views.interfaz, name='interfaz'),
-    path('programacion_academica/', include('programacion_academica.urls')),
     path('administrador/', include('administrador.urls')),
+    path('programacion/', include('programacion.urls')),
 ]
