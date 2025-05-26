@@ -9,6 +9,17 @@
             <button class="btn btn-primary" type="submit">Buscar</button>
         </div>
     </form>
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <select name="carrera" class="form-select">
+                <option value="">Todas las carreras</option>
+                {% for carrera in carreras %}
+                    <option value="{{ carrera.id }}" {% if carrera.id|stringformat:"s" == carrera_id %}selected{% endif %}>{{ carrera.nombre }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-primary" type="submit">Filtrar</button>
+        </div>
+    </form>
     <a href="{% url 'programacion:agregar_docente' %}" class="btn btn-success mb-3">Agregar Docente</a>
     <div class="table-responsive">
         <table class="table table-bordered table-striped">
@@ -16,6 +27,7 @@
                 <tr>
                     <th>Nombre</th>
                     <th>Dedicación</th>
+                    <th>Carreras</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -25,13 +37,20 @@
                     <td>{{ docente.nombre }}</td>
                     <td>{{ docente.dedicacion }}</td>
                     <td>
+                        {% for carrera in docente.carreras.all %}
+                            {{ carrera.nombre }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            Sin carrera
+                        {% endfor %}
+                    </td>
+                    <td>
                         <a href="{% url 'programacion:editar_docente' docente.id %}" class="btn btn-sm btn-warning">Editar</a>
                         <a href="{% url 'programacion:eliminar_docente' docente.id %}" class="btn btn-sm btn-danger">Eliminar</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="3" class="text-center">No hay docentes registrados.</td>
+                    <td colspan="4" class="text-center">No hay docentes registrados.</td>
                 </tr>
                 {% endfor %}
             </tbody>

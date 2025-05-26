@@ -1,6 +1,6 @@
 import pandas as pd
 from django.core.management.base import BaseCommand
-from programacion.models import Docente, Asignatura, Periodo, ProgramacionAcademica
+from programacion.models import Docente, Asignatura, Periodo, ProgramacionAcademica, Carrera
 
 class Command(BaseCommand):
     help = 'Importa la programación académica desde un archivo Excel'
@@ -21,9 +21,19 @@ class Command(BaseCommand):
             docente.dedicacion = row.get('DEDICACIÓN', '')
             docente.save()
 
-            asignatura, _ = Asignatura.objects.get_or_create(nombre=row['ASIGNATURA'])
-            asignatura.carrera = row.get('CARRERA', '')
-            asignatura.save()
+            # Crear o buscar la carrera
+            carrera_nombre = row.get('CARRERA', '')
+            if pd.isna(carrera_nombre) or not str(carrera_nombre).strip():
+                continue  # O maneja el caso de asignaturas sin carrera
+
+            carrera_nombre = str(carrera_nombre).strip()
+            carrera_obj, _ = Carrera.objects.get_or_create(nombre=carrera_nombre)
+
+            # Crear o buscar la asignatura asociada a la carrera
+            asignatura, _ = Asignatura.objects.get_or_create(
+                nombre=row['ASIGNATURA'],
+                carrera=carrera_obj
+            )
 
             ProgramacionAcademica.objects.create(
                 docente=docente,

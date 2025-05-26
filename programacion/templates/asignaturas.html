@@ -1,0 +1,46 @@
+{% extends "interfaz.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Asignaturas</h2>
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Buscar asignatura..." value="{{ query }}">
+            <button class="btn btn-primary" type="submit">Buscar</button>
+        </div>
+    </form>
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <select name="carrera" class="form-select">
+                <option value="">Todas las carreras</option>
+                {% for carrera in carreras %}
+                    <option value="{{ carrera.id }}" {% if carrera.id|stringformat:"s" == carrera_id %}selected{% endif %}>{{ carrera.nombre }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-primary" type="submit">Filtrar</button>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Carrera</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asignatura in asignaturas %}
+                <tr>
+                    <td>{{ asignatura.nombre }}</td>
+                    <td>{{ asignatura.carrera.nombre }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="text-center">No hay asignaturas registradas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

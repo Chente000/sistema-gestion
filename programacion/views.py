@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
-from .models import ProgramacionAcademica, Docente
+from .models import ProgramacionAcademica, Docente, Carrera, Asignatura
 from .forms import ProgramacionAcademicaForm, DocenteForm
 
 def evaluacion_docente(request):
@@ -23,17 +23,41 @@ def menu_programacion(request):
 
 def docentes(request):
     query = request.GET.get('q', '')
+    carrera_id = request.GET.get('carrera')
+    carreras = Carrera.objects.all()
+    docentes = Docente.objects.all()
+
     if query:
-        docentes = Docente.objects.filter(
+        docentes = docentes.filter(
             Q(nombre__icontains=query) | Q(dedicacion__icontains=query)
         )
-    else:
-        docentes = Docente.objects.all()
-    return render(request, 'docentes.html', {'docentes': docentes, 'query': query})
+    if carrera_id:
+        docentes = docentes.filter(carreras__id=carrera_id)
+
+    return render(request, 'docentes.html', {
+        'docentes': docentes,
+        'carreras': carreras,
+        'carrera_id': carrera_id,
+        'query': query,
+    })
 
 def asignaturas(request):
-    asignaturas = ProgramacionAcademica.objects.values_list('asignatura__nombre', flat=True).distinct()
-    return render(request, 'asignaturas.html', {'asignaturas': asignaturas})
+    query = request.GET.get('q', '')
+    carrera_id = request.GET.get('carrera')
+    carreras = Carrera.objects.all()
+    asignaturas = Asignatura.objects.select_related('carrera').all()
+
+    if query:
+        asignaturas = asignaturas.filter(nombre__icontains=query)
+    if carrera_id:
+        asignaturas = asignaturas.filter(carrera__id=carrera_id)
+
+    return render(request, 'asignaturas.html', {
+        'asignaturas': asignaturas,
+        'carreras': carreras,
+        'carrera_id': carrera_id,
+        'query': query,
+    })
 
 def programacion_lista(request):
     programaciones = ProgramacionAcademica.objects.all()
@@ -43,7 +67,7 @@ def agregar_docente(request):
     if request.method == 'POST':
         form = DocenteForm(request.POST)
         if form.is_valid():
-            form.save()
+            form.save()  # No llames a save_m2m() si no usas commit=False
             return redirect('programacion:docentes')
     else:
         form = DocenteForm()
@@ -54,7 +78,7 @@ def editar_docente(request, docente_id):
     if request.method == 'POST':
         form = DocenteForm(request.POST, instance=docente)
         if form.is_valid():
-            form.save()
+            form.save()  # No llames a save_m2m() si no usas commit=False
             return redirect('programacion:docentes')
     else:
         form = DocenteForm(instance=docente)

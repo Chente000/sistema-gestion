@@ -2,16 +2,24 @@ from django.db import models
 
 # Create your models here.
 
+class Carrera(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    def __str__(self):
+        return self.nombre
 class Docente(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     dedicacion = models.CharField(max_length=50)
+    carreras = models.ManyToManyField(Carrera, related_name='docentes', blank=True)
 
     def __str__(self):
         return self.nombre
 
 class Asignatura(models.Model):
-    nombre = models.CharField(max_length=100, unique=True)
-    carrera = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100)
+    carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE, related_name='asignaturas')
+
+    class Meta:
+        unique_together = ('nombre', 'carrera')
 
     def __str__(self):
         return self.nombre
