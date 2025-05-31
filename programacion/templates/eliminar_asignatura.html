@@ -1,0 +1,12 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Eliminar Asignatura</h2>
+    <p>¿Estás seguro que deseas eliminar la asignatura <strong>{{ asignatura.nombre }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Eliminar</button>
+        <a href="{% url 'programacion:asignaturas' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

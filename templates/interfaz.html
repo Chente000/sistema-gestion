@@ -246,27 +246,15 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#"> {# Reemplaza '#' con tu URL #}
+                    <a class="nav-link" href="{% url 'servicio_social:servicio_list' %}"> {# Reemplaza '#' con tu URL #}
                         <i class="bi bi-people-fill"></i>
                         <span>Servicio Social</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">
-                        <i class="bi bi-mortarboard-fill"></i>
-                        <span>Trabajo de Grado</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">
                         <i class="bi bi-briefcase-fill"></i>
                         <span>Prácticas Pro.</span> {# Más corto #}
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">
-                        <i class="bi bi-journals"></i> {# Icono diferente #}
-                        <span>Investigación</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -278,13 +266,6 @@
                 
                 {% if user.is_superuser or user.is_staff %}
                 <hr>
-                <li class="nav-item">
-
-                    <a class="nav-link" href="#">
-                        <i class="bi bi-person-plus-fill"></i>
-                        <span>Gestionar Usuarios</span>
-                    </a>
-                </li>
                 {% endif %}
             </ul>
         </div>

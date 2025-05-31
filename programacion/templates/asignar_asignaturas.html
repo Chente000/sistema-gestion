@@ -1,0 +1,27 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Asignar Asignaturas a {{ docente.nombre }}</h2>
+    <form method="get" id="asignar-form">
+        {% csrf_token %}
+        {{ form.periodo.label_tag }} {{ form.periodo }}
+        {{ form.carrera.label_tag }} 
+        <select name="carrera" id="id_carrera" class="form-select">
+            {% for c in form.carrera.field.queryset %}
+                <option value="{{ c.id }}" {% if form.carrera.value|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>
+            {% endfor %}
+        </select>
+        {{ form.asignaturas.label_tag }} {{ form.asignaturas }}
+        <button type="submit" class="btn btn-success" id="btn-asignar">Asignar</button>
+        <a href="{% url 'programacion:docentes' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+<script>
+document.getElementById('id_carrera').addEventListener('change', function() {
+    document.getElementById('asignar-form').submit();
+});
+document.getElementById('btn-asignar').addEventListener('click', function() {
+    document.getElementById('asignar-form').method = 'post';
+});
+</script>
+{% endblock %}

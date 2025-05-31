@@ -10,4 +10,5 @@ urlpatterns = [
     path('cerrar/', views.cerrar_sesion, name='cerrar_sesion'),
     path('base/', views.base, name='base'),
     path('solicitar/', views.solicitar_registro, name='solicitar_registro'),
+    path('registro_no_disponible/', views.registro_no_disponible, name='registro_no_disponible'),
     ]

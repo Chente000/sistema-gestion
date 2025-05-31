@@ -19,9 +19,10 @@ class ConfiguracionRegistro(models.Model):
         help_text="Selecciona los días permitidos separados por coma (ej: lunes,martes,viernes)"
     )
     activa = models.BooleanField("Configuración activa", default=True)
+    registro_habilitado = models.BooleanField(default=False)
 
     def dias_permitidos_lista(self):
         return self.dias_permitidos.split(',')
 
     def __str__(self):
-        return f"Registro: {self.hora_inicio} - {self.hora_fin} ({self.dias_permitidos})"
+        return "Configuración de Registro"

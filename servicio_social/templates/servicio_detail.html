@@ -1,0 +1,19 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<h2>Detalle del Servicio Social</h2>
+<ul class="list-group mb-3">
+    <li class="list-group-item"><strong>Estudiante:</strong> {{ servicio.estudiante.username }}</li>
+    <li class="list-group-item"><strong>Tutor:</strong> {{ servicio.tutor }}</li>
+    <li class="list-group-item"><strong>Cédula Tutor:</strong> {{ servicio.cedula_tutor }}</li>
+    <li class="list-group-item"><strong>Departamento:</strong> {{ servicio.departamento }}</li>
+    <li class="list-group-item"><strong>Nombre Proyecto:</strong> {{ servicio.nombre_proyecto }}</li>
+    <li class="list-group-item"><strong>Fecha Inicio:</strong> {{ servicio.fecha_inicio }}</li>
+    <li class="list-group-item"><strong>Fecha Fin:</strong> {{ servicio.fecha_fin }}</li>
+    <li class="list-group-item"><strong>Horas Cumplidas:</strong> {{ servicio.horas_cumplidas }}</li>
+    <li class="list-group-item"><strong>Estado:</strong> {{ servicio.get_estado_display }}</li>
+    <li class="list-group-item"><strong>Observaciones:</strong> {{ servicio.observaciones }}</li>
+</ul>
+<a href="{% url 'servicio_social:servicio_update' servicio.pk %}" class="btn btn-warning">Editar</a>
+<a href="{% url 'servicio_social:servicio_delete' servicio.pk %}" class="btn btn-danger">Eliminar</a>
+<a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-secondary">Volver a la lista</a>
+{% endblock %}

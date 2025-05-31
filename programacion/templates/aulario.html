@@ -1,0 +1,7 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<h2>Aulario</h2>
+<a href="{% url 'programacion:aula_list' %}" class="btn btn-primary mb-3">Administrar Aulas</a>
+<a href="{% url 'programacion:horario_list' %}" class="btn btn-secondary mb-3">Ver Horarios</a>
+<a href="{% url 'programacion:grilla_aulario' %}" class="btn btn-info mb-3">Ver Grilla Semanal</a>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "interfaz.html" %}
+{% load extra_filters %}
+{% block content %}
+<h2>Grilla Semanal de Aulas</h2>
+<a href="{% url 'programacion:aulario' %}" class="btn btn-secondary mb-3">Volver a Aulario</a>
+<div class="table-responsive">
+<table class="table table-bordered table-sm text-center align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>Aula</th>
+            <th>Hora</th>
+            {% for dia in dias %}
+                <th>{{ dia }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for aula in aulas %}
+            {% for hora in horas %}
+                <tr>
+                    {% if forloop.first %}
+                        <td rowspan="{{ horas|length }}" class="fw-bold align-middle bg-secondary text-white border-end border-3 border-dark">{{ aula.nombre }}</td>
+                    {% endif %}
+                    <td class="text-nowrap">{{ hora }}</td>
+                    {% for dia in dias %}
+                        {% get_item grilla aula.id dia hora as horario %}
+                        <td>
+                            {% if horario %}
+                                <div class="bg-danger text-white rounded p-1" style="min-width: 120px;">
+                                    <strong>{{ horario.asignatura.nombre }}</strong><br>
+                                    <small>Sección: {{ horario.seccion }}</small><br>
+                                    <small>{{ horario.hora_inicio }} - {{ horario.hora_fin }}</small><br>
+                                    <small>{{ horario.docente.nombre }}</small>
+                                </div>
+                            {% else %}
+                                <span class="bg-success text-white rounded p-1 d-block" style="min-width: 120px;">Libre</span>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            <!-- Fila separadora visual -->
+            <tr class="table-secondary">
+                <td colspan="{{ dias|length|add:'2' }}"></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

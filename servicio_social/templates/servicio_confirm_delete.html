@@ -1,0 +1,10 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<h2>Eliminar Servicio Social</h2>
+<p>¿Estás seguro de que deseas eliminar el servicio social <strong>{{ servicio.nombre_proyecto }}</strong> de <strong>{{ servicio.estudiante.username }}</strong>?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+    <a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

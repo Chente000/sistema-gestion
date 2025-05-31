@@ -25,9 +25,12 @@ class inicio_sesion(LoginView):
         return context
 
     def get_success_url(self):
-        # Redirige al dashboard o página principal después del login exitoso
-        # Puedes cambiar 'dashboard' por el nombre de la URL a la que quieras redirigir
-        return reverse_lazy('administrador:panel_administrador')
+        user = self.request.user
+        # Si es superusuario o pertenece al grupo 'Administrador'
+        if user.is_superuser or user.groups.filter(name='Administrador').exists():
+            return reverse_lazy('administrador:panel_administrador')
+        # Si no, va al panel principal
+        return reverse_lazy('home:panel_principal')
 
 # Vista para el dashboard (ejemplo)
 @login_required # Asegura que solo usuarios logueados puedan acceder
@@ -43,34 +46,10 @@ def base(request):
     return render(request, 'base.html') # Crea una plantilla base.html
 
 def solicitar_registro(request):
-    # Obtener la configuración activa
-    config = ConfiguracionRegistro.objects.filter(activa=True).first()
-    if not config:
-        messages.error(request, "El registro está deshabilitado por el administrador.")
-        return redirect('accounts:inicio_sesion')  # O la página que prefieras
+    config = ConfiguracionRegistro.objects.first()
+    if not config or not config.registro_habilitado:
+        return render(request, 'registro_no_disponible.html')
 
-    ahora = timezone.localtime()
-    dia_actual = ahora.strftime('%A').lower()
-    hora_actual = ahora.time()
-
-    dias_map = {
-        'monday': 'lunes',
-        'tuesday': 'martes',
-        'wednesday': 'miercoles',
-        'thursday': 'jueves',
-        'friday': 'viernes',
-        'saturday': 'sabado',
-        'sunday': 'domingo',
-    }
-    dia_actual_es = dias_map.get(dia_actual, dia_actual)
-
-    dias_permitidos = [d.strip() for d in config.dias_permitidos.split(',')] if config.dias_permitidos else []
-    if (
-        dia_actual_es not in dias_permitidos or
-        not (config.hora_inicio <= hora_actual <= config.hora_fin)
-    ):
-        messages.error(request, "El registro solo está habilitado en los días y horarios permitidos.")
-        return redirect('accounts:inicio_sesion')
 
     # ... lógica normal de la vista ...
     if request.method == 'POST':
@@ -82,3 +61,6 @@ def solicitar_registro(request):
     else:
         form = SolicitudUsuarioForm()
     return render(request, 'solicitar_registro.html', {'form': form})
+
+def registro_no_disponible(request):
+    return render(request, 'registro_no_disponible.html')  # Crea una plantilla registro_no_disponible.html

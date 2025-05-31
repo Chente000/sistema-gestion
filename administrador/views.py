@@ -32,7 +32,7 @@ def gestionar_roles_view(request, user_id):
 
 @staff_member_required
 def configurar_registro_view(request):
-    config = ConfiguracionRegistro.objects.first()
+    config, created = ConfiguracionRegistro.objects.get_or_create(pk=1)
     if request.method == 'POST':
         form = ConfiguracionRegistroForm(request.POST, instance=config)
         if form.is_valid():
@@ -40,12 +40,7 @@ def configurar_registro_view(request):
             messages.success(request, "Configuración actualizada correctamente.")
             return redirect('administrador:configurar_registro')
     else:
-        # Convierte los días a lista para el formulario
-        if config:
-            initial = {'dias_permitidos': config.dias_permitidos.split(',')}
-            form = ConfiguracionRegistroForm(instance=config, initial=initial)
-        else:
-            form = ConfiguracionRegistroForm()
+        form = ConfiguracionRegistroForm(instance=config)
     return render(request, 'configurar_registro.html', {'form': form})
 
 @staff_member_required

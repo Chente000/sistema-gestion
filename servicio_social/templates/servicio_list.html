@@ -1,0 +1,33 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<h2>Lista de Servicios Sociales</h2>
+<a href="{% url 'servicio_social:servicio_create' %}" class="btn btn-primary mb-3">Nuevo Servicio Social</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Estudiante</th>
+            <th>Proyecto</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for servicio in servicios %}
+        <tr>
+            <td>{{ servicio.estudiante.username }}</td>
+            <td>{{ servicio.nombre_proyecto }}</td>
+            <td>{{ servicio.get_estado_display }}</td>
+            <td>
+                <a href="{% url 'servicio_social:servicio_detail' servicio.pk %}" class="btn btn-info btn-sm">Ver</a>
+                <a href="{% url 'servicio_social:servicio_update' servicio.pk %}" class="btn btn-warning btn-sm">Editar</a>
+                <a href="{% url 'servicio_social:servicio_delete' servicio.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No hay servicios sociales registrados.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

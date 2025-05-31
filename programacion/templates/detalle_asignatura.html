@@ -1,0 +1,21 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Detalle de Asignatura</h2>
+    <table class="table table-bordered">
+        <tr><th>Nombre</th><td>{{ asignatura.nombre }}</td></tr>
+        <tr><th>Código</th><td>{{ asignatura.codigo }}</td></tr>
+        <tr><th>Semestre</th><td>{{ asignatura.semestre }}</td></tr>
+        <tr><th>Horas Teóricas</th><td>{{ asignatura.horas_teoricas }}</td></tr>
+        <tr><th>Horas Prácticas</th><td>{{ asignatura.horas_practicas }}</td></tr>
+        <tr><th>Horas Laboratorio</th><td>{{ asignatura.horas_laboratorio }}</td></tr>
+        <tr><th>Diurno</th><td>{{ asignatura.diurno }}</td></tr>
+        <tr><th>UC</th><td>{{ asignatura.uc }}</td></tr>
+        <tr><th>Requisitos</th><td>{{ asignatura.requisitos }}</td></tr>
+        <tr><th>Carrera</th><td>{{ asignatura.carrera.nombre }}</td></tr>
+    </table>
+    <a href="{% url 'programacion:asignaturas' %}" class="btn btn-secondary">Volver</a>
+    <a href="{% url 'programacion:editar_asignatura' asignatura.id %}" class="btn btn-warning">Editar</a>
+    <a href="{% url 'programacion:eliminar_asignatura' asignatura.id %}" class="btn btn-danger">Eliminar</a>
+</div>
+{% endblock %}
