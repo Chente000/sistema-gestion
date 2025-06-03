@@ -1,8 +1,10 @@
 {% extends "interfaz.html" %}
 {% load extra_filters %}
 {% block content %}
+<a href="{% url 'programacion:menu_programacion' %}" class="btn btn-secondary mb-3">Volver</a>
 <h2>Grilla Semanal de Aulas</h2>
-<a href="{% url 'programacion:aulario' %}" class="btn btn-secondary mb-3">Volver a Aulario</a>
+<a href="{% url 'programacion:aula_list' %}" class="btn btn-primary mb-3">Administrar Aulas</a>
+<a href="{% url 'programacion:horario_list' %}" class="btn btn-secondary mb-3">Ver Horarios</a>
 <div class="table-responsive">
 <table class="table table-bordered table-sm text-center align-middle">
     <thead class="table-dark">

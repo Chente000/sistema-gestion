@@ -53,11 +53,13 @@ def aprobar_solicitud(request, solicitud_id):
     solicitud = get_object_or_404(SolicitudUsuario, pk=solicitud_id, estado='Pendiente')
 
     usuario = User.objects.create(
-        username=solicitud.username,
+        username=solicitud.cedula,
         password=make_password(solicitud.password),
         first_name=solicitud.first_name,
         last_name=solicitud.last_name,
         email=solicitud.email,
+        cedula=solicitud.cedula,
+        telefono_movil=solicitud.telefono_movil,
         rol='profesor',  # O el rol que corresponda
     )
 
@@ -109,5 +111,12 @@ def asignar_rol(request, user_id):
         }
     )
 
+@staff_member_required
+def eliminar_usuario(request, usuario_id):
+    User = get_user_model()
+    usuario = get_object_or_404(User, id=usuario_id)
+    usuario.delete()
+    messages.success(request, "Usuario eliminado correctamente.")
+    return redirect('administrador:usuarios_aprobados')
 
 

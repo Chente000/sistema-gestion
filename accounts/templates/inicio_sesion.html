@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load widget_tweaks %}
 {% load static %} {% block content %}
 <div class="container mt-5 pt-5"> <div class="row justify-content-center"> <div class="col-md-6 col-lg-5"> <div class="card shadow-sm"> <div class="card-body p-4 p-md-5"> <h2 class="card-title text-center mb-4">Iniciar Sesión</h2> {% if error or form.non_field_errors %}
                         <div class="alert alert-danger" role="alert">
@@ -15,10 +16,10 @@
 
                     <form method="POST" action="{% url 'accounts:inicio_sesion' %}" novalidate> {% csrf_token %}
 
-                        <div class="mb-3"> <label for="{{ form.username.id_for_label }}" class="form-label">Usuario</label>
-                            {{ form.username }}
-                            {% if form.username.errors %}
-                                <div class="invalid-feedback d-block"> {% for error in form.username.errors %}
+                        <div class="mb-3"> <label for="{{ form.identificador.id_for_label }}" class="form-label">Cédula o Correo</label>
+                            {{ form.identificador|add_class:"form-control" }}
+                            {% if form.identificador.errors %}
+                                <div class="invalid-feedback d-block"> {% for error in form.identificador.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
@@ -40,7 +41,11 @@
                         <div class="d-grid gap-2 mt-4"> <button type="submit" class="btn btn-primary btn-lg">Iniciar Sesión</button>
                         </div>
 
-                    </form> <hr class="my-4"> <p class="text-center mb-0">
+                    </form> 
+                    <p class="text-center mt-3">
+                        <a href="{% url 'accounts:recuperar_contrasena' %}">¿Olvidaste tu contraseña?</a>
+                    </p>
+                    <hr class="my-4"> <p class="text-center mb-0">
                         ¿No tienes una cuenta? <a href="{% url 'accounts:solicitar_registro' %}">Solicita tu regístrate aquí</a>
                     </p>
                     {% if not registro_activo %}

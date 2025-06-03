@@ -1,36 +1,35 @@
 # en la carpeta de tu aplicación, por ejemplo, 'usuarios/views.py'
 
-from django.contrib.auth.views import LoginView
-from django.urls import reverse_lazy
+from django.contrib.auth import login
+from django.urls import reverse_lazy, reverse
+from django.conf import settings
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib.auth import logout
-from .forms import SolicitudUsuarioForm
+from .forms import SolicitudUsuarioForm, CedulaEmailAuthenticationForm, RecuperarContrasenaForm
 from .models import SolicitudUsuario
 from django.utils import timezone
 from django.contrib import messages
 from administrador.models import ConfiguracionRegistro
+
 import datetime
 
 
-class inicio_sesion(LoginView):
-    template_name = 'inicio_sesion.html'  # Especifica tu plantilla de login
-    fields = '__all__' # O especifica los campos que quieres en el formulario
-    redirect_authenticated_user = True # Redirige si el usuario ya está autenticado
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        from administrador.models import ConfiguracionRegistro
-        context['registro_activo'] = ConfiguracionRegistro.objects.filter(activa=True).exists()
-        return context
-
-    def get_success_url(self):
-        user = self.request.user
-        # Si es superusuario o pertenece al grupo 'Administrador'
-        if user.is_superuser or user.groups.filter(name='Administrador').exists():
-            return reverse_lazy('administrador:panel_administrador')
-        # Si no, va al panel principal
-        return reverse_lazy('home:panel_principal')
+def inicio_sesion(request):
+    if request.method == 'POST':
+        form = CedulaEmailAuthenticationForm(request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            # Redirección según rol
+            if user.is_superuser or user.groups.filter(name='Administrador').exists():
+                return redirect('administrador:panel_administrador')
+            return redirect('home:panel_principal')
+    else:
+        form = CedulaEmailAuthenticationForm()
+    return render(request, 'inicio_sesion.html', {'form': form})
 
 # Vista para el dashboard (ejemplo)
 @login_required # Asegura que solo usuarios logueados puedan acceder
@@ -64,3 +63,42 @@ def solicitar_registro(request):
 
 def registro_no_disponible(request):
     return render(request, 'registro_no_disponible.html')  # Crea una plantilla registro_no_disponible.html
+
+def recuperar_contraseña(request):
+    mensaje = None
+    if request.method == 'POST':
+        form = RecuperarContrasenaForm(request.POST)
+        if form.is_valid():
+            identificador = form.cleaned_data['identificador']
+            User = get_user_model()
+            try:
+                user = User.objects.get(email=identificador)
+            except User.DoesNotExist:
+                try:
+                    user = User.objects.get(cedula=identificador)
+                except User.DoesNotExist:
+                    user = None
+
+            if user and user.email:
+                # Genera un enlace de reseteo usando el sistema de Django
+                from django.contrib.auth.tokens import default_token_generator
+                from django.utils.http import urlsafe_base64_encode
+                from django.utils.encoding import force_bytes
+
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                reset_url = request.build_absolute_uri(
+                    reverse('accounts:reset_password', args=[uid, token])
+                )
+                send_mail(
+                    'Recuperar contraseña',
+                    f'Para restablecer tu contraseña haz clic aquí: {reset_url}',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                )
+                mensaje = "Se ha enviado un enlace de recuperación a tu correo."
+            else:
+                mensaje = "No se encontró un usuario con ese correo o cédula."
+    else:
+        form = RecuperarContrasenaForm()
+    return render(request, 'recuperar_contrasena.html', {'form': form, 'mensaje': mensaje})

@@ -22,11 +22,11 @@
             {% csrf_token %}
 
             <div class="mb-3">
-            <label for="{{ form.username.id_for_label }}" class="form-label">Usuario</label>
-            {{ form.username|add_class:"form-control" }}
-            {% if form.username.errors %}
+            <label for="{{ form.cedula.id_for_label }}" class="form-label">Cédula</label>
+            {{ form.cedula|add_class:"form-control" }}
+            {% if form.cedula.errors %}
                 <div class="invalid-feedback d-block">
-                {% for error in form.username.errors %}
+                {% for error in form.cedula.errors %}
                     {{ error }}
                 {% endfor %}
                 </div>
@@ -70,6 +70,18 @@
             </div>
 
             <div class="mb-3">
+            <label for="{{ form.telefono_movil.id_for_label }}" class="form-label">Teléfono Móvil</label>
+            {{ form.telefono_movil|add_class:"form-control" }}
+            {% if form.telefono_movil.errors %}
+                <div class="invalid-feedback d-block">
+                {% for error in form.telefono_movil.errors %}
+                    {{ error }}
+                {% endfor %}
+                </div>
+            {% endif %}
+            </div>
+
+            <div class="mb-3">
             <label for="{{ form.password.id_for_label }}" class="form-label">Contraseña</label>
             {{ form.password|add_class:"form-control" }}
             {% if form.password.errors %}
@@ -79,6 +91,18 @@
                 {% endfor %}
                 </div>
             {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.confirmar_password.id_for_label }}" class="form-label">Confirmar Contraseña</label>
+                {{ form.confirmar_password|add_class:"form-control" }}
+                {% if form.confirmar_password.errors %}
+                    <div class="invalid-feedback d-block">
+                    {% for error in form.confirmar_password.errors %}
+                        {{ error }}
+                    {% endfor %}
+                    </div>
+                {% endif %}
             </div>
 
             <div class="d-grid gap-2 mt-4">

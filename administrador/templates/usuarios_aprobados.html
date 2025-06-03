@@ -5,15 +5,17 @@
 <div class="container mt-5 pt-5">
     <div class="row justify-content-center">
         <div class="col-md-10">
+            <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary mb-3">Volver</a>
             <h2 class="mb-4">Usuarios Aprobados</h2>
             {% if usuarios %}
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped">
                         <thead class="table-dark">
                             <tr>
-                                <th>Usuario</th>
                                 <th>Nombre completo</th>
                                 <th>Correo</th>
+                                <th>Cédula</th>
+                                <th>Teléfono</th>
                                 <th>Rol</th>
                                 <th>Cargo Departamental</th>
                                 <th>Acciones</th>
@@ -22,15 +24,19 @@
                         <tbody>
                             {% for usuario in usuarios %}
                                 <tr>
-                                    <td>{{ usuario.username }}</td>
                                     <td>{{ usuario.get_full_name }}</td>
                                     <td>{{ usuario.email }}</td>
+                                    <td>{{ usuario.cedula }}</td>
+                                    <td>{{ usuario.telefono_movil }}</td>
                                     <td>{{ usuario.get_rol_display }}</td>
                                     <td>{{ usuario.get_cargo_departamental_display }}</td>
                                     <td>
                                         <a href="{% url 'administrador:asignar_rol' usuario.id %}" class="btn btn-sm btn-warning">Asignar Rol</a>
+                                        <form action="{% url 'administrador:eliminar_usuario' usuario.id %}" method="post" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que deseas eliminar este usuario?');">Eliminar</button>
+                                        </form>
                                     </td>
-                                        
                                 </tr>
                             {% endfor %}
                         </tbody>

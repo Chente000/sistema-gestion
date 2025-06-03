@@ -1,5 +1,6 @@
 {% extends "interfaz.html" %}
 {% block content %}
+<a href="{% url 'programacion:grilla_aulario' %}" class="btn btn-secondary mb-3">Volver</a>
 <h2>Listado de Horarios de Aula</h2>
 <a href="{% url 'programacion:horario_create' %}" class="btn btn-success mb-3">Agregar Horario</a>
 <table class="table table-bordered">

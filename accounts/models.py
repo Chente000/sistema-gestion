@@ -28,6 +28,8 @@ class Usuario(AbstractUser):
         blank=True,
         null=True
     )
+    cedula = models.CharField("Cédula", max_length=20, unique=True, null=True, blank=True)
+    telefono_movil = models.CharField("Teléfono Móvil", max_length=15, blank=True, null=True)
 
     def __str__(self):
         return f"{self.username} ({self.get_full_name()})"
@@ -38,7 +40,8 @@ class SolicitudUsuario(models.Model):
         ('Rechazada', 'Rechazada'),
     ]
 
-    username   = models.CharField(max_length=150, unique=True)
+    cedula     = models.CharField("Cédula", max_length=20, unique=True)
+    telefono_movil = models.CharField("Teléfono Móvil", max_length=15, blank=True, null=True)
     email      = models.EmailField(unique=True)
     first_name = models.CharField("Nombre", max_length=30)
     last_name  = models.CharField("Apellido", max_length=150)
@@ -48,4 +51,4 @@ class SolicitudUsuario(models.Model):
     rol = models.CharField("Rol general", max_length=20, choices=Usuario.ROLES, default='profesor')
 
     def __str__(self):
-        return f"{self.username} ({self.estado})"
+        return f"{self.cedula} ({self.estado})"

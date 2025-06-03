@@ -2,24 +2,28 @@
 
 {% block content %}
 <div class="container mt-5 pt-5">
+    <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary mb-3">Volver</a>
     <h2 class="mb-4 text-center">Solicitudes Pendientes</h2>
+
 
     {% if pendientes %}
         <table class="table table-bordered table-hover">
             <thead class="table-light">
                 <tr>
-                    <th>Usuario</th>
                     <th>Nombre</th>
                     <th>Correo</th>
+                    <th>Cedula</th>
+                    <th>Telefono</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {% for solicitud in pendientes %}
                     <tr>
-                        <td>{{ solicitud.username }}</td>
                         <td>{{ solicitud.first_name }} {{ solicitud.last_name }}</td>
                         <td>{{ solicitud.email }}</td>
+                        <td>{{ solicitud.cedula }}</td>
+                        <td>{{ solicitud.telefono_movil }}</td>
                         <td>
                             <a href="{% url 'administrador:aprobar_solicitud' solicitud.pk %}" class="btn btn-success btn-sm">Aprobar</a>
                             <a href="{% url 'administrador:rechazar_solicitud' solicitud.pk %}" class="btn btn-danger btn-sm">Rechazar</a>

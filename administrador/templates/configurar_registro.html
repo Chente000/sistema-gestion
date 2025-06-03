@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container mt-5 pt-5">
+    <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary mb-3">Volver</a>
     <h2>Configurar Franja Horaria de Registro</h2>
     <form method="post">
         {% csrf_token %}
