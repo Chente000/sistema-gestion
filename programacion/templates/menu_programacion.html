@@ -1,55 +1,122 @@
 {% extends "interfaz.html" %}
-
+{% load static %}
 {% block content %}
+<style>
+    .recursos-header {
+        background: #181818;
+        color: #fff;
+        padding: 2rem 1rem 1rem 1rem;
+        border-radius: 10px 10px 0 0;
+    }
+    .recurso-card {
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+        background: #232323;
+        color: #fff;
+        border: none;
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .recurso-card .icono {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    .recurso-card.bg-blue { background: #3b82f6; }
+    .recurso-card.bg-yellow { background: #fbbf24; color: #222; }
+    .recurso-card.bg-white { background: #fff; color: #222; }
+    .recurso-card .btn-descargar {
+        background: #22c55e;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 0.5rem 1.5rem;
+        font-weight: bold;
+        margin-top: 1rem;
+    }
+    .recurso-card .gratis-label {
+        background: #22c55e;
+        color: #fff;
+        border-radius: 5px;
+        padding: 0.2rem 0.7rem;
+        font-size: 0.9rem;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+</style>
+
 <div class="container mt-5">
-    <h2>Módulo de Programación Académica</h2>
-    <div class="row mt-4">
-        <div class="col-md-4 mb-3">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Docentes</h5>
-                    <p class="card-text">Gestión de docentes registrados.</p>
-                    <a href="{% url 'programacion:docentes' %}" class="btn btn-primary">Ver Docentes</a>
+    <div class="recursos-header mb-4">
+        <h1 class="mb-0">Recursos del Módulo de Programación Académica</h1>
+        <p class="mb-0">Acceso rápido a las principales funciones del sistema</p>
+    </div>
+    <div class="row g-4">
+        <!-- Docentes -->
+        <div class="col-md-6 col-lg-4">
+            <div class="recurso-card bg-white h-100 p-4">
+                <div>
+                    <div class="icono"><i class="bi bi-person-badge"></i></div>
+                    <span class="gratis-label">Acceso</span>
+                    <h5 class="fw-bold">Docentes</h5>
+                    <p>Gestión de docentes registrados.</p>
                 </div>
+                <a href="{% url 'programacion:docentes' %}" class="btn btn-descargar">Ver Docentes</a>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Asignaturas</h5>
-                    <p class="card-text">Gestión de asignaturas disponibles.</p>
-                    <a href="{% url 'programacion:asignaturas' %}" class="btn btn-primary">Ver Asignaturas</a>
+        <!-- Asignaturas -->
+        <div class="col-md-6 col-lg-4">
+            <div class="recurso-card bg-blue h-100 p-4">
+                <div>
+                    <div class="icono"><i class="bi bi-journal-bookmark"></i></div>
+                    <span class="gratis-label">Acceso</span>
+                    <h5 class="fw-bold">Asignaturas</h5>
+                    <p>Gestión de asignaturas disponibles.</p>
                 </div>
+                <a href="{% url 'programacion:asignaturas' %}" class="btn btn-descargar">Ver Asignaturas</a>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Aulario</h5>
-                    <p class="card-text">Gestión y consulta de aulas y horarios.</p>
-                    <a href="{% url 'programacion:grilla_aulario' %}" class="btn btn-primary">Ir al Aulario</a>
+        <!-- Aulario -->
+        <div class="col-md-6 col-lg-4">
+            <div class="recurso-card bg-yellow h-100 p-4">
+                <div>
+                    <div class="icono"><i class="bi bi-building"></i></div>
+                    <span class="gratis-label">Acceso</span>
+                    <h5 class="fw-bold">Aulario</h5>
+                    <p>Gestión y consulta de aulas y horarios.</p>
                 </div>
+                <a href="{% url 'programacion:grilla_aulario' %}" class="btn btn-descargar">Ir al Aulario</a>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Programación Académica</h5>
-                    <p class="card-text">Consulta y gestión de la programación académica.</p>
-                    <a href="{% url 'programacion:programacion_lista' %}" class="btn btn-primary">Ver Programación</a>
+        <!-- Programación Académica -->
+        <div class="col-md-6 col-lg-4">
+            <div class="recurso-card bg-white h-100 p-4">
+                <div>
+                    <div class="icono"><i class="bi bi-calendar-week"></i></div>
+                    <span class="gratis-label">Acceso</span>
+                    <h5 class="fw-bold">Programación Académica</h5>
+                    <p>Consulta y gestión de la programación académica.</p>
                 </div>
+                <a href="{% url 'programacion:programacion_lista' %}" class="btn btn-descargar">Ver Programación</a>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Evaluacion Docente</h5>
-                    <p class="card-text">Consulta y gestión de la relacion de evaluación docente.</p>
-                    <a href="{% url 'programacion:evaluacion_docente' %}" class="btn btn-primary">Ver Evaluación</a>
+        <!-- Evaluación Docente -->
+        <div class="col-md-6 col-lg-4">
+            <div class="recurso-card bg-blue h-100 p-4">
+                <div>
+                    <div class="icono"><i class="bi bi-clipboard-check"></i></div>
+                    <span class="gratis-label">Acceso</span>
+                    <h5 class="fw-bold">Evaluación Docente</h5>
+                    <p>Consulta y gestión de la relación de evaluación docente.</p>
                 </div>
+                <a href="{% url 'programacion:evaluacion_docente' %}" class="btn btn-descargar">Ver Evaluación</a>
             </div>
         </div>
-        <!-- Puedes agregar más opciones aquí en el futuro -->
+        <!-- Puedes agregar más tarjetas aquí -->
     </div>
 </div>
+
+<!-- Iconos Bootstrap (si no los tienes ya) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}

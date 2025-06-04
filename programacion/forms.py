@@ -76,8 +76,11 @@ class AulaForm(forms.ModelForm):
     class Meta:
         model = Aula
         fields = '__all__'
+        
 
 class HorarioAulaForm(forms.ModelForm):
     class Meta:
         model = HorarioAula
         fields = '__all__'
+        
+        

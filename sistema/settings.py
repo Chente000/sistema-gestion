@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'programacion',
     'servicio_social',
     'widget_tweaks',
+    'practicas'
 ]
 
 

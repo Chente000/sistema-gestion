@@ -1,0 +1,19 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h2>Detalle de Práctica Profesional</h2>
+    <div class="card mt-4">
+        <div class="card-body">
+            <p><strong>Nombre del Estudiante:</strong> {{ practica.nombre_estudiante }}</p>
+            <p><strong>Cédula del Estudiante:</strong> {{ practica.cedula_estudiante }}</p>
+            <p><strong>Empresa:</strong> {{ practica.empresa }}</p>
+            <p><strong>Tutor de la Empresa:</strong> {{ practica.tutor_empresa }}</p>
+            <p><strong>Fecha de Inicio:</strong> {{ practica.fecha_inicio }}</p>
+            <p><strong>Fecha de Fin:</strong> {{ practica.fecha_fin }}</p>
+            <p><strong>Estado:</strong> {{ practica.get_estado_display }}</p>
+            <p><strong>Observaciones:</strong> {{ practica.observaciones|default:"Sin observaciones" }}</p>
+        </div>
+    </div>
+    <a href="{% url 'practicas:practica_list' %}" class="btn btn-secondary mt-3">Volver al listado</a>
+</div>
+{% endblock %}
