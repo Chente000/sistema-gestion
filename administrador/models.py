@@ -1,28 +1,8 @@
 from django.db import models
 
 class ConfiguracionRegistro(models.Model):
-    DIAS_SEMANA = [
-        ('lunes', 'Lunes'),
-        ('martes', 'Martes'),
-        ('miercoles', 'Miércoles'),
-        ('jueves', 'Jueves'),
-        ('viernes', 'Viernes'),
-        ('sabado', 'Sábado'),
-        ('domingo', 'Domingo'),
-    ]
-
-    hora_inicio = models.TimeField("Hora de inicio")
-    hora_fin = models.TimeField("Hora de fin")
-    dias_permitidos = models.CharField(
-        "Días permitidos",
-        max_length=100,
-        help_text="Selecciona los días permitidos separados por coma (ej: lunes,martes,viernes)"
-    )
-    activa = models.BooleanField("Configuración activa", default=True)
-    registro_habilitado = models.BooleanField(default=False)
-
-    def dias_permitidos_lista(self):
-        return self.dias_permitidos.split(',')
-
-    def __str__(self):
-        return "Configuración de Registro"
+    fecha_inicio = models.DateField()
+    hora_inicio = models.TimeField()
+    fecha_fin = models.DateField()
+    hora_fin = models.TimeField()
+    activa = models.BooleanField(default=True)

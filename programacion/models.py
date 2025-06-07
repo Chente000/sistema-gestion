@@ -91,6 +91,7 @@ class HorarioAula(models.Model):
     seccion = models.CharField(max_length=10)
     semestre = models.CharField(max_length=10, blank=True)
     carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
+    docente = models.ForeignKey(Docente, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         unique_together = ('aula', 'dia', 'hora_inicio', 'hora_fin', 'seccion')
@@ -113,3 +114,14 @@ class HorarioAula(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
+        
+class Seccion(models.Model):
+    codigo = models.CharField(max_length=20, unique=True)  # Ejemplo: 2630D
+    nombre = models.CharField(max_length=100, blank=True)  # Nombre opcional
+    semestre = models.CharField(max_length=10)             # Ejemplo: 1, 2, etc.
+    carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
+    # Puedes agregar más campos según tus necesidades, por ejemplo:
+    # turno = models.CharField(max_length=20, blank=True)  # Diurno, Vespertino, etc.
+
+    def __str__(self):
+        return f"{self.codigo} - {self.carrera.nombre} - Semestre {self.semestre}"

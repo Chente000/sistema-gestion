@@ -46,9 +46,15 @@ def base(request):
 
 def solicitar_registro(request):
     config = ConfiguracionRegistro.objects.first()
-    if not config or not config.registro_habilitado:
-        return render(request, 'registro_no_disponible.html')
+    ahora = timezone.now()
+    registro_activo = False
+    if config:
+        inicio = timezone.make_aware(datetime.datetime.combine(config.fecha_inicio, config.hora_inicio))
+        fin = timezone.make_aware(datetime.datetime.combine(config.fecha_fin, config.hora_fin))
+        registro_activo = config.activa and inicio <= ahora <= fin
 
+    if not config or not registro_activo:
+        return render(request, 'registro_no_disponible.html')
 
     # ... lógica normal de la vista ...
     if request.method == 'POST':

@@ -1,0 +1,34 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<h2>Secciones</h2>
+<a href="{% url 'programacion:seccion_create' %}" class="btn btn-primary mb-3">Agregar Sección</a>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Semestre</th>
+            <th>Carrera</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for seccion in secciones %}
+        <tr>
+            <td>{{ seccion.codigo }}</td>
+            <td>{{ seccion.nombre }}</td>
+            <td>{{ seccion.semestre }}</td>
+            <td>{{ seccion.carrera.nombre }}</td>
+            <td>
+                <a href="{% url 'programacion:seccion_edit' seccion.id %}" class="btn btn-sm btn-warning">Editar</a>
+                <a href="{% url 'programacion:seccion_delete' seccion.id %}" class="btn btn-sm btn-danger">Eliminar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center">No hay secciones registradas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

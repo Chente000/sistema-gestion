@@ -28,4 +28,11 @@ urlpatterns = [
     path('horarios/editar/<int:pk>/', views.horario_edit, name='horario_edit'),
     path('horarios/eliminar/<int:pk>/', views.horario_delete, name='horario_delete'),
     path('aulario/grilla/', views.grilla_aulario, name='grilla_aulario'),
+    path('secciones/', views.seccion_list, name='seccion_list'),
+    path('secciones/agregar/', views.seccion_create, name='seccion_create'),
+    path('secciones/editar/<int:pk>/', views.seccion_edit, name='seccion_edit'),
+    path('secciones/eliminar/<int:pk>/', views.seccion_delete, name='seccion_delete'),
+    path('seleccionar_seccion/', views.seleccionar_seccion, name='seleccionar_seccion'),
+    path('seccion/<int:seccion_id>/horario/', views.programar_horario, name='programar_horario'),
+    path('seccion/<int:seccion_id>/guardar_bloque/', views.guardar_bloque_horario, name='guardar_bloque_horario'),
 ]

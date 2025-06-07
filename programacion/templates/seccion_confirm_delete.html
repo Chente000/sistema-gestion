@@ -1,0 +1,10 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<h2>Eliminar Sección</h2>
+<p>¿Estás seguro de que deseas eliminar la sección <strong>{{ seccion.codigo }}</strong>?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Eliminar</button>
+    <a href="{% url 'programacion:seccion_list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

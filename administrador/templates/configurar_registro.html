@@ -1,12 +1,32 @@
 {% extends "base.html" %}
-
+{% load widget_tweaks %}
 {% block content %}
 <div class="container mt-5 pt-5">
     <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary mb-3">Volver</a>
     <h2>Configurar Franja Horaria de Registro</h2>
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">Fecha de inicio</label>
+                {{ form.fecha_inicio|add_class:"form-control" }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.hora_inicio.id_for_label }}" class="form-label">Hora de inicio</label>
+                {{ form.hora_inicio|add_class:"form-control" }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">Fecha de fin</label>
+                {{ form.fecha_fin|add_class:"form-control" }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.hora_fin.id_for_label }}" class="form-label">Hora de fin</label>
+                {{ form.hora_fin|add_class:"form-control" }}
+            </div>
+            <div class="col-md-12 mb-3 form-check">
+                {{ form.activa }} <label for="{{ form.activa.id_for_label }}" class="form-check-label">Activar registro</label>
+            </div>
+        </div>
         <button type="submit" class="btn btn-primary">Guardar</button>
     </form>
 </div>

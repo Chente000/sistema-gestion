@@ -1,5 +1,6 @@
 {% extends "interfaz.html" %}
 {% load extra_filters %}
+{% load dict_extras %}
 {% block content %}
 <a href="{% url 'programacion:menu_programacion' %}" class="btn btn-secondary mb-3">Volver</a>
 <h2>Grilla Semanal de Aulas</h2>
@@ -23,19 +24,18 @@
                     {% if forloop.first %}
                         <td rowspan="{{ horas|length }}" class="fw-bold align-middle bg-secondary text-white border-end border-3 border-dark">{{ aula.nombre }}</td>
                     {% endif %}
-                    <td class="text-nowrap">{{ hora }}</td>
+                    <td>{{ hora.0 }} - {{ hora.1 }}</td>
                     {% for dia in dias %}
-                        {% get_item grilla aula.id dia hora as horario %}
                         <td>
-                            {% if horario %}
-                                <div class="bg-danger text-white rounded p-1" style="min-width: 120px;">
-                                    <strong>{{ horario.asignatura.nombre }}</strong><br>
-                                    <small>Sección: {{ horario.seccion }}</small><br>
-                                    <small>{{ horario.hora_inicio }} - {{ horario.hora_fin }}</small><br>
-                                    <small>{{ horario.docente.nombre }}</small>
-                                </div>
-                            {% else %}
-                                <span class="bg-success text-white rounded p-1 d-block" style="min-width: 120px;">Libre</span>
+                            {% get_dict_item grilla aula.id dia hora.0 as h %}
+                            {% if h %}
+                                <div><strong>{{ h.asignatura.nombre }}</strong></div>
+                                <div>Sección: {{ h.seccion|default:"-" }}</div>
+                                {% if h.docente %}
+                                    <div>Docente: {{ h.docente.nombre }}</div>
+                                {% else %}
+                                    <div class="text-danger"><em>Sin docente asignado</em></div>
+                                {% endif %}
                             {% endif %}
                         </td>
                     {% endfor %}

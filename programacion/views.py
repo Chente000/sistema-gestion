@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
-from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula
-from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm
+from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion
+from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm
+from django.forms import modelformset_factory
+from .forms import HorarioAulaBloqueForm
 from datetime import datetime
+from django.http import JsonResponse
 
 def evaluacion_docente(request):
     programaciones = ProgramacionAcademica.objects.select_related('docente', 'asignatura', 'periodo')
@@ -225,14 +228,68 @@ def horario_list(request):
     return render(request, 'horario_list.html', {'horarios': horarios})
 
 def horario_create(request):
+    aulas = Aula.objects.all()
+    aula_id = request.GET.get('aula')
+    aula = Aula.objects.filter(id=aula_id).first() if aula_id else None
+
+    HorarioFormSet = modelformset_factory(HorarioAula, form=HorarioAulaBloqueForm, extra=3, can_delete=True)
     if request.method == 'POST':
-        form = HorarioAulaForm(request.POST)
-        if form.is_valid():
-            form.save()
+        formset = HorarioFormSet(request.POST, queryset=HorarioAula.objects.none())
+        if formset.is_valid():
+            for form in formset:
+                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                    horario = form.save(commit=False)
+                    horario.aula = aula  # asigna el aula seleccionada
+                    horario.save()
             return redirect('programacion:horario_list')
     else:
-        form = HorarioAulaForm()
-    return render(request, 'horario_form.html', {'form': form})
+        formset = HorarioFormSet(queryset=HorarioAula.objects.none())
+
+    dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+    horas = [
+        ("07:00", "07:45"),
+        ("07:45", "08:30"),
+        ("08:30", "09:15"),
+        ("09:15", "10:00"),
+        ("10:00", "10:45"),
+        ("10:45", "11:30"),
+        ("11:30", "12:15"),
+        ("12:15", "13:00"),
+        ("13:00", "13:45"),
+        ("13:45", "14:30"),
+        ("14:30", "15:15"),
+        ("15:15", "16:00"),
+        ("16:00", "16:45"),
+        ("16:45", "17:30"),
+        ("17:30", "18:15"),
+        ("18:15", "19:00"),
+        ("19:00", "19:45"),
+        ("19:45", "20:30"),
+        ("20:30", "21:15"),
+        ("21:15", "22:00"),
+    ]
+    grilla = {}
+    if aula_id:
+        horarios = HorarioAula.objects.filter(aula=aula).select_related('asignatura', 'docente')
+        for h in horarios:
+            for hora_inicio_str, hora_fin_str in horas:
+                hora_inicio_dt = datetime.strptime(hora_inicio_str, "%H:%M").time()
+                hora_fin_dt = datetime.strptime(hora_fin_str, "%H:%M").time()
+                if (
+                    h.dia in dias and
+                    h.hora_inicio < hora_fin_dt and
+                    h.hora_fin > hora_inicio_dt
+                ):
+                    grilla[(h.aula_id, h.dia, hora_inicio_str)] = h
+
+    return render(request, 'horario_form.html', {
+        'formset': formset,
+        'aula': aula,
+        'aulas': aulas,  # <-- agrega esto
+        'dias': dias,
+        'horas': horas,
+        'grilla': grilla,
+    })
 
 def horario_edit(request, pk):
     horario = get_object_or_404(HorarioAula, pk=pk)
@@ -256,19 +313,170 @@ def grilla_aulario(request):
     aulas = Aula.objects.all()
     dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
     horas = [
-        "07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
-        "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"
+        ("07:00", "07:45"),
+        ("07:45", "08:30"),
+        ("08:30", "09:15"),
+        ("09:15", "10:00"),
+        ("10:00", "10:45"),
+        ("10:45", "11:30"),
+        ("11:30", "12:15"),
+        ("12:15", "13:00"),
+        ("13:00", "13:45"),
+        ("13:45", "14:30"),
+        ("14:30", "15:15"),
+        ("15:15", "16:00"),
+        ("16:00", "16:45"),
+        ("16:45", "17:30"),
+        ("17:30", "18:15"),
+        ("18:15", "19:00"),
+        ("19:00", "19:45"),
+        ("19:45", "20:30"),
+        ("20:30", "21:15"),
+        ("21:15", "22:00"),
     ]
     horarios = HorarioAula.objects.select_related('aula', 'asignatura').all()
     grilla = {}
     for h in horarios:
-        for hora_str in horas:
-            hora_dt = datetime.strptime(hora_str, "%H:%M").time()
-            if h.hora_inicio <= hora_dt < h.hora_fin and h.dia in dias:
-                grilla[(h.aula_id, h.dia, hora_str)] = h
+        for hora_inicio_str, hora_fin_str in horas:
+            hora_inicio_dt = datetime.strptime(hora_inicio_str, "%H:%M").time()
+            hora_fin_dt = datetime.strptime(hora_fin_str, "%H:%M").time()
+            # El bloque [hora_inicio_dt, hora_fin_dt) y el horario [h.hora_inicio, h.hora_fin) se solapan si:
+            if (
+                h.dia in dias and
+                h.hora_inicio < hora_fin_dt and
+                h.hora_fin > hora_inicio_dt
+            ):
+                grilla[(h.aula_id, h.dia, hora_inicio_str)] = h
     return render(request, 'grilla_aulario.html', {
         'aulas': aulas,
         'dias': dias,
         'horas': horas,
         'grilla': grilla,
     })
+    
+def seccion_list(request):
+    secciones = Seccion.objects.select_related('carrera').all()
+    return render(request, 'seccion_list.html', {'secciones': secciones})
+
+def seccion_create(request):
+    if request.method == 'POST':
+        form = SeccionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('programacion:seccion_list')
+    else:
+        form = SeccionForm()
+    return render(request, 'seccion_form.html', {'form': form})
+
+def seccion_edit(request, pk):
+    seccion = get_object_or_404(Seccion, pk=pk)
+    if request.method == 'POST':
+        form = SeccionForm(request.POST, instance=seccion)
+        if form.is_valid():
+            form.save()
+            return redirect('programacion:seccion_list')
+    else:
+        form = SeccionForm(instance=seccion)
+    return render(request, 'seccion_form.html', {'form': form})
+
+def seccion_delete(request, pk):
+    seccion = get_object_or_404(Seccion, pk=pk)
+    if request.method == 'POST':
+        seccion.delete()
+        return redirect('programacion:seccion_list')
+    return render(request, 'seccion_confirm_delete.html', {'seccion': seccion})
+    
+def seleccionar_seccion(request):
+    if request.method == 'POST':
+        form = SeleccionarSeccionForm(request.POST)
+        if form.is_valid():
+            seccion = form.cleaned_data['seccion']
+            return redirect('programacion:programar_horario', seccion_id=seccion.id)
+    else:
+        form = SeleccionarSeccionForm()
+    return render(request, 'seleccionar_seccion.html', {'form': form})
+        
+def programar_horario(request, seccion_id):
+    seccion = Seccion.objects.get(id=seccion_id)
+    dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+    horas = [
+        ("07:00", "07:45"),
+        ("07:45", "08:30"),
+        ("08:30", "09:15"),
+        ("09:15", "10:00"),
+        ("10:00", "10:45"),
+        ("10:45", "11:30"),
+        ("11:30", "12:15"),
+        ("12:15", "13:00"),
+        ("13:00", "13:45"),
+        ("13:45", "14:30"),
+        ("14:30", "15:15"),
+        ("15:15", "16:00"),
+        ("16:00", "16:45"),
+        ("16:45", "17:30"),
+        ("17:30", "18:15"),
+        ("18:15", "19:00"),
+        ("19:00", "19:45"),
+        ("19:45", "20:30"),
+        ("20:30", "21:15"),
+        ("21:15", "22:00"),
+    ]
+    # Construir la grilla: {(dia, hora_inicio): horario}
+    horarios = HorarioAula.objects.filter(seccion=seccion)
+    grilla = {}
+    for h in horarios:
+        clave = f"{h.dia}-{h.hora_inicio.strftime('%H:%M')}"
+        grilla[clave] = h
+
+    return render(request, 'programar_horario.html', {
+        'seccion': seccion,
+        'dias': dias,
+        'horas': horas,
+        'grilla': grilla,
+        'asignaturas': Asignatura.objects.filter(carrera=seccion.carrera),
+        'aulas': Aula.objects.all(),
+        'docentes': Docente.objects.all(),
+    })
+    
+def guardar_bloque_horario(request, seccion_id):
+    if request.method == 'POST' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        dia = request.POST.get('dia')
+        hora_inicio = request.POST.get('hora_inicio')
+        asignatura_id = request.POST.get('asignatura')
+        aula_id = request.POST.get('aula')
+        docente_id = request.POST.get('docente')
+
+        seccion = get_object_or_404(Seccion, id=seccion_id)
+        asignatura = get_object_or_404(Asignatura, id=asignatura_id)
+        aula = get_object_or_404(Aula, id=aula_id)
+        docente = get_object_or_404(Docente, id=docente_id)
+
+        hora_fin = None
+        # Busca la hora_fin según la hora_inicio en tu lista de horas
+        horas = [
+            ("07:00", "07:45"), ("07:45", "08:30"), ("08:30", "09:15"), ("09:15", "10:00"),
+            ("10:00", "10:45"), ("10:45", "11:30"), ("11:30", "12:15"), ("12:15", "13:00"),
+            ("13:00", "13:45"), ("13:45", "14:30"), ("14:30", "15:15"), ("15:15", "16:00"),
+            ("16:00", "16:45"), ("16:45", "17:30"), ("17:30", "18:15"), ("18:15", "19:00"),
+            ("19:00", "19:45"), ("19:45", "20:30"), ("20:30", "21:15"), ("21:15", "22:00"),
+        ]
+        for h_ini, h_fin in horas:
+            if h_ini == hora_inicio:
+                hora_fin = h_fin
+                break
+
+        # Actualiza o crea el bloque horario
+        bloque, created = HorarioAula.objects.update_or_create(
+            seccion=seccion,
+            dia=dia,
+            hora_inicio=hora_inicio,
+            defaults={
+                'hora_fin': hora_fin,
+                'asignatura': asignatura,
+                'aula': aula,
+                'docente': docente,
+                'carrera': seccion.carrera,
+            }
+        )
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False}, status=400)

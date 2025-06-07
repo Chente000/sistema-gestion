@@ -77,6 +77,17 @@
                 <a href="{% url 'programacion:asignaturas' %}" class="btn btn-descargar">Ver Asignaturas</a>
             </div>
         </div>
+        <!-- Secciones -->
+        <div class="col-md-6 col-lg-4">
+            <div class="recurso-card bg-yellow h-100 p-4">
+                <div>
+                    <div class="icono"><i class="bi bi-grid-3x3-gap"></i></div>
+                    <span class="gratis-label">Acceso</span>
+                    <h5 class="fw-bold">Secciones</h5>
+                    <p>Consulta y gestión de secciones académicas.</p>
+                </div>
+                <a href="{% url 'programacion:seccion_list' %}" class="btn btn-descargar">Ver Secciones</a>
+            </div>
         <!-- Aulario -->
         <div class="col-md-6 col-lg-4">
             <div class="recurso-card bg-yellow h-100 p-4">
@@ -86,7 +97,7 @@
                     <h5 class="fw-bold">Aulario</h5>
                     <p>Gestión y consulta de aulas y horarios.</p>
                 </div>
-                <a href="{% url 'programacion:grilla_aulario' %}" class="btn btn-descargar">Ir al Aulario</a>
+                <a href="{% url 'programacion:seleccionar_seccion' %}" class="btn btn-descargar">Ir al Aulario</a>
             </div>
         </div>
         <!-- Programación Académica -->

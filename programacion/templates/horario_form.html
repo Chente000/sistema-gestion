@@ -1,10 +1,99 @@
 {% extends "interfaz.html" %}
+{% load widget_tweaks %}
+{% load dict_extras %}
 {% block content %}
-<h2>{% if form.instance.pk %}Editar Horario{% else %}Agregar Horario{% endif %}</h2>
-<form method="post">
+<h2>Agregar Varios Bloques Horarios</h2>
+<form method="post" id="horario-form">
     {% csrf_token %}
-    {{ form.as_p }}
+    <div class="mb-3">
+        <label for="id_aula">Aula</label>
+        <select name="aula" id="id_aula" class="form-select">
+            <option value="">---------</option>
+            {% for a in aulas %}
+                <option value="{{ a.id }}" {% if aula and a.id == aula.id %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {{ formset.management_form }}
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Día</th>
+                <th>Hora inicio</th>
+                <th>Hora fin</th>
+                <th>Asignatura</th>
+                <th>Sección</th>
+                <th>Semestre</th>
+                <th>Carrera</th>
+                <th>Eliminar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for form in formset %}
+            <tr>
+                <td>{{ form.dia }}</td>
+                <td>{{ form.hora_inicio }}</td>
+                <td>{{ form.hora_fin }}</td>
+                <td>{{ form.asignatura }}</td>
+                <td>{{ form.seccion }}</td>
+                <td>{{ form.semestre }}</td>
+                <td>{{ form.carrera }}</td>
+                <td>{{ form.DELETE }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     <button type="submit" class="btn btn-success">Guardar</button>
     <a href="{% url 'programacion:horario_list' %}" class="btn btn-secondary">Cancelar</a>
 </form>
+
+{% if aula %}
+    <hr>
+    <h4>Grilla del Aula: {{ aula.nombre }}</h4>
+    <div class="table-responsive">
+        <table class="table table-bordered table-sm text-center align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Hora</th>
+                    {% for dia in dias %}
+                        <th>{{ dia }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for hora in horas %}
+                    <tr>
+                        <td>{{ hora.0 }} - {{ hora.1 }}</td>
+                        {% for dia in dias %}
+                            <td>
+                                {% get_dict_item grilla aula.id dia hora.0 as h %}
+                                {% if h %}
+                                    <div><strong>{{ h.asignatura.nombre }}</strong></div>
+                                    <div>Sección: {{ h.seccion|default:"-" }}</div>
+                                    {% if h.docente %}
+                                        <div>Docente: {{ h.docente.nombre }}</div>
+                                    {% else %}
+                                        <div class="text-danger"><em>Sin docente asignado</em></div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+<script>
+document.getElementById("id_aula").addEventListener("change", function() {
+    var aulaId = this.value;
+    var url = "{% url 'programacion:horario_create' %}";
+    if (aulaId) {
+        window.location.href = url + "?aula=" + aulaId;
+    } else {
+        window.location.href = url;
+    }
+});
+</script>
 {% endblock %}
