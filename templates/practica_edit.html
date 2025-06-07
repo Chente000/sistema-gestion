@@ -1,0 +1,38 @@
+{% extends "interfaz.html" %}
+{% load widget_tweaks %}
+
+{% block content %}
+<main class="main-content">
+    <a href="{% url 'practicas:practica_list' %}" class="btn btn-secondary mb-3" style="background:#003366;border:none;">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+    <h2 class="mb-4">Editar Práctica Profesional</h2>
+    <div class="card card-custom mb-4">
+        <div class="card-header">
+            Editar Registro de Práctica
+        </div>
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {{ field|add_class:"form-control" }}
+                        {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ field.errors|striptags }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" style="background:#003366;border:none;">
+                    <i class="bi bi-save"></i> Guardar Cambios
+                </button>
+                <a href="{% url 'practicas:practica_list' %}" class="btn btn-secondary" style="background:#FFD600;color:#003366;border:none;">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</main>
+{% endblock %}

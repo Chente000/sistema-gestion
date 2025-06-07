@@ -1,0 +1,36 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<main class="main-content">
+    <h2 class="mb-3">Detalle de Práctica Profesional</h2>
+    <div class="card card-custom mb-4">
+        <div class="card-header">
+            Información de la Práctica
+        </div>
+        <div class="card-body">
+            <ul class="list-group mb-3">
+                <li class="list-group-item"><strong>Nombre del Estudiante:</strong> {{ practica.nombre_estudiante }}</li>
+                <li class="list-group-item"><strong>Cédula del Estudiante:</strong> {{ practica.cedula_estudiante }}</li>
+                <li class="list-group-item"><strong>Empresa:</strong> {{ practica.empresa }}</li>
+                <li class="list-group-item"><strong>Tutor de la Empresa:</strong> {{ practica.tutor_empresa }}</li>
+                <li class="list-group-item"><strong>Fecha de Inicio:</strong> {{ practica.fecha_inicio }}</li>
+                <li class="list-group-item"><strong>Fecha de Fin:</strong> {{ practica.fecha_fin }}</li>
+                <li class="list-group-item"><strong>Estado:</strong>
+                    {% if practica.get_estado_display == "Finalizado" %}
+                        <span class="badge" style="background:#D90429;">{{ practica.get_estado_display }}</span>
+                    {% elif practica.get_estado_display == "En Proceso" %}
+                        <span class="badge" style="background:#28a745;">{{ practica.get_estado_display }}</span>
+                    {% elif practica.get_estado_display == "Pendiente" %}
+                        <span class="badge" style="background:#FFD600;color:#003366;">{{ practica.get_estado_display }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ practica.get_estado_display }}</span>
+                    {% endif %}
+                </li>
+                <li class="list-group-item"><strong>Observaciones:</strong> {{ practica.observaciones|default:"Sin observaciones" }}</li>
+            </ul>
+            <a href="{% url 'practicas:practica_list' %}" class="btn btn-secondary" style="background:#003366;border:none;">
+                <i class="bi bi-arrow-left"></i> Volver al listado
+            </a>
+        </div>
+    </div>
+</main>
+{% endblock %}
