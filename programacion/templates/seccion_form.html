@@ -7,4 +7,24 @@
     <button type="submit" class="btn btn-success">Guardar</button>
     <a href="{% url 'programacion:seccion_list' %}" class="btn btn-secondary">Cancelar</a>
 </form>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const carreraSelect = document.getElementById('id_carrera');
+    const semestreSelect = document.getElementById('id_semestre');
+    carreraSelect.addEventListener('change', function() {
+        const carreraId = this.value;
+        fetch(`/programacion/ajax/semestres/?carrera_id=${carreraId}`)
+            .then(response => response.json())
+            .then(data => {
+                semestreSelect.innerHTML = '';
+                data.semestres.forEach(function(semestre) {
+                    const option = document.createElement('option');
+                    option.value = semestre.id;
+                    option.textContent = semestre.nombre;
+                    semestreSelect.appendChild(option);
+                });
+            });
+    });
+});
+</script>
 {% endblock %}

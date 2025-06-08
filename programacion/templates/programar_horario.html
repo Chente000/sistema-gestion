@@ -3,81 +3,192 @@
 {% load dict_extras %}
 {% block content %}
 <h2>Horario de la Sección: {{ seccion.codigo }} - {{ seccion.carrera.nombre }} - Semestre {{ seccion.semestre }}</h2>
-<div class="table-responsive">
-<table class="table table-bordered text-center align-middle">
-    <thead class="table-dark">
+<!-- Botón para abrir el modal -->
+<button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalNuevoHorario">
+    + Nuevo Horario
+</button>
+
+<!-- Modal para crear nuevo horario -->
+<div class="modal fade" id="modalNuevoHorario" tabindex="-1" aria-labelledby="modalNuevoHorarioLabel" aria-hidden="true">
+<div class="modal-dialog">
+    <div class="modal-content">
+    <form id="form-nuevo-horario">
+        {% csrf_token %}
+        <div class="modal-header">
+        <h5 class="modal-title" id="modalNuevoHorarioLabel">Nuevo Horario de Sección</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+        {{ form.as_p }}
+        </div>
+        <div class="modal-footer">
+        <button type="submit" class="btn btn-success">Guardar</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+    </form>
+    </div>
+</div>
+</div>
+
+<div class="mb-3">
+    <h5>Horarios creados para esta sección:</h5>
+    <ul class="list-group">
+        {% for horario in horarios_seccion %}
+            <li class="list-group-item d-flex justify-content-between align-items-center {% if horario.activo %}list-group-item-success{% endif %}">
+                <span>
+                    {{ horario.periodo.nombre }} | {{ horario.fecha_inicio }} a {{ horario.fecha_fin }}
+                    {% if horario.descripcion %} - {{ horario.descripcion }}{% endif %}
+                    {% if horario.activo %}<strong> (Activo)</strong>{% endif %}
+                </span>
+                <span class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="abrirModalEditarHorario({{ horario.id }})">Editar</button>
+                    <form method="post" action="{% url 'programacion:eliminar_horario_seccion' horario.id %}" style="display:inline;" onsubmit="return confirm('¿Seguro que deseas eliminar este horario?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                    </form>
+                    {% if not horario.activo %}
+                    <form method="post" action="{% url 'programacion:activar_horario_seccion' horario.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Activar</button>
+                    </form>
+                {% endif %}
+            </span>
+            </li>
+        {% empty %}
+            <li class="list-group-item">No hay horarios creados para esta sección.</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<h5>Asignaturas y sesiones</h5>
+<table class="table table-bordered table-sm text-center">
+    <thead>
         <tr>
-            <th>Hora</th>
-            {% for dia in dias %}
-                <th>{{ dia }}</th>
-            {% endfor %}
+            <th>Asignatura</th>
+            <th>Sesiones Programadas</th>
+            <th>Sesiones Planificadas</th>
         </tr>
     </thead>
     <tbody>
-        {% for hora in horas %}
+        {% for item in lista_asignaturas %}
         <tr>
-            <td>{{ hora.0 }} - {{ hora.1 }}</td>
-            {% for dia in dias %}
-                <td style="cursor:pointer;" ondblclick="editarCelda('{{ dia }}', '{{ hora.0 }}')">
-                    {% get_dict_item grilla dia|add:"-"|add:hora.0 as h %}
-                    {% if h %}
-                        <div><strong>{{ h.asignatura.nombre }}</strong></div>
-                        <div>Docente: {{ h.docente.nombre|default:"-" }}</div>
-                        <div>Aula: {{ h.aula.nombre|default:"-" }}</div>
-                    {% else %}
-                        <span class="text-muted">-</span>
-                    {% endif %}
-                </td>
-            {% endfor %}
+            <td>{{ item.asignatura.nombre }}</td>
+            <td>{{ item.sesiones_programadas }}</td>
+            <td>{{ item.sesiones_planificadas }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-</div>
+
+{% if horario_activo %}
+    <div class="mb-3">
+        <h5>Grilla de Horario</h5>
+        <p>Haz doble clic en una celda para editar el bloque horario.</p>
+
+        <div class="table-responsive">
+        <table class="table table-bordered text-center align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Hora</th>
+                    {% for dia in dias %}
+                        <th>{{ dia }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for hora in horas %}
+                <tr>
+                    <td>{{ hora.0 }} - {{ hora.1 }}</td>
+                    {% for dia in dias %}
+                        <td style="cursor:pointer;" ondblclick="editarCelda('{{ dia }}', '{{ hora.0 }}')">
+                            {% get_dict_item grilla dia|add:"-"|add:hora.0 as h %}
+                            {% if h %}
+                                <div><strong>{{ h.asignatura.nombre }}</strong></div>
+                                <div>Docente: {{ h.docente.nombre|default:"-" }}</div>
+                                <div>Aula: {{ h.aula.nombre|default:"-" }}</div>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        Debe crear y activar un horario para esta sección antes de programar bloques.
+    </div>
+{% endif %}
 
 <!-- Modal para agregar/editar bloque horario -->
-<div class="modal fade" id="modalHorario" tabindex="-1" aria-labelledby="modalHorarioLabel" aria-hidden="true">
+        <div class="modal fade" id="modalHorario" tabindex="-1" aria-labelledby="modalHorarioLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <form id="form-bloque-horario" method="post">
+                {% csrf_token %}
+                <div class="modal-header">
+                <h5 class="modal-title" id="modalHorarioLabel">Editar Bloque Horario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                <input type="hidden" name="dia" id="modal-dia">
+                <input type="hidden" name="hora_inicio" id="modal-hora-inicio">
+                <div class="mb-3">
+                    <label for="modal-asignatura" class="form-label">Asignatura</label>
+                    <select name="asignatura" id="modal-asignatura" class="form-select" required>
+                    <option value="">---------</option>
+                    {% for asignatura in asignaturas %}
+                        <option value="{{ asignatura.id }}">{{ asignatura.nombre }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="modal-aula" class="form-label">Aula</label>
+                    <select name="aula" id="modal-aula" class="form-select" required>
+                    <option value="">---------</option>
+                    {% for aula in aulas %}
+                        <option value="{{ aula.id }}">{{ aula.nombre }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="modal-docente" class="form-label">Docente</label>
+                    <select name="docente" id="modal-docente" class="form-select" required>
+                    <option value="">---------</option>
+                    {% for docente in docentes %}
+                        <option value="{{ docente.id }}">{{ docente.nombre }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                </div>
+                <div class="modal-footer">
+                <button type="submit" class="btn btn-success">Guardar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+            </div>
+        </div>
+        </div>
+
+
+<!-- Modal para editar horario -->
+<div class="modal fade" id="modalEditarHorario" tabindex="-1" aria-labelledby="modalEditarHorarioLabel" aria-hidden="true">
 <div class="modal-dialog">
     <div class="modal-content">
-    <form id="form-bloque-horario" method="post">
+    <form id="form-editar-horario">
         {% csrf_token %}
         <div class="modal-header">
-        <h5 class="modal-title" id="modalHorarioLabel">Editar Bloque Horario</h5>
+        <h5 class="modal-title" id="modalEditarHorarioLabel">Editar Horario de Sección</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-        <div class="modal-body">
-        <input type="hidden" name="dia" id="modal-dia">
-        <input type="hidden" name="hora_inicio" id="modal-hora-inicio">
-        <div class="mb-3">
-            <label for="modal-asignatura" class="form-label">Asignatura</label>
-            <select name="asignatura" id="modal-asignatura" class="form-select" required>
-            <option value="">---------</option>
-            {% for asignatura in asignaturas %}
-                <option value="{{ asignatura.id }}">{{ asignatura.nombre }}</option>
-            {% endfor %}
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="modal-aula" class="form-label">Aula</label>
-            <select name="aula" id="modal-aula" class="form-select" required>
-            <option value="">---------</option>
-            {% for aula in aulas %}
-                <option value="{{ aula.id }}">{{ aula.nombre }}</option>
-            {% endfor %}
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="modal-docente" class="form-label">Docente</label>
-            <select name="docente" id="modal-docente" class="form-select" required>
-            <option value="">---------</option>
-            {% for docente in docentes %}
-                <option value="{{ docente.id }}">{{ docente.nombre }}</option>
-            {% endfor %}
-            </select>
-        </div>
+        <div class="modal-body" id="editar-horario-body">
+        <!-- Aquí se cargará el formulario por AJAX -->
         </div>
         <div class="modal-footer">
-        <button type="submit" class="btn btn-success">Guardar</button>
+        <button type="submit" class="btn btn-success">Guardar cambios</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         </div>
     </form>
@@ -127,5 +238,69 @@ document.getElementById('form-bloque-horario').addEventListener('submit', functi
         alert("Error de red.");
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const formNuevoHorario = document.getElementById('form-nuevo-horario');
+    if (formNuevoHorario) {
+        formNuevoHorario.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var form = this;
+            var url = "{% url 'programacion:crear_horario_seccion' seccion.id %}";
+            var formData = new FormData(form);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert("Error al crear el horario.");
+                }
+            })
+            .catch(error => {
+                alert("Error de red.");
+            });
+        });
+    }
+});
+function abrirModalEditarHorario(horarioId) {
+    fetch(`/programacion/horario_seccion/${horarioId}/editar/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('editar-horario-body').innerHTML = data.form_html;
+            var modal = new bootstrap.Modal(document.getElementById('modalEditarHorario'));
+            modal.show();
+
+            // Agrega el submit handler al nuevo formulario cargado
+            document.getElementById('form-editar-horario').onsubmit = function(e) {
+                e.preventDefault();
+                var form = this;
+                var formData = new FormData(form);
+                fetch(`/programacion/horario_seccion/${horarioId}/editar/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        document.getElementById('editar-horario-body').innerHTML = data.form_html;
+                    }
+                });
+            };
+        });
+}
 </script>
 {% endblock %}

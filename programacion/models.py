@@ -14,6 +14,13 @@ class Docente(models.Model):
 
     def __str__(self):
         return self.nombre
+    
+class semestre(models.Model):
+    nombre = models.CharField(max_length=20)
+    carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE, related_name='semestres')
+    
+    def __str__(self):
+        return f"{self.nombre} - {self.carrera.nombre}"
 
 class Asignatura(models.Model):
     nombre = models.CharField(max_length=100)
@@ -92,6 +99,7 @@ class HorarioAula(models.Model):
     semestre = models.CharField(max_length=10, blank=True)
     carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
     docente = models.ForeignKey(Docente, on_delete=models.SET_NULL, null=True, blank=True)
+    horario_seccion = models.ForeignKey('HorarioSeccion', on_delete=models.CASCADE, related_name='bloques', null=True, blank=True)
 
     class Meta:
         unique_together = ('aula', 'dia', 'hora_inicio', 'hora_fin', 'seccion')
@@ -125,3 +133,14 @@ class Seccion(models.Model):
 
     def __str__(self):
         return f"{self.codigo} - {self.carrera.nombre} - Semestre {self.semestre}"
+
+class HorarioSeccion(models.Model):
+    seccion = models.ForeignKey(Seccion, on_delete=models.CASCADE, related_name='horarios')
+    periodo = models.ForeignKey(Periodo, on_delete=models.CASCADE)
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
+    descripcion = models.CharField(max_length=200, blank=True)
+    activo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.seccion.codigo} - {self.periodo.nombre} ({self.fecha_inicio} a {self.fecha_fin})"

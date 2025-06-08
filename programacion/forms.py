@@ -1,7 +1,7 @@
 # forms.py en la app programacion
 
 from django import forms
-from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion
+from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, semestre
 
 class ProgramacionAcademicaForm(forms.ModelForm):
     class Meta:
@@ -91,8 +91,26 @@ class HorarioAulaBloqueForm(forms.ModelForm):
 class SeccionForm(forms.ModelForm):
     class Meta:
         model = Seccion
-        fields = ['codigo', 'nombre', 'semestre', 'carrera']
+        fields = ['codigo', 'nombre', 'carrera', 'semestre']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['semestre'].queryset = semestre.objects.none()
+        if 'carrera' in self.data:
+            try:
+                carrera_id = int(self.data.get('carrera'))
+                self.fields['semestre'].queryset = semestre.objects.filter(carrera_id=carrera_id)
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk:
+            self.fields['semestre'].queryset = self.instance.carrera.semestres.all()
+
 class SeleccionarSeccionForm(forms.Form):
     seccion = forms.ModelChoiceField(queryset=Seccion.objects.all(), label="Seleccione una sección")
+
+class HorarioSeccionForm(forms.ModelForm):
+    class Meta:
+        model = HorarioSeccion
+        fields = ['periodo', 'fecha_inicio', 'fecha_fin', 'descripcion', 'activo']
 
 

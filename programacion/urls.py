@@ -35,4 +35,9 @@ urlpatterns = [
     path('seleccionar_seccion/', views.seleccionar_seccion, name='seleccionar_seccion'),
     path('seccion/<int:seccion_id>/horario/', views.programar_horario, name='programar_horario'),
     path('seccion/<int:seccion_id>/guardar_bloque/', views.guardar_bloque_horario, name='guardar_bloque_horario'),
+    path('seccion/<int:seccion_id>/nuevo_horario/', views.crear_horario_seccion, name='crear_horario_seccion'),
+    path('horario_seccion/<int:horario_id>/activar/', views.activar_horario_seccion, name='activar_horario_seccion'),
+    path('horario_seccion/<int:horario_id>/eliminar/', views.eliminar_horario_seccion, name='eliminar_horario_seccion'),
+    path('horario_seccion/<int:horario_id>/editar/', views.editar_horario_seccion, name='editar_horario_seccion'),
+    path('ajax/semestres/', views.ajax_semestres, name='ajax_semestres'),
 ]

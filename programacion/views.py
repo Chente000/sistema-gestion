@@ -1,11 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
-from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion
-from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm
+from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, HorarioSeccion, semestre
+from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm, HorarioSeccionForm, HorarioAulaBloqueForm
 from django.forms import modelformset_factory
-from .forms import HorarioAulaBloqueForm
 from datetime import datetime
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.template.loader import render_to_string
+
 
 def evaluacion_docente(request):
     programaciones = ProgramacionAcademica.objects.select_related('docente', 'asignatura', 'periodo')
@@ -398,6 +400,8 @@ def seleccionar_seccion(request):
         
 def programar_horario(request, seccion_id):
     seccion = Seccion.objects.get(id=seccion_id)
+    horarios_seccion = seccion.horarios.order_by('fecha_inicio')
+    horario_activo = horarios_seccion.filter(activo=True).first() if horarios_seccion else None
     dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
     horas = [
         ("07:00", "07:45"),
@@ -422,20 +426,51 @@ def programar_horario(request, seccion_id):
         ("21:15", "22:00"),
     ]
     # Construir la grilla: {(dia, hora_inicio): horario}
-    horarios = HorarioAula.objects.filter(seccion=seccion)
-    grilla = {}
-    for h in horarios:
-        clave = f"{h.dia}-{h.hora_inicio.strftime('%H:%M')}"
-        grilla[clave] = h
+    if horario_activo:
+        horarios = HorarioAula.objects.filter(horario_seccion=horario_activo)
+        grilla = {}
+        for h in horarios:
+            clave = f"{h.dia}-{h.hora_inicio.strftime('%H:%M')}"
+            grilla[clave] = h
+    else:
+        grilla = {}
+        
+    asignaturas = Asignatura.objects.filter(
+        carrera=seccion.carrera,
+        semestre=seccion.semestre.nombre)
+    asignaturas_info = []
+    if horario_activo:
+        for asignatura in asignaturas:
+            sesiones_programadas = HorarioAula.objects.filter(
+            horario_seccion=horario_activo,
+            asignatura=asignatura
+        ).count()
+        sesiones_planificadas = asignatura.horas_teoricas + asignatura.horas_practicas
+        asignaturas_info.append({
+            'asignatura': asignatura,
+            'sesiones_programadas': sesiones_programadas,
+            'sesiones_planificadas': sesiones_planificadas,
+        })
+    else:
+        for asignatura in asignaturas:
+            sesiones_planificadas = asignatura.horas_teoricas + asignatura.horas_practicas
+        asignaturas_info.append({
+            'asignatura': asignatura,
+            'sesiones_programadas': 0,
+            'sesiones_planificadas': sesiones_planificadas,
+        })
 
     return render(request, 'programar_horario.html', {
         'seccion': seccion,
+        'horarios_seccion': horarios_seccion,
+        'horario_activo': horario_activo,
         'dias': dias,
         'horas': horas,
         'grilla': grilla,
         'asignaturas': Asignatura.objects.filter(carrera=seccion.carrera),
         'aulas': Aula.objects.all(),
         'docentes': Docente.objects.all(),
+        'form': HorarioSeccionForm(),
     })
     
 def guardar_bloque_horario(request, seccion_id):
@@ -466,10 +501,18 @@ def guardar_bloque_horario(request, seccion_id):
                 break
 
         # Actualiza o crea el bloque horario
+        # Busca el horario activo
+        horario_activo = HorarioSeccion.objects.filter(seccion=seccion, activo=True).first()
+        if horario_activo:
+            horarios = HorarioAula.objects.filter(horario_seccion=horario_activo)
+        else:
+            horarios = HorarioAula.objects.none()
+
         bloque, created = HorarioAula.objects.update_or_create(
             seccion=seccion,
             dia=dia,
             hora_inicio=hora_inicio,
+            horario_seccion=horario_activo,  # <-- Asigna el horario activo
             defaults={
                 'hora_fin': hora_fin,
                 'asignatura': asignatura,
@@ -480,3 +523,62 @@ def guardar_bloque_horario(request, seccion_id):
         )
         return JsonResponse({'success': True})
     return JsonResponse({'success': False}, status=400)
+
+def crear_horario_seccion(request, seccion_id):
+    seccion = get_object_or_404(Seccion, id=seccion_id)
+    if request.method == 'POST':
+        form = HorarioSeccionForm(request.POST)
+        if form.is_valid():
+            # Desactiva todos los horarios anteriores
+            HorarioSeccion.objects.filter(seccion=seccion).update(activo=False)
+            horario = form.save(commit=False)
+            horario.seccion = seccion
+            horario.activo = True  # <-- Marca el nuevo como activo
+            horario.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+    else:
+        form = HorarioSeccionForm()
+    return render(request, 'crear_horario_seccion.html', {'form': form, 'seccion': seccion})
+
+def editar_horario_seccion(request, horario_id):
+    horario = get_object_or_404(HorarioSeccion, id=horario_id)
+    if request.method == 'POST':
+        form = HorarioSeccionForm(request.POST, instance=horario)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            html = render_to_string('editar_horario_seccion_form.html', {'form': form, 'horario': horario}, request)
+            return JsonResponse({'success': False, 'form_html': html})
+    else:
+        form = HorarioSeccionForm(instance=horario)
+        html = render_to_string('editar_horario_seccion_form.html', {'form': form, 'horario': horario}, request)
+        return JsonResponse({'form_html': html})
+
+@require_POST
+def activar_horario_seccion(request, horario_id):
+    horario = get_object_or_404(HorarioSeccion, id=horario_id)
+    # Desactiva todos los horarios de la sección
+    HorarioSeccion.objects.filter(seccion=horario.seccion).update(activo=False)
+    # Activa el seleccionado
+    horario.activo = True
+    horario.save()
+    return redirect('programacion:programar_horario', seccion_id=horario.seccion.id)
+
+from django.views.decorators.http import require_POST
+
+@require_POST
+def eliminar_horario_seccion(request, horario_id):
+    horario = get_object_or_404(HorarioSeccion, id=horario_id)
+    seccion_id = horario.seccion.id
+    horario.delete()
+    return redirect('programacion:programar_horario', seccion_id=seccion_id)
+
+def ajax_semestres(request):
+    carrera_id = request.GET.get('carrera_id')
+    semestres = []
+    if carrera_id:
+        semestres = list(semestre.objects.filter(carrera_id=carrera_id).values('id', 'nombre'))
+    return JsonResponse({'semestres': semestres})
