@@ -44,6 +44,9 @@ def cerrar_sesion(request):
 def base(request):
     return render(request, 'base.html') # Crea una plantilla base.html
 
+def base2(request):
+    return render(request, 'base2.html') # Crea una plantilla base2.html
+
 def solicitar_registro(request):
     config = ConfiguracionRegistro.objects.first()
     ahora = timezone.now()

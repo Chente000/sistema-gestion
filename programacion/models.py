@@ -25,7 +25,7 @@ class semestre(models.Model):
 class Asignatura(models.Model):
     nombre = models.CharField(max_length=100)
     codigo = models.CharField(max_length=20, blank=True)
-    semestre = models.CharField(max_length=20, blank=True)
+    semestre = models.ForeignKey(semestre, on_delete=models.CASCADE, related_name='asignaturas')  # Cambiado a ForeignKey
     horas_teoricas = models.PositiveIntegerField(default=0)
     horas_practicas = models.PositiveIntegerField(default=0)
     horas_laboratorio = models.PositiveIntegerField(default=0)
@@ -96,7 +96,7 @@ class HorarioAula(models.Model):
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     seccion = models.CharField(max_length=10)
-    semestre = models.CharField(max_length=10, blank=True)
+    semestre = models.ForeignKey(semestre, on_delete=models.CASCADE, related_name='horarios_aula')
     carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
     docente = models.ForeignKey(Docente, on_delete=models.SET_NULL, null=True, blank=True)
     horario_seccion = models.ForeignKey('HorarioSeccion', on_delete=models.CASCADE, related_name='bloques', null=True, blank=True)
@@ -126,7 +126,7 @@ class HorarioAula(models.Model):
 class Seccion(models.Model):
     codigo = models.CharField(max_length=20, unique=True)  # Ejemplo: 2630D
     nombre = models.CharField(max_length=100, blank=True)  # Nombre opcional
-    semestre = models.CharField(max_length=10)             # Ejemplo: 1, 2, etc.
+    semestre = models.ForeignKey(semestre, on_delete=models.CASCADE, related_name='secciones')    
     carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
     # Puedes agregar más campos según tus necesidades, por ejemplo:
     # turno = models.CharField(max_length=20, blank=True)  # Diurno, Vespertino, etc.

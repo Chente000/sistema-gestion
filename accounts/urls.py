@@ -19,4 +19,5 @@ urlpatterns = [
         ),
         name='reset_password'
     ),
+    path('base2/', views.base2, name='base2'),
     ]

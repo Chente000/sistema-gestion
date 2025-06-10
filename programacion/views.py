@@ -7,6 +7,7 @@ from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
+from datetime import time
 
 
 def evaluacion_docente(request):
@@ -425,6 +426,7 @@ def programar_horario(request, seccion_id):
         ("20:30", "21:15"),
         ("21:15", "22:00"),
     ]
+    
     # Construir la grilla: {(dia, hora_inicio): horario}
     if horario_activo:
         horarios = HorarioAula.objects.filter(horario_seccion=horario_activo)
@@ -435,31 +437,36 @@ def programar_horario(request, seccion_id):
     else:
         grilla = {}
         
+    # Filtrar asignaturas por carrera y semestre de la sección
+    # Esta variable 'asignaturas' ya la tenías y es la que necesitamos para el modal.
     asignaturas = Asignatura.objects.filter(
         carrera=seccion.carrera,
-        semestre=seccion.semestre.nombre)
+        semestre=seccion.semestre 
+    )
+
     asignaturas_info = []
     if horario_activo:
-        for asignatura in asignaturas:
+        for asignatura_obj in asignaturas: # Usamos asignatura_obj para evitar conflicto con la variable asignaturas de arriba
             sesiones_programadas = HorarioAula.objects.filter(
-            horario_seccion=horario_activo,
-            asignatura=asignatura
-        ).count()
-        sesiones_planificadas = asignatura.horas_teoricas + asignatura.horas_practicas
-        asignaturas_info.append({
-            'asignatura': asignatura,
-            'sesiones_programadas': sesiones_programadas,
-            'sesiones_planificadas': sesiones_planificadas,
-        })
+                horario_seccion=horario_activo,
+                asignatura=asignatura_obj
+            ).count()
+            sesiones_planificadas = asignatura_obj.horas_teoricas + asignatura_obj.horas_practicas
+            asignaturas_info.append({
+                'asignatura': asignatura_obj,
+                'sesiones_programadas': sesiones_programadas,
+                'sesiones_planificadas': sesiones_planificadas,
+            })
     else:
-        for asignatura in asignaturas:
-            sesiones_planificadas = asignatura.horas_teoricas + asignatura.horas_practicas
-        asignaturas_info.append({
-            'asignatura': asignatura,
-            'sesiones_programadas': 0,
-            'sesiones_planificadas': sesiones_planificadas,
-        })
+        for asignatura_obj in asignaturas: # Usamos asignatura_obj aquí también
+            sesiones_planificadas = asignatura_obj.horas_teoricas + asignatura_obj.horas_practicas
+            asignaturas_info.append({
+                'asignatura': asignatura_obj,
+                'sesiones_programadas': 0,
+                'sesiones_planificadas': sesiones_planificadas,
+            })
 
+    # MODIFICACIÓN CLAVE AQUÍ: Pasar 'asignaturas' y 'asignaturas_data'
     return render(request, 'programar_horario.html', {
         'seccion': seccion,
         'horarios_seccion': horarios_seccion,
@@ -467,62 +474,91 @@ def programar_horario(request, seccion_id):
         'dias': dias,
         'horas': horas,
         'grilla': grilla,
-        'asignaturas': Asignatura.objects.filter(carrera=seccion.carrera),
+        'asignaturas_data': asignaturas_info, # Para la tabla de sesiones
+        'asignaturas': asignaturas,          # <-- ¡AÑADIDO DE NUEVO! Para el modal
         'aulas': Aula.objects.all(),
         'docentes': Docente.objects.all(),
         'form': HorarioSeccionForm(),
     })
     
 def guardar_bloque_horario(request, seccion_id):
+    # Verifica si la solicitud es POST y una solicitud AJAX
     if request.method == 'POST' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        dia = request.POST.get('dia')
-        hora_inicio = request.POST.get('hora_inicio')
-        asignatura_id = request.POST.get('asignatura')
-        aula_id = request.POST.get('aula')
-        docente_id = request.POST.get('docente')
+        try:
+            # Obtener datos del formulario del modal
+            dia = request.POST.get('dia')
+            hora_inicio_str = request.POST.get('hora_inicio') # Hora de inicio como string
+            asignatura_id = request.POST.get('asignatura')
+            aula_id = request.POST.get('aula')
+            docente_id = request.POST.get('docente')
 
-        seccion = get_object_or_404(Seccion, id=seccion_id)
-        asignatura = get_object_or_404(Asignatura, id=asignatura_id)
-        aula = get_object_or_404(Aula, id=aula_id)
-        docente = get_object_or_404(Docente, id=docente_id)
+            # Obtener la sección actual
+            seccion = get_object_or_404(Seccion, id=seccion_id)
+            
+            # Obtener el horario activo para esta sección
+            horario_activo = HorarioSeccion.objects.filter(seccion=seccion, activo=True).first()
+            
+            if not horario_activo:
+                # Si no hay un horario activo, no podemos guardar un bloque
+                return JsonResponse({'success': False, 'message': 'No hay un horario activo para esta sección.'}, status=400)
 
-        hora_fin = None
-        # Busca la hora_fin según la hora_inicio en tu lista de horas
-        horas = [
-            ("07:00", "07:45"), ("07:45", "08:30"), ("08:30", "09:15"), ("09:15", "10:00"),
-            ("10:00", "10:45"), ("10:45", "11:30"), ("11:30", "12:15"), ("12:15", "13:00"),
-            ("13:00", "13:45"), ("13:45", "14:30"), ("14:30", "15:15"), ("15:15", "16:00"),
-            ("16:00", "16:45"), ("16:45", "17:30"), ("17:30", "18:15"), ("18:15", "19:00"),
-            ("19:00", "19:45"), ("19:45", "20:30"), ("20:30", "21:15"), ("21:15", "22:00"),
-        ]
-        for h_ini, h_fin in horas:
-            if h_ini == hora_inicio:
-                hora_fin = h_fin
-                break
+            # Validar y obtener los objetos relacionados
+            asignatura = get_object_or_404(Asignatura, id=asignatura_id)
+            aula = get_object_or_404(Aula, id=aula_id)
+            docente = get_object_or_404(Docente, id=docente_id)
 
-        # Actualiza o crea el bloque horario
-        # Busca el horario activo
-        horario_activo = HorarioSeccion.objects.filter(seccion=seccion, activo=True).first()
-        if horario_activo:
-            horarios = HorarioAula.objects.filter(horario_seccion=horario_activo)
-        else:
-            horarios = HorarioAula.objects.none()
+            # Convertir la hora de string a un objeto time de Python
+            hora_inicio = time.fromisoformat(hora_inicio_str)
 
-        bloque, created = HorarioAula.objects.update_or_create(
-            seccion=seccion,
-            dia=dia,
-            hora_inicio=hora_inicio,
-            horario_seccion=horario_activo,  # <-- Asigna el horario activo
-            defaults={
-                'hora_fin': hora_fin,
-                'asignatura': asignatura,
-                'aula': aula,
-                'docente': docente,
-                'carrera': seccion.carrera,
-            }
-        )
-        return JsonResponse({'success': True})
-    return JsonResponse({'success': False}, status=400)
+            # Buscar la hora_fin según la hora_inicio en tu lista de horas
+            # (Esta lógica ya la tenías y la conservamos)
+            hora_fin = None
+            horas_predefinidas = [
+                ("07:00", "07:45"), ("07:45", "08:30"), ("08:30", "09:15"), ("09:15", "10:00"),
+                ("10:00", "10:45"), ("10:45", "11:30"), ("11:30", "12:15"), ("12:15", "13:00"),
+                ("13:00", "13:45"), ("13:45", "14:30"), ("14:30", "15:15"), ("15:15", "16:00"),
+                ("16:00", "16:45"), ("16:45", "17:30"), ("17:30", "18:15"), ("18:15", "19:00"),
+                ("19:00", "19:45"), ("19:45", "20:30"), ("20:30", "21:15"), ("21:15", "22:00"),
+            ]
+            for h_ini, h_fin in horas_predefinidas:
+                if h_ini == hora_inicio_str: # Comparamos con el string original para la búsqueda
+                    hora_fin = time.fromisoformat(h_fin) # Convertir hora_fin a objeto time
+                    break
+            
+            if hora_fin is None:
+                # Manejar el caso si hora_fin no se encuentra, lo cual es inesperado si la lista es completa
+                return JsonResponse({'success': False, 'message': 'No se pudo determinar la hora de fin para la hora de inicio proporcionada.'}, status=400)
+
+
+            # OBTENER EL SEMESTRE DE LA ASIGNATURA SELECCIONADA (¡SOLUCIÓN AL ERROR NOT NULL!)
+            semestre_asignatura = asignatura.semestre
+
+            # Intentar obtener o crear el bloque horario
+            # Usamos horario_seccion, dia y hora_inicio para la búsqueda
+            # Y proporcionamos todos los demás campos en defaults
+            bloque, created = HorarioAula.objects.update_or_create(
+                horario_seccion=horario_activo, # Campo para buscar si existe
+                dia=dia,                       # Campo para buscar si existe
+                hora_inicio=hora_inicio,       # Campo para buscar si existe
+                defaults={
+                    'asignatura': asignatura,
+                    'aula': aula,
+                    'docente': docente,
+                    'hora_fin': hora_fin,
+                    'semestre': semestre_asignatura, # <-- ¡AÑADIDO PARA SOLUCIONAR EL ERROR!
+                    'carrera': seccion.carrera,     # Tu campo existente
+                }
+            )
+            return JsonResponse({'success': True})
+
+        except Exception as e:
+            # Capturar cualquier otro error y devolver una respuesta de error
+            print(f"Error al guardar el bloque horario: {e}")
+            return JsonResponse({'success': False, 'message': f'Error interno del servidor: {e}'}, status=500)
+    
+    # Si no es POST o no es AJAX, devolver un error 400
+    return JsonResponse({'success': False, 'message': 'Solicitud inválida.'}, status=400)
+
 
 def crear_horario_seccion(request, seccion_id):
     seccion = get_object_or_404(Seccion, id=seccion_id)

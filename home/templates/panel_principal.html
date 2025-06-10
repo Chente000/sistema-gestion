@@ -18,7 +18,7 @@
                     <div class="card-body text-center">
                         <h5 class="card-title"><i class="bi bi-calendar-check"></i> Prog. y Eval. Académica</h5>
                         <p class="card-text small text-muted">Gestiona horarios, calificaciones...</p>
-                        <a href="#" class="btn btn-primary btn-sm">Ir al módulo</a>
+                        <a href="{% url 'programacion:menu_programacion' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
                     </div>
                 </div>
             </div>
@@ -27,16 +27,16 @@
                     <div class="card-body text-center">
                         <h5 class="card-title"><i class="bi bi-people-fill"></i> Servicio Social</h5>
                         <p class="card-text small text-muted">Seguimiento de proyectos...</p>
-                        <a href="#" class="btn btn-primary btn-sm">Ir al módulo</a>
+                        <a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
                     </div>
                 </div>
             </div>
             <div class="col-md-4 mb-3">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h5 class="card-title"><i class="bi bi-mortarboard-fill"></i> Trabajo de Grado</h5>
+                        <h5 class="card-title"><i class="bi bi-mortarboard-fill"></i> Practicas profesionales</h5>
                         <p class="card-text small text-muted">Registro de propuestas...</p>
-                        <a href="#" class="btn btn-primary btn-sm">Ir al módulo</a>
+                        <a href="{% url 'practicas:practica_list' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
                     </div>
                 </div>
             </div>
