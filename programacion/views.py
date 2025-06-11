@@ -1,29 +1,76 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
-from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, HorarioSeccion, semestre
+from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, HorarioSeccion, semestre, Periodo
 from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm, HorarioSeccionForm, HorarioAulaBloqueForm
 from django.forms import modelformset_factory
 from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
-from datetime import time
+from datetime import time, date
+from django.db import transaction
 
 
 def evaluacion_docente(request):
-    programaciones = ProgramacionAcademica.objects.select_related('docente', 'asignatura', 'periodo')
-    return render(request, 'evaluacion_docente.html', {'programaciones': programaciones})
+    # select_related mejora el rendimiento al obtener los objetos relacionados en una sola consulta
+    programaciones = ProgramacionAcademica.objects.select_related('docente', 'asignatura', 'periodo').all()
+    
+    # Puedes añadir lógica de filtrado aquí si lo deseas, similar a servicio_list.
+    # Por ejemplo:
+    # filter_docente_id = request.GET.get('docente')
+    # if filter_docente_id:
+    #     programaciones = programaciones.filter(docente__id=filter_docente_id)
 
+    # También pasamos los docentes y periodos para posibles filtros en el template
+    docentes = Docente.objects.all().order_by('nombre')
+    periodos = Periodo.objects.all().order_by('-fecha_inicio') # Asumiendo que Periodo ya tiene fecha_inicio
+
+    return render(request, 'evaluacion_docente.html', {
+        'programaciones': programaciones,
+        'docentes': docentes,
+        'periodos': periodos,
+        # Pasa los valores de filtro actuales si implementas filtros aquí
+        # 'filter_docente_id': filter_docente_id,
+    })
+
+# Vista para crear una nueva programación académica / evaluación
+def crear_programacion(request):
+    if request.method == 'POST':
+        form = ProgramacionAcademicaForm(request.POST)
+        if form.is_valid():
+            programacion = form.save(commit=False) # No guardar aún, podemos añadir la fecha
+            programacion.fecha_evaluacion = date.today() # Establecer la fecha de evaluación al día actual
+            programacion.save()
+            return redirect('programacion:evaluacion_docente') # Redirige a la lista de evaluaciones
+    else:
+        form = ProgramacionAcademicaForm()
+    return render(request, 'crear_programacion.html', {'form': form}) # Nuevo template
+
+# Vista para editar una programación académica / evaluación existente
 def editar_programacion(request, pk):
     programacion = get_object_or_404(ProgramacionAcademica, pk=pk)
     if request.method == 'POST':
         form = ProgramacionAcademicaForm(request.POST, instance=programacion)
         if form.is_valid():
             form.save()
-            return redirect('programacion:evaluacion_docente')  # Redirige a la lista
+            return redirect('programacion:evaluacion_docente') # Redirige a la lista
     else:
         form = ProgramacionAcademicaForm(instance=programacion)
-    return render(request, 'editar_programacion.html', {'form': form})
+    return render(request, 'editar_programacion.html', {'form': form, 'programacion': programacion}) # Pasar la instancia
+
+def eliminar_programacion(request, pk):
+    programacion = get_object_or_404(ProgramacionAcademica, pk=pk)
+    if request.method == 'POST':
+        programacion.delete()
+        return redirect('programacion:evaluacion_docente') # Redirige a la lista
+    return render(request, 'eliminar_programacion.html', {'programacion': programacion}) # Nuevo template
+
+
+# Tu vista menu_programacion (sin cambios)
+def menu_programacion(request):
+    return render(request, 'menu_programacion.html')
+
+
 
 def menu_programacion(request):
     return render(request, 'menu_programacion.html')

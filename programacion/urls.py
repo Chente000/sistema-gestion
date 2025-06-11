@@ -5,7 +5,9 @@ app_name = 'programacion'
 
 urlpatterns = [
     path('evaluacion_docente/', views.evaluacion_docente, name='evaluacion_docente'),
-    path('editar/<int:pk>/', views.editar_programacion, name='editar_programacion'),
+    path('evaluacion/crear/', views.crear_programacion, name='crear_programacion'),
+    path('evaluacion/<int:pk>/editar/', views.editar_programacion, name='editar_programacion'),
+    path('evaluacion/<int:pk>/eliminar/', views.eliminar_programacion, name='eliminar_programacion'),
     path('menu_programacion/', views.menu_programacion, name='menu_programacion'),
     path('docentes/', views.docentes, name='docentes'),
     path('docentes/agregar/', views.agregar_docente, name='agregar_docente'),

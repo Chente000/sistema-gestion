@@ -50,24 +50,106 @@ class Periodo(models.Model):
 
 
 class ProgramacionAcademica(models.Model):
-    docente = models.ForeignKey(Docente, on_delete=models.CASCADE)
-    asignatura = models.ForeignKey(Asignatura, on_delete=models.CASCADE)
-    periodo = models.ForeignKey(Periodo, on_delete=models.CASCADE)
-    fue_evaluada = models.BooleanField(default=False)
-    fecha_evaluacion = models.DateField(null=True, blank=True)
-    entrego_autoevaluacion = models.BooleanField(default=False)
-    evaluacion_estudiante = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    docente_evaluador = models.ForeignKey(Docente, related_name='evaluaciones_realizadas', on_delete=models.CASCADE, null=True, blank=True)
-    acompanamiento_docente = models.BooleanField(default=False)
-    autoevaluacion = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    juicio_valor = models.CharField(max_length=100, blank=True, null=True)
-    # Agrega otros campos según las columnas de tu Excel
+    docente = models.ForeignKey(
+        'Docente', on_delete=models.CASCADE, verbose_name="Docente Evaluado"
+    )
+    asignatura = models.ForeignKey(
+        'Asignatura', on_delete=models.CASCADE, verbose_name="Asignatura"
+    )
+    periodo = models.ForeignKey(
+        'Periodo', on_delete=models.CASCADE, verbose_name="Período Académico"
+    )
     
+    # Campos que ya existían y se reafirman o modifican
+    fue_evaluada = models.BooleanField(default=False, verbose_name="¿Fue Evaluado por el Evaluador?")
+    fecha_evaluacion = models.DateField(null=True, blank=True, verbose_name="Fecha de Evaluación")
+    
+    # Puntajes de evaluación
+    score_acompanamiento = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name="Puntaje de Acompañamiento (max 100)",
+        help_text="Escala de 0 a 100 puntos."
+    )
+    
+    entrego_autoevaluacion = models.BooleanField(default=False, verbose_name="¿Entregó Autoevaluación?")
+    autoevaluacion_score = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name="Puntaje de Autoevaluación (max 60)",
+        help_text="Escala de 0 a 60 puntos."
+    )
+    
+    evaluacion_estudiante_score = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name="Puntaje de Evaluación del Estudiante (max 10)",
+        help_text="Escala de 1 a 10 puntos." # Ajustado por la imagen (1 a 10)
+    )
+    
+    # Docente que realizó la evaluación (si aplica)
+    docente_evaluador = models.ForeignKey(
+        'Docente', related_name='evaluaciones_realizadas', 
+        on_delete=models.SET_NULL, # Mejor usar SET_NULL si el docente evaluador puede ser eliminado
+        null=True, blank=True, verbose_name="Docente Evaluador"
+    )
+    
+    # Campo para el juicio de valor general (ahora un TextField para más espacio)
+    juicio_valor = models.TextField(
+        blank=True, null=True, verbose_name="Juicio de Valor General del Docente",
+        help_text="Comentarios generales sobre la evaluación del docente."
+    )
+
     class Meta:
         unique_together = ('docente', 'asignatura', 'periodo')
+        verbose_name = "Evaluación Docente"
+        verbose_name_plural = "Evaluaciones Docentes"
 
     def __str__(self):
-        return f"{self.docente} - {self.asignatura}"
+        return f"Evaluación de {self.docente.nombre} - {self.asignatura.nombre} ({self.periodo.nombre})"
+
+    # --- PROPIEDADES CALCULADAS PARA LOS JUICIOS DE VALOR ---
+    @property
+    def juicio_acompanamiento(self):
+        """Calcula el juicio de valor para el acompañamiento."""
+        if self.score_acompanamiento is None:
+            return "N/A"
+        score = float(self.score_acompanamiento) # Convertir a float para comparación precisa
+        if 0 <= score <= 70:
+            return "DEFICIENTE"
+        elif 71 <= score <= 85:
+            return "BUENO"
+        elif 86 <= score <= 94:
+            return "SOBRESALIENTE"
+        elif 95 <= score <= 100:
+            return "EXCELENTE"
+        return "Fuera de Rango"
+
+    @property
+    def juicio_autoevaluacion(self):
+        """Calcula el juicio de valor para la autoevaluación."""
+        if self.autoevaluacion_score is None:
+            return "N/A"
+        score = float(self.autoevaluacion_score) # Convertir a float
+        if 0 <= score <= 24:
+            return "DEFICIENTE"
+        elif 25 <= score <= 35:
+            return "REGULAR"
+        elif 36 <= score <= 44:
+            return "BUENO"
+        elif 45 <= score <= 60: # Ajustado a 60 para cubrir el rango max. de la escala
+            return "SOBRESALIENTE"
+        return "Fuera de Rango"
+
+    @property
+    def juicio_evaluacion_estudiante(self):
+        """Calcula el juicio de valor para la evaluación del estudiante."""
+        if self.evaluacion_estudiante_score is None:
+            return "N/A"
+        score = float(self.evaluacion_estudiante_score) # Convertir a float
+        if 1 <= score <= 3.9:
+            return "DEFICIENTE"
+        # La imagen solo define DEFICIENTE y EXCELENTE. Si hay rangos intermedios, habría que añadirlos.
+        elif 8 <= score <= 10:
+            return "EXCELENTE"
+        return "Fuera de Rango / No Definido" # Para valores como 4 a 7.9
 
 class Aula(models.Model):
     nombre = models.CharField(max_length=10, unique=True)

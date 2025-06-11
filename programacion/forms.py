@@ -6,9 +6,35 @@ from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo
 class ProgramacionAcademicaForm(forms.ModelForm):
     class Meta:
         model = ProgramacionAcademica
-        fields = ['fue_evaluada', 'fecha_evaluacion', 'entrego_autoevaluacion',
-                'evaluacion_estudiante', 'docente_evaluador', 'acompanamiento_docente',
-                'autoevaluacion', 'juicio_valor']
+        fields = '__all__' # Esto incluirá todos los campos definidos en el modelo
+        widgets = {
+            'docente': forms.Select(attrs={'class': 'form-control'}),
+            'asignatura': forms.Select(attrs={'class': 'form-control'}),
+            'periodo': forms.Select(attrs={'class': 'form-control'}),
+            'fue_evaluada': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'fecha_evaluacion': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            
+            'score_acompanamiento': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}),
+            'entrego_autoevaluacion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'autoevaluacion_score': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '60'}),
+            'evaluacion_estudiante_score': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '1', 'max': '10'}),
+            
+            'docente_evaluador': forms.Select(attrs={'class': 'form-control'}),
+            'juicio_valor': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
+        labels = {
+            'docente': 'Docente a Evaluar',
+            'asignatura': 'Asignatura',
+            'periodo': 'Período',
+            'fue_evaluada': '¿El docente fue evaluado?',
+            'fecha_evaluacion': 'Fecha de Evaluación',
+            'score_acompanamiento': 'Puntaje de Acompañamiento',
+            'entrego_autoevaluacion': '¿Entregó Autoevaluación?',
+            'autoevaluacion_score': 'Puntaje de Autoevaluación',
+            'evaluacion_estudiante_score': 'Puntaje de Evaluación del Estudiante',
+            'docente_evaluador': 'Docente Evaluador (Si aplica)',
+            'juicio_valor': 'Observaciones / Juicio de Valor General',
+        }
 
 class DocenteForm(forms.ModelForm):
     carreras = forms.ModelMultipleChoiceField(
