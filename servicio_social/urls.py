@@ -9,4 +9,6 @@ urlpatterns = [
     path('<int:pk>/', views.servicio_detail, name='servicio_detail'),
     path('<int:pk>/editar/', views.servicio_update, name='servicio_update'),
     path('<int:pk>/eliminar/', views.servicio_delete, name='servicio_delete'),
+    path('exportar/pdf/', views.export_servicios_pdf, name='export_pdf'),
+    path('exportar/excel/', views.export_servicios_excel, name='export_excel'),
 ]

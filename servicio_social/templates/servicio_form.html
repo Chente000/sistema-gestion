@@ -1,10 +1,448 @@
-{% extends "interfaz.html" %}
+{% extends "interfaz.html" %} {# Asegúrate de que tu base template sea correcta #}
+{% load static %}
+
 {% block content %}
-<h2>{% if form.instance.pk %}Editar{% else %}Nuevo{% endif %} Servicio Social</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-success">Guardar</button>
-    <a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-secondary">Cancelar</a>
-</form>
+<div class="container mt-4">
+    <div class="card shadow p-4 mb-4">
+        <h2 class="card-title text-center mb-4">
+            {% if servicio %}Editar Servicio Social{% else %}Nuevo Servicio Social{% endif %}
+        </h2>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {# --- Sección de Información del Proyecto --- #}
+            <fieldset class="mb-4 p-3 border rounded shadow-sm">
+                <legend class="float-none w-auto px-2 fs-5">Información del Proyecto</legend>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.nombre_proyecto.id_for_label }}" class="form-label">Nombre del Proyecto</label>
+                        {{ form.nombre_proyecto }}
+                        {% if form.nombre_proyecto.errors %}<div class="text-danger">{{ form.nombre_proyecto.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.nombre_comunidad_institucion.id_for_label }}" class="form-label">Nombre de la Comunidad y/o Institución</label>
+                        {{ form.nombre_comunidad_institucion }}
+                        {% if form.nombre_comunidad_institucion.errors %}<div class="text-danger">{{ form.nombre_comunidad_institucion.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label for="{{ form.direccion_comunidad.id_for_label }}" class="form-label">Dirección de la Comunidad</label>
+                        {{ form.direccion_comunidad }}
+                        {% if form.direccion_comunidad.errors %}<div class="text-danger">{{ form.direccion_comunidad.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.tutor_comunitario_nombre.id_for_label }}" class="form-label">Nombre del Tutor Comunitario</label>
+                        {{ form.tutor_comunitario_nombre }}
+                        {% if form.tutor_comunitario_nombre.errors %}<div class="text-danger">{{ form.tutor_comunitario_nombre.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.tutor_comunitario_cedula.id_for_label }}" class="form-label">Cédula de Identidad (Tutor Comunitario)</label>
+                        {{ form.tutor_comunitario_cedula }}
+                        {% if form.tutor_comunitario_cedula.errors %}<div class="text-danger">{{ form.tutor_comunitario_cedula.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.tutor_comunitario_telefono.id_for_label }}" class="form-label">Teléfono (Tutor Comunitario)</label>
+                        {{ form.tutor_comunitario_telefono }}
+                        {% if form.tutor_comunitario_telefono.errors %}<div class="text-danger">{{ form.tutor_comunitario_telefono.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.cantidad_beneficiados.id_for_label }}" class="form-label">Cantidad de Beneficiados</label>
+                        {{ form.cantidad_beneficiados }}
+                        {% if form.cantidad_beneficiados.errors %}<div class="text-danger">{{ form.cantidad_beneficiados.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <label for="{{ form.area_accion_proyecto.id_for_label }}" class="form-label">Área de Acción del Proyecto</label>
+                        {{ form.area_accion_proyecto }}
+                        {% if form.area_accion_proyecto.errors %}<div class="text-danger">{{ form.area_accion_proyecto.errors }}</div>{% endif %}
+                        <div class="form-text">{{ form.area_accion_proyecto.help_text }}</div>
+                    </div>
+                    <div class="col-12">
+                        <label for="{{ form.vinculacion_planes_programas.id_for_label }}" class="form-label">Vinculación del Proyecto con Planes, Programas y/o Proyectos del Ejecutivo Nacional</label>
+                        {{ form.vinculacion_planes_programas }}
+                        {% if form.vinculacion_planes_programas.errors %}<div class="text-danger">{{ form.vinculacion_planes_programas.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">Fecha de Inicio</label>
+                        {{ form.fecha_inicio }}
+                        {% if form.fecha_inicio.errors %}<div class="text-danger">{{ form.fecha_inicio.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">Fecha de Fin</label>
+                        {{ form.fecha_fin }}
+                        {% if form.fecha_fin.errors %}<div class="text-danger">{{ form.fecha_fin.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.horas_cumplidas.id_for_label }}" class="form-label">Horas Cumplidas</label>
+                        {{ form.horas_cumplidas }}
+                        {% if form.horas_cumplidas.errors %}<div class="text-danger">{{ form.horas_cumplidas.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.estado.id_for_label }}" class="form-label">Estado del Proyecto</label>
+                        {{ form.estado }}
+                        {% if form.estado.errors %}<div class="text-danger">{{ form.estado.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label for="{{ form.departamento.id_for_label }}" class="form-label">Departamento</label>
+                        {{ form.departamento }}
+                        {% if form.departamento.errors %}<div class="text-danger">{{ form.departamento.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label for="{{ form.observaciones.id_for_label }}" class="form-label">Observaciones Generales del Proyecto</label>
+                        {{ form.observaciones }}
+                        {% if form.observaciones.errors %}<div class="text-danger">{{ form.observaciones.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </fieldset>
+
+            {# --- Sección de Información del Tutor --- #}
+            <fieldset class="mb-4 p-3 border rounded shadow-sm">
+                <legend class="float-none w-auto px-2 fs-5">Información del Tutor</legend>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.tutor_nombres.id_for_label }}" class="form-label">Nombres del Tutor</label>
+                        {{ form.tutor_nombres }}
+                        {% if form.tutor_nombres.errors %}<div class="text-danger">{{ form.tutor_nombres.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.tutor_apellidos.id_for_label }}" class="form-label">Apellidos del Tutor</label>
+                        {{ form.tutor_apellidos }}
+                        {% if form.tutor_apellidos.errors %}<div class="text-danger">{{ form.tutor_apellidos.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.tutor_cedula.id_for_label }}" class="form-label">Cédula de Identidad (Tutor)</label>
+                        {{ form.tutor_cedula }}
+                        {% if form.tutor_cedula.errors %}<div class="text-danger">{{ form.tutor_cedula.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.tutor_tipo.id_for_label }}" class="form-label">Tipo de Tutor</label>
+                        {{ form.tutor_tipo }}
+                        {% if form.tutor_tipo.errors %}<div class="text-danger">{{ form.tutor_tipo.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6" id="tutor_unidad_administrativa_div" style="display:none;">
+                        <label for="{{ form.tutor_unidad_administrativa.id_for_label }}" class="form-label">Unidad Administrativa</label>
+                        {{ form.tutor_unidad_administrativa }}
+                        {% if form.tutor_unidad_administrativa.errors %}<div class="text-danger">{{ form.tutor_unidad_administrativa.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6" id="tutor_categoria_docente_div" style="display:none;">
+                        <label for="{{ form.tutor_categoria_docente.id_for_label }}" class="form-label">Categoría Docente</label>
+                        {{ form.tutor_categoria_docente }}
+                        {% if form.tutor_categoria_docente.errors %}<div class="text-danger">{{ form.tutor_categoria_docente.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </fieldset>
+
+            {# --- Sección de Actividades Realizadas --- #}
+            <fieldset class="mb-4 p-3 border rounded shadow-sm">
+                <legend class="float-none w-auto px-2 fs-5">Actividades Realizadas en el Marco del Proyecto</legend>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            {{ form.act_foros }}
+                            <label class="form-check-label" for="{{ form.act_foros.id_for_label }}">Foros</label>
+                            {% if form.act_foros.errors %}<div class="text-danger">{{ form.act_foros.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            {{ form.act_charlas }}
+                            <label class="form-check-label" for="{{ form.act_charlas.id_for_label }}">Charlas</label>
+                            {% if form.act_charlas.errors %}<div class="text-danger">{{ form.act_charlas.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            {{ form.act_jornadas }}
+                            <label class="form-check-label" for="{{ form.act_jornadas.id_for_label }}">Jornadas</label>
+                            {% if form.act_jornadas.errors %}<div class="text-danger">{{ form.act_jornadas.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            {{ form.act_talleres }}
+                            <label class="form-check-label" for="{{ form.act_talleres.id_for_label }}">Talleres</label>
+                            {% if form.act_talleres.errors %}<div class="text-danger">{{ form.act_talleres.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            {{ form.act_campanas }}
+                            <label class="form-check-label" for="{{ form.act_campanas.id_for_label }}">Campañas</label>
+                            {% if form.act_campanas.errors %}<div class="text-danger">{{ form.act_campanas.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            {{ form.act_reunion_misiones }}
+                            <label class="form-check-label" for="{{ form.act_reunion_misiones.id_for_label }}">Reunión con Misiones</label>
+                            {% if form.act_reunion_misiones.errors %}<div class="text-danger">{{ form.act_reunion_misiones.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            {{ form.act_ferias }}
+                            <label class="form-check-label" for="{{ form.act_ferias.id_for_label }}">Ferias</label>
+                            {% if form.act_ferias.errors %}<div class="text-danger">{{ form.act_ferias.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            {{ form.act_alianzas_estrategicas }}
+                            <label class="form-check-label" for="{{ form.act_alianzas_estrategicas.id_for_label }}">Alianzas Estratégicas</label>
+                            {% if form.act_alianzas_estrategicas.errors %}<div class="text-danger">{{ form.act_alianzas_estrategicas.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            {# --- Sección de Estudiantes (Formset) --- #}
+            <fieldset class="mb-4 p-3 border rounded shadow-sm">
+                <legend class="float-none w-auto px-2 fs-5">Estudiantes Participantes</legend>
+                {{ formset.management_form }} {# Campos ocultos del formset para Django #}
+                <div id="estudiante-formset-container">
+                    {% for form_estudiante in formset %}
+                        <div class="estudiante-form border p-3 mb-3 rounded" id="estudiante-form-{{ forloop.counter0 }}">
+                            <h6 class="mb-3">Estudiante #<span class="estudiante-index">{{ forloop.counter }}</span></h6>
+                            {% if form_estudiante.instance.pk %}{# Si el estudiante ya existe, mostrar opción de eliminar #}
+                                <div class="form-check mb-3">
+                                    {{ form_estudiante.DELETE }}
+                                    <label class="form-check-label" for="{{ form_estudiante.DELETE.id_for_label }}">Eliminar este estudiante</label>
+                                </div>
+                            {% endif %}
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="{{ form_estudiante.nombres.id_for_label }}" class="form-label">Nombres</label>
+                                    {{ form_estudiante.nombres }}
+                                    {% if form_estudiante.nombres.errors %}<div class="text-danger">{{ form_estudiante.nombres.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form_estudiante.apellidos.id_for_label }}" class="form-label">Apellidos</label>
+                                    {{ form_estudiante.apellidos }}
+                                    {% if form_estudiante.apellidos.errors %}<div class="text-danger">{{ form_estudiante.apellidos.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form_estudiante.cedula_identidad.id_for_label }}" class="form-label">Cédula de Identidad</label>
+                                    {{ form_estudiante.cedula_identidad }}
+                                    {% if form_estudiante.cedula_identidad.errors %}<div class="text-danger">{{ form_estudiante.cedula_identidad.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form_estudiante.carrera.id_for_label }}" class="form-label">Carrera</label>
+                                    {{ form_estudiante.carrera }}
+                                    {% if form_estudiante.carrera.errors %}<div class="text-danger">{{ form_estudiante.carrera.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form_estudiante.semestre.id_for_label }}" class="form-label">Semestre</label>
+                                    {{ form_estudiante.semestre }}
+                                    {% if form_estudiante.semestre.errors %}<div class="text-danger">{{ form_estudiante.semestre.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form_estudiante.seccion.id_for_label }}" class="form-label">Sección</label>
+                                    {{ form_estudiante.seccion }}
+                                    {% if form_estudiante.seccion.errors %}<div class="text-danger">{{ form_estudiante.seccion.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form_estudiante.turno.id_for_label }}" class="form-label">Turno</label>
+                                    {{ form_estudiante.turno }}
+                                    {% if form_estudiante.turno.errors %}<div class="text-danger">{{ form_estudiante.turno.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-12">
+                                    <label for="{{ form_estudiante.observaciones_estudiante.id_for_label }}" class="form-label">Observaciones del Estudiante</label>
+                                    {{ form_estudiante.observaciones_estudiante }}
+                                    {% if form_estudiante.observaciones_estudiante.errors %}<div class="text-danger">{{ form_estudiante.observaciones_estudiante.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+                            {# Mostrar errores de campo ocultos (como ID si está presente) #}
+                            {% for hidden in form_estudiante.hidden_fields %}
+                                {{ hidden }}
+                                {% if hidden.errors %}<div class="text-danger">{{ hidden.errors }}</div>{% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="add-estudiante-btn" class="btn btn-primary mt-3"><i class="bi bi-plus-circle"></i> Agregar Estudiante</button>
+            </fieldset>
+
+            <div class="d-flex justify-content-between mt-4">
+                <button type="submit" class="btn btn-success btn-lg">Guardar Servicio Social</button>
+                <a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-secondary btn-lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Iconos Bootstrap (si no los tienes ya en interfaz.html) #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Lógica para mostrar/ocultar campos de tutor ---
+        function toggleTutorFields() {
+            const tutorTipo = document.getElementById('id_tutor_tipo').value;
+            const adminDiv = document.getElementById('tutor_unidad_administrativa_div');
+            const docenteDiv = document.getElementById('tutor_categoria_docente_div');
+
+            if (tutorTipo === 'administrativo') {
+                adminDiv.style.display = 'block';
+                docenteDiv.style.display = 'none';
+                // Opcional: Limpiar el campo oculto
+                document.getElementById('id_tutor_categoria_docente').value = '';
+            } else if (tutorTipo === 'docente') {
+                adminDiv.style.display = 'none';
+                docenteDiv.style.display = 'block';
+                // Opcional: Limpiar el campo oculto
+                document.getElementById('id_tutor_unidad_administrativa').value = '';
+            } else {
+                adminDiv.style.display = 'none';
+                docenteDiv.style.display = 'none';
+                document.getElementById('id_tutor_unidad_administrativa').value = '';
+                document.getElementById('id_tutor_categoria_docente').value = '';
+            }
+        }
+
+        // Ejecutar al cargar la página para el estado inicial
+        toggleTutorFields();
+        // Añadir listener para cambios
+        document.getElementById('id_tutor_tipo').addEventListener('change', toggleTutorFields);
+
+
+        // --- Lógica para añadir y eliminar formularios de estudiantes dinámicamente ---
+        const addEstudianteBtn = document.getElementById('add-estudiante-btn');
+        const formsetContainer = document.getElementById('estudiante-formset-container');
+        const totalForms = document.getElementById('id_estudiantes_participantes-TOTAL_FORMS'); // Este es el ID del campo de gestión
+
+        // Clonar la plantilla de un formulario vacío
+        // Usamos el último formulario (que es el "extra" por defecto si no hay errores)
+        // o un formulario vacío si todos son iniciales.
+        const emptyForm = formsetContainer.querySelector('.estudiante-form:last-of-type').cloneNode(true);
+        // Limpiar los valores del formulario clonado para que esté realmente vacío
+        emptyForm.querySelectorAll('input, select, textarea').forEach(input => {
+            if (input.type === 'checkbox' || input.type === 'radio') {
+                input.checked = false;
+            } else {
+                input.value = '';
+            }
+        });
+        // Asegurarse de que el campo DELETE no esté marcado
+        const deleteCheckbox = emptyForm.querySelector('[name$="-DELETE"]');
+        if (deleteCheckbox) {
+            deleteCheckbox.checked = false;
+        }
+        // Quitar el campo ID oculto si existe para nuevas instancias (prevención de errores)
+        const pkInput = emptyForm.querySelector('input[name$="-id"]');
+        if (pkInput) {
+            pkInput.remove();
+        }
+        // Eliminar el botón de eliminar si el formulario es una plantilla para añadir nuevos
+        const deleteButton = emptyForm.querySelector('.form-check.mb-3');
+        if (deleteButton) {
+            deleteButton.remove();
+        }
+
+
+        addEstudianteBtn.addEventListener('click', function() {
+            const currentForms = document.querySelectorAll('.estudiante-form').length;
+            const newForm = emptyForm.cloneNode(true); // Clonar la plantilla limpia
+
+            // Actualizar IDs y nombres de los campos en el nuevo formulario
+            const formRegex = RegExp('-(\\d+)-'); // Regex para encontrar el índice del formulario
+            newForm.innerHTML = newForm.innerHTML.replace(formRegex, '-' + currentForms + '-');
+            newForm.id = 'estudiante-form-' + currentForms;
+
+            // Actualizar los IDs 'for' de las etiquetas y el 'id' de los inputs
+            newForm.querySelectorAll('[id^="id_estudiantes_participantes-"], [for^="id_estudiantes_participantes-"]').forEach(element => {
+                element.id = element.id.replace(formRegex, '-' + currentForms + '-');
+                const forAttr = element.getAttribute('for');
+                if (forAttr) {
+                    element.setAttribute('for', forAttr.replace(formRegex, '-' + currentForms + '-'));
+                }
+            });
+            // Asegurarse que los 'name' de los campos sean correctos (si no se actualizan con innerHTML.replace)
+            newForm.querySelectorAll('[name^="estudiantes_participantes-"]').forEach(input => {
+                input.name = input.name.replace(formRegex, '-' + currentForms + '-');
+            });
+
+
+            // Actualizar el número de estudiante visible
+            newForm.querySelector('.estudiante-index').textContent = currentForms + 1;
+
+            // Añadir un botón de eliminar para las nuevas filas añadidas
+            // Solo si no estamos en la plantilla inicial vacía
+            if (currentForms >= {{ formset.min_num }}) { // Solo permitir eliminar si no estamos en el mínimo requerido
+                const deleteHtml = `
+                    <button type="button" class="btn btn-danger btn-sm mt-2 remove-estudiante-btn" data-form-index="${currentForms}">
+                        <i class="bi bi-dash-circle"></i> Eliminar Estudiante
+                    </button>
+                `;
+                newForm.insertAdjacentHTML('beforeend', deleteHtml);
+            }
+            
+            formsetContainer.appendChild(newForm);
+
+            // Incrementar TOTAL_FORMS
+            totalForms.value = parseInt(totalForms.value) + 1;
+
+            // Volver a vincular los eventos de eliminar (para los nuevos botones)
+            attachRemoveEvents();
+        });
+
+        function attachRemoveEvents() {
+            document.querySelectorAll('.remove-estudiante-btn').forEach(button => {
+                button.onclick = function() {
+                    const formIndex = this.dataset.formIndex;
+                    const formToDelete = document.getElementById('estudiante-form-' + formIndex);
+                    if (formToDelete) {
+                        // Marcar el campo DELETE oculto para que Django lo procese
+                        const deleteCheckbox = formToDelete.querySelector(`[name="estudiantes_participantes-${formIndex}-DELETE"]`);
+                        if (deleteCheckbox) {
+                            deleteCheckbox.checked = true;
+                        }
+                        // Ocultar el formulario en lugar de removerlo completamente
+                        formToDelete.style.display = 'none';
+                        // Re-indexar los formularios visibles si es necesario para el contador
+                        updateFormIndexes();
+                    }
+                };
+            });
+        }
+
+        // Función para actualizar los índices visibles después de una eliminación
+        function updateFormIndexes() {
+            let visibleForms = 0;
+            document.querySelectorAll('.estudiante-form').forEach((formElem, index) => {
+                if (formElem.style.display !== 'none') {
+                    visibleForms++;
+                    formElem.querySelector('.estudiante-index').textContent = visibleForms;
+                    // También podemos actualizar el data-form-index para los botones de eliminar si se usan
+                    const removeBtn = formElem.querySelector('.remove-estudiante-btn');
+                    if (removeBtn) {
+                        removeBtn.dataset.formIndex = index; // Importante para que el JS sepa qué form eliminar
+                    }
+                }
+            });
+        }
+
+        // Adjuntar eventos de eliminar a los formularios existentes al cargar la página
+        // Solo a los formularios que no son el formulario vacío "extra"
+        document.querySelectorAll('.estudiante-form').forEach((formElem, index) => {
+            // Asumiendo que el último es el extra si no hay errores
+            // Puedes añadir un botón de eliminar a todos los "initial" forms si no tienen el DELETE checkbox ya
+            // O si tienen el DELETE checkbox, lo dejas como está y solo añades un botón si quieres un trigger visual.
+            if (index < {{ formset.initial_forms }}) { // Asumiendo que solo los formularios iniciales pueden ser eliminados visualmente
+                // Si ya tiene el checkbox DELETE, no necesitas añadir otro botón de eliminar
+                // Django ya manejará la eliminación si el checkbox se marca.
+                // Si quieres un botón para *marcar* ese checkbox:
+                const deleteCheckbox = formElem.querySelector(`[name="estudiantes_participantes-${index}-DELETE"]`);
+                if (deleteCheckbox) {
+                    const deleteBtnHtml = `
+                        <button type="button" class="btn btn-danger btn-sm mt-2 remove-estudiante-btn" data-form-index="${index}">
+                            <i class="bi bi-dash-circle"></i> Eliminar Estudiante
+                        </button>
+                    `;
+                    formElem.insertAdjacentHTML('beforeend', deleteBtnHtml);
+                }
+            }
+        });
+        attachRemoveEvents(); // Asegurarse de que los eventos se adjunten al inicio para los formularios existentes.
+        
+    });
+</script>
 {% endblock %}

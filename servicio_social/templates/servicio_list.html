@@ -1,33 +1,148 @@
-{% extends "interfaz.html" %}
+{% extends "interfaz.html" %} {# Asegúrate de que tu base template sea correcta #}
+{% load static %}
+
 {% block content %}
-<h2>Lista de Servicios Sociales</h2>
-<a href="{% url 'servicio_social:servicio_create' %}" class="btn btn-primary mb-3">Nuevo Servicio Social</a>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Estudiante</th>
-            <th>Proyecto</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for servicio in servicios %}
-        <tr>
-            <td>{{ servicio.estudiante.username }}</td>
-            <td>{{ servicio.nombre_proyecto }}</td>
-            <td>{{ servicio.get_estado_display }}</td>
-            <td>
-                <a href="{% url 'servicio_social:servicio_detail' servicio.pk %}" class="btn btn-info btn-sm">Ver</a>
-                <a href="{% url 'servicio_social:servicio_update' servicio.pk %}" class="btn btn-warning btn-sm">Editar</a>
-                <a href="{% url 'servicio_social:servicio_delete' servicio.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="4">No hay servicios sociales registrados.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="container mt-4">
+    <div class="card shadow p-4 mb-4">
+        <h2 class="card-title text-center mb-4">Lista de Servicios Sociales</h2>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <a href="{% url 'servicio_social:servicio_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i> Nuevo Servicio Social</a>
+            
+            {# Botón para expandir/colapsar el filtro #}
+            <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+                <i class="bi bi-funnel"></i> Filtrar Lista
+            </button>
+        </div>
+
+        {# Formulario de Filtro (colapsable) #}
+        {# 'show' class to keep it open if filters are active #}
+        <div class="collapse mb-4 {% if filter_nombre_proyecto or filter_tutor_encargado or filter_estado or filter_area_accion or filter_periodo_id %}show{% endif %}" id="filterCollapse">
+            <div class="card card-body">
+                <form method="GET" action="{% url 'servicio_social:servicio_list' %}" id="filterForm">
+                    <div class="row g-3">
+                        <div class="col-md-6 col-lg-3">
+                            <label for="id_nombre_proyecto" class="form-label">Nombre del Proyecto:</label>
+                            <input type="text" class="form-control" id="id_nombre_proyecto" name="nombre_proyecto" value="{{ filter_nombre_proyecto|default:'' }}">
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <label for="id_tutor_encargado" class="form-label">Tutor Encargado:</label>
+                            <input type="text" class="form-control" id="id_tutor_encargado" name="tutor_encargado" value="{{ filter_tutor_encargado|default:'' }}">
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <label for="id_estado" class="form-label">Estado:</label>
+                            <select class="form-select" id="id_estado" name="estado">
+                                <option value="">Todos</option>
+                                {% for key, value in estado_choices %}
+                                    <option value="{{ key }}" {% if filter_estado == key %}selected{% endif %}>{{ value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <label for="id_area_accion" class="form-label">Área de Acción:</label>
+                            <select class="form-select" id="id_area_accion" name="area_accion">
+                                <option value="">Todas</option>
+                                {% for key, value in area_accion_choices %}
+                                    <option value="{{ key }}" {% if filter_area_accion == key %}selected{% endif %}>{{ value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {# Filtro por Período Académico (Ahora el modelo Periodo tiene fechas) #}
+                        <div class="col-md-6 col-lg-3">
+                            <label for="id_periodo" class="form-label">Período Académico:</label>
+                            <select class="form-select" id="id_periodo" name="periodo">
+                                <option value="">Todos los Períodos</option>
+                                {% for periodo in periodos %}
+                                    <option value="{{ periodo.pk }}" {% if filter_periodo_id|slugify == periodo.pk|slugify %}selected{% endif %}>{{ periodo.nombre }} ({{ periodo.fecha_inicio|date:"Y" }} - {{ periodo.fecha_fin|date:"Y" }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="submit" class="btn btn-success me-2"><i class="bi bi-filter"></i> Aplicar Filtros</button>
+                        <a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Limpiar Filtros</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-responsive mb-3">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nombre del Proyecto</th>
+                        <th>Tutor Encargado</th>
+                        <th># Estudiantes</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for servicio in servicios %}
+                    <tr>
+                        <td>{{ servicio.nombre_proyecto }}</td>
+                        <td>{{ servicio.tutor_nombres }} {{ servicio.tutor_apellidos }}</td>
+                        <td>{{ servicio.estudiantes_participantes.count }}</td>
+                        <td><span class="badge bg-{% if servicio.estado == 'finalizado' %}success{% elif servicio.estado == 'en_proceso' %}info{% else %}warning{% endif %}">{{ servicio.get_estado_display }}</span></td>
+                        <td class="text-center">
+                            <a href="{% url 'servicio_social:servicio_detail' servicio.pk %}" class="btn btn-info btn-sm" title="Ver Detalles"><i class="bi bi-eye"></i></a>
+                            <a href="{% url 'servicio_social:servicio_update' servicio.pk %}" class="btn btn-warning btn-sm ms-1" title="Editar Proyecto"><i class="bi bi-pencil"></i></a>
+                            <form action="{% url 'servicio_social:servicio_delete' servicio.pk %}" method="post" class="d-inline ms-1" onsubmit="return confirm('¿Está seguro de que desea eliminar el proyecto \'{{ servicio.nombre_proyecto }}\'?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Proyecto"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No hay servicios sociales registrados que coincidan con los filtros.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Botones de Descarga #}
+        <div class="d-flex justify-content-end mt-3">
+            <a id="downloadPdfBtn" href="#" class="btn btn-danger me-2"><i class="bi bi-file-earmark-pdf"></i> Descargar PDF</a>
+            <a id="downloadExcelBtn" href="#" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Descargar Excel</a>
+        </div>
+    </div>
+</div>
+
+{# Iconos Bootstrap (si no los tienes ya en interfaz.html) #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterForm = document.getElementById('filterForm');
+        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+        const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+
+        function updateDownloadLinks() {
+            // Construir los parámetros de la URL desde el formulario de filtro
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams();
+            for (const pair of formData.entries()) {
+                if (pair[1]) { // Solo añadir si el valor no está vacío
+                    params.append(pair[0], pair[1]);
+                }
+            }
+            const queryString = params.toString();
+
+            // Actualizar los href de los botones de descarga
+            downloadPdfBtn.href = "{% url 'servicio_social:export_pdf' %}" + (queryString ? '?' + queryString : '');
+            downloadExcelBtn.href = "{% url 'servicio_social:export_excel' %}" + (queryString ? '?' + queryString : '');
+        }
+
+        // Actualizar los links al cargar la página (para el estado inicial del filtro)
+        updateDownloadLinks();
+
+        // Actualizar los links cada vez que un filtro cambia
+        filterForm.querySelectorAll('input, select').forEach(element => {
+            element.addEventListener('change', updateDownloadLinks);
+            element.addEventListener('keyup', updateDownloadLinks); // Para campos de texto
+        });
+    });
+</script>
 {% endblock %}

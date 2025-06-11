@@ -1,19 +1,94 @@
-{% extends "interfaz.html" %}
+{% extends "interfaz.html" %} {# Asegúrate de que tu base template sea correcta #}
+{% load static %}
+
 {% block content %}
-<h2>Detalle del Servicio Social</h2>
-<ul class="list-group mb-3">
-    <li class="list-group-item"><strong>Estudiante:</strong> {{ servicio.estudiante.username }}</li>
-    <li class="list-group-item"><strong>Tutor:</strong> {{ servicio.tutor }}</li>
-    <li class="list-group-item"><strong>Cédula Tutor:</strong> {{ servicio.cedula_tutor }}</li>
-    <li class="list-group-item"><strong>Departamento:</strong> {{ servicio.departamento }}</li>
-    <li class="list-group-item"><strong>Nombre Proyecto:</strong> {{ servicio.nombre_proyecto }}</li>
-    <li class="list-group-item"><strong>Fecha Inicio:</strong> {{ servicio.fecha_inicio }}</li>
-    <li class="list-group-item"><strong>Fecha Fin:</strong> {{ servicio.fecha_fin }}</li>
-    <li class="list-group-item"><strong>Horas Cumplidas:</strong> {{ servicio.horas_cumplidas }}</li>
-    <li class="list-group-item"><strong>Estado:</strong> {{ servicio.get_estado_display }}</li>
-    <li class="list-group-item"><strong>Observaciones:</strong> {{ servicio.observaciones }}</li>
-</ul>
-<a href="{% url 'servicio_social:servicio_update' servicio.pk %}" class="btn btn-warning">Editar</a>
-<a href="{% url 'servicio_social:servicio_delete' servicio.pk %}" class="btn btn-danger">Eliminar</a>
-<a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-secondary">Volver a la lista</a>
+<div class="container mt-4">
+    <div class="card shadow p-4 mb-4">
+        <h2 class="card-title text-center mb-4">Detalles del Servicio Social</h2>
+
+        <div class="row g-3 mb-4">
+            {# --- Información del Proyecto --- #}
+            <div class="col-12">
+                <h5 class="border-bottom pb-2 mb-3">Información del Proyecto</h5>
+                <p><strong>Nombre del Proyecto:</strong> {{ servicio.nombre_proyecto }}</p>
+                <p><strong>Comunidad/Institución:</strong> {{ servicio.nombre_comunidad_institucion }}</p>
+                <p><strong>Dirección:</strong> {{ servicio.direccion_comunidad }}</p>
+                <p><strong>Tutor Comunitario:</strong> {{ servicio.tutor_comunitario_nombre }} (C.I.: {{ servicio.tutor_comunitario_cedula }}) - Tel: {{ servicio.tutor_comunitario_telefono|default:"N/A" }}</p>
+                <p><strong>Cantidad de Beneficiados:</strong> {{ servicio.cantidad_beneficiados }}</p>
+                <p><strong>Área de Acción:</strong> {{ servicio.get_area_accion_proyecto_display }}</p>
+                <p><strong>Vinculación con Planes Nacionales:</strong> {{ servicio.vinculacion_planes_programas }}</p>
+                <p><strong>Departamento:</strong> {{ servicio.departamento }}</p>
+                <p><strong>Fecha de Inicio:</strong> {{ servicio.fecha_inicio|date:"d/m/Y" }}</p>
+                <p><strong>Fecha de Fin:</strong> {{ servicio.fecha_fin|date:"d/m/Y" }}</p>
+                <p><strong>Horas Cumplidas:</strong> {{ servicio.horas_cumplidas }}</p>
+                <p><strong>Estado:</strong> {{ servicio.get_estado_display }}</p>
+                <p><strong>Observaciones Generales:</strong> {{ servicio.observaciones|default:"Ninguna" }}</p>
+            </div>
+
+            {# --- Información del Tutor --- #}
+            <div class="col-12">
+                <h5 class="border-bottom pb-2 mb-3">Información del Tutor</h5>
+                <p><strong>Nombres:</strong> {{ servicio.tutor_nombres }}</p>
+                <p><strong>Apellidos:</strong> {{ servicio.tutor_apellidos }}</p>
+                <p><strong>Cédula:</strong> {{ servicio.tutor_cedula }}</p>
+                <p><strong>Tipo:</strong> {{ servicio.get_tutor_tipo_display }}</p>
+                {% if servicio.tutor_tipo == 'administrativo' %}
+                    <p><strong>Unidad Administrativa:</strong> {{ servicio.tutor_unidad_administrativa|default:"N/A" }}</p>
+                {% elif servicio.tutor_tipo == 'docente' %}
+                    <p><strong>Categoría Docente:</strong> {{ servicio.tutor_categoria_docente|default:"N/A" }}</p>
+                {% endif %}
+            </div>
+
+            {# --- Actividades Realizadas --- #}
+            <div class="col-12">
+                <h5 class="border-bottom pb-2 mb-3">Actividades Realizadas</h5>
+                <ul>
+                    {% if servicio.act_foros %}<li>Foros</li>{% endif %}
+                    {% if servicio.act_charlas %}<li>Charlas</li>{% endif %}
+                    {% if servicio.act_jornadas %}<li>Jornadas</li>{% endif %}
+                    {% if servicio.act_talleres %}<li>Talleres</li>{% endif %}
+                    {% if servicio.act_campanas %}<li>Campañas</li>{% endif %}
+                    {% if servicio.act_reunion_misiones %}<li>Reuniones con Misiones</li>{% endif %}
+                    {% if servicio.act_ferias %}<li>Ferias</li>{% endif %}
+                    {% if servicio.act_alianzas_estrategicas %}<li>Alianzas Estratégicas</li>{% endif %}
+                    {% if not servicio.act_foros and not servicio.act_charlas and not servicio.act_jornadas and not servicio.act_talleres and not servicio.act_campanas and not servicio.act_reunion_misiones and not servicio.act_ferias and not servicio.act_alianzas_estrategicas %}
+                        <li>Ninguna actividad registrada.</li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            {# --- Estudiantes Participantes --- #}
+            <div class="col-12">
+                <h5 class="border-bottom pb-2 mb-3">Estudiantes Participantes</h5>
+                {% if servicio.estudiantes_participantes.all %}
+                    <div class="list-group">
+                        {% for estudiante in servicio.estudiantes_participantes.all %}
+                            <div class="list-group-item list-group-item-action mb-2 shadow-sm rounded">
+                                <h6 class="mb-1">{{ estudiante.nombres }} {{ estudiante.apellidos }} (C.I.: {{ estudiante.cedula_identidad }})</h6>
+                                <small class="text-muted">Carrera: {{ estudiante.carrera|default:"N/A" }} | Semestre: {{ estudiante.semestre|default:"N/A" }} | Sección: {{ estudiante.seccion }} | Turno: {{ estudiante.get_turno_display }}</small>
+                                {% if estudiante.observaciones_estudiante %}
+                                    <p class="mb-1 mt-2"><strong>Obs. Estudiante:</strong> {{ estudiante.observaciones_estudiante }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p>No hay estudiantes registrados para este servicio social.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'servicio_social:servicio_update' pk=servicio.pk %}" class="btn btn-warning btn-lg"><i class="bi bi-pencil-square"></i> Editar</a>
+            <a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-secondary btn-lg"><i class="bi bi-arrow-left"></i> Volver a la Lista</a>
+            <form action="{% url 'servicio_social:servicio_delete' pk=servicio.pk %}" method="post" style="display:inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar este Servicio Social?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-lg"><i class="bi bi-trash"></i> Eliminar</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Iconos Bootstrap (si no los tienes ya en interfaz.html) #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}

@@ -42,6 +42,8 @@ class Asignatura(models.Model):
     
 class Periodo(models.Model):
     nombre = models.CharField(max_length=20, unique=True)  # Ej: "1-2025"
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
 
     def __str__(self):
         return self.nombre
