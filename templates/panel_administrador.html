@@ -1,36 +1,81 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5 pt-5">
-    <h2 class="mb-4">Panel de Administrador</h2>
-
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Usuarios Registrados</h5>
-                    <p class="card-text">Ver y gestionar los usuarios del sistema.</p>
-                    <a href="{% url 'administrador:usuarios_aprobados' %}" class="btn btn-primary">Ver Usuarios</a>
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    /* Fondo azul animado */
+    .admin-bg-animated {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(-45deg, #63abf3, #00509e, #003366, #00509e);
+        background-size: 400% 400%;
+        animation: gradientBG 10s ease-in-out infinite;
+    }
+    @keyframes gradientBG {
+        0% {background-position: 0% 50%;}
+        50% {background-position: 100% 50%;}
+        100% {background-position: 0% 50%;}
+    }
+    /* Panel dorado sólido */
+    .admin-card-gold {
+        background: #FFD700 !important;
+        border-radius: 12px;
+        box-shadow: 0 0 24px 0 rgba(0,0,0,0.07);
+        border: none;
+        transition: transform 0.2s;
+    }
+    .admin-card-gold:hover {
+        transform: translateY(-5px) scale(1.03);
+        box-shadow: 0 8px 32px 0 rgba(0,0,0,0.15);
+    }
+    .admin-card-gold .card-title {
+        color: #003366;
+        font-weight: bold;
+    }
+    .admin-card-gold .btn {
+        font-weight: bold;
+    }
+    @media (max-width: 900px) {
+        .admin-bg-animated {
+            padding: 2rem 0;
+        }
+    }
+</style>
+<div class="admin-bg-animated">
+    <div class="container mt-5 pt-5">
+        <h2 class="mb-4 text-center" style="color:#fff; text-shadow: 1px 1px 8px #003366;">Panel de Administrador</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card admin-card-gold shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Usuarios Registrados</h5>
+                        <p class="card-text">Ver y gestionar los usuarios del sistema.</p>
+                        <a href="{% url 'administrador:usuarios_aprobados' %}" class="btn btn-primary w-100">Ver Usuarios</a>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Solicitudes Pendientes</h5>
-                    <p class="card-text">Revisa y aprueba nuevas solicitudes de registro.</p>
-                    <a href="{% url 'administrador:revisar_solicitudes' %}" class="btn btn-warning">Revisar</a>
+            <div class="col-md-4">
+                <div class="card admin-card-gold shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Solicitudes Pendientes</h5>
+                        <p class="card-text">Revisa y aprueba nuevas solicitudes de registro.</p>
+                        <a href="{% url 'administrador:revisar_solicitudes' %}" class="btn btn-warning w-100">Revisar</a>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Configuración de Registro</h5>
-                    <p class="card-text">Controla el horario de registro de nuevos usuarios.</p>
-                    <a href="{% url 'administrador:configurar_registro' %}" class="btn btn-secondary">Configurar</a>
+            <div class="col-md-4">
+                <div class="card admin-card-gold shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Configuración de Registro</h5>
+                        <p class="card-text">Controla el horario de registro de nuevos usuarios.</p>
+                        <a href="{% url 'administrador:configurar_registro' %}" class="btn btn-secondary w-100">Configurar</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -38,12 +83,9 @@
 </div>
 {% endblock %}
 
-
 {% block extra_styles %}
 <style>
-    .border-start { /* Para Bootstrap 5.1+ ya existe, pero por si acaso */
-        border-left-width: 0 !important; /* Reseteamos por si acaso */
-    }
+    .border-start { border-left-width: 0 !important; }
     .border-primary { border-left-color: var(--bs-primary) !important; }
     .border-success { border-left-color: var(--bs-success) !important; }
     .border-info   { border-left-color: var(--bs-info) !important; }
@@ -56,11 +98,11 @@
     .text-xs {
         font-size: .75rem;
     }
-    .text-gray-300 { color: #dddfeb !important; } /* Color de icono sutil */
-    .text-gray-800 { color: #5a5c69 !important; } /* Color de texto para números */
+    .text-gray-300 { color: #dddfeb !important; }
+    .text-gray-800 { color: #5a5c69 !important; }
 
     .list-group-item-action:hover, .list-group-item-action:focus {
-        background-color: #f8f9fa; /* Un hover sutil para los items de lista */
+        background-color: #f8f9fa;
         color: var(--primary-accent-color, var(--bs-primary));
     }
     .list-group-item .bi {
