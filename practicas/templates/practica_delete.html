@@ -1,12 +1,20 @@
 {% extends "interfaz.html" %}
+{% load static %}
+
 {% block content %}
 <div class="container mt-5 pt-5">
-    <h2>Eliminar Práctica</h2>
-    <p>¿Estás seguro de que deseas eliminar la práctica de <strong>{{ practica.nombre_estudiante }}</strong> en <strong>{{ practica.empresa }}</strong>?</p>
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger">Eliminar</button>
-        <a href="{% url 'practicas:practica_list' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+    <div class="card p-4 shadow-sm">
+        <h2 class="mb-4 text-danger">Eliminar Práctica Profesional</h2>
+        <p class="lead">¿Estás seguro de que deseas eliminar la práctica de <strong>{{ practica.nombre_estudiante }}</strong> en <strong>{{ practica.nombre_empresa }}</strong>?</p>
+        <p class="text-muted">Esta acción es irreversible.</p>
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger me-2"><i class="bi bi-trash me-2"></i> Eliminar</button>
+            <a href="{% url 'practicas:practica_list' %}" class="btn btn-secondary"><i class="bi bi-x-circle me-2"></i> Cancelar</a>
+        </form>
+    </div>
 </div>
+
+{# Iconos Bootstrap #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}

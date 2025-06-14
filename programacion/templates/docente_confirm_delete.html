@@ -1,0 +1,16 @@
+{% extends "interfaz.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow p-4 mb-4 text-center">
+        <h2 class="card-title text-danger mb-4">Confirmar Eliminación de Docente</h2>
+        <p class="lead">¿Estás seguro de que deseas eliminar al docente <strong>{{ docente.nombre }}</strong>?</p>
+        <p class="text-danger">Esta acción no se puede deshacer y eliminará también sus asignaciones de asignaturas.</p>
+        
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-lg me-3"><i class="bi bi-trash me-2"></i> Sí, Eliminar</button>
+            <a href="{% url 'programacion:docentes' %}" class="btn btn-secondary btn-lg"><i class="bi bi-x-circle me-2"></i> Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

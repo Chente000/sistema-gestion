@@ -1,13 +1,58 @@
 {% extends "interfaz.html" %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2>Agregar Docente</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-success">Guardar</button>
-        <a href="{% url 'programacion:docentes' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+<div class="container mt-4">
+    <div class="card shadow p-4 mb-4">
+        <h2 class="card-title text-center mb-4">Agregar Nuevo Docente</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="{{ form.nombre.id_for_label }}" class="form-label">{{ form.nombre.label }}</label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}<div class="text-danger">{{ form.nombre.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.cedula.id_for_label }}" class="form-label">{{ form.cedula.label }}</label>
+                    {{ form.cedula }}
+                    {% if form.cedula.errors %}<div class="text-danger">{{ form.cedula.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.telefono.id_for_label }}" class="form-label">{{ form.telefono.label }}</label>
+                    {{ form.telefono }}
+                    {% if form.telefono.errors %}<div class="text-danger">{{ form.telefono.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<div class="text-danger">{{ form.email.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.dedicacion.id_for_label }}" class="form-label">{{ form.dedicacion.label }}</label>
+                    {{ form.dedicacion }}
+                    {% if form.dedicacion.errors %}<div class="text-danger">{{ form.dedicacion.errors }}</div>{% endif %}
+                </div>
+                <div class="col-12">
+                    <label class="form-label">{{ form.carreras.label }}</label>
+                    <div class="form-check-group"> {# Para agrupar checkboxes si es necesario #}
+                        {% for checkbox in form.carreras %}
+                            <div class="form-check">
+                                {{ checkbox.tag }}
+                                <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.carreras.errors %}<div class="text-danger">{{ form.carreras.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="d-flex justify-content-between mt-4">
+                <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-save me-2"></i> Guardar Docente</button>
+                <a href="{% url 'programacion:docentes' %}" class="btn btn-secondary btn-lg"><i class="bi bi-x-circle me-2"></i> Cancelar</a>
+            </div>
+        </form>
+    </div>
 </div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}

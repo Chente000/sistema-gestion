@@ -1,9 +1,122 @@
 {% extends "interfaz.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
 {% block content %}
-<h2>Seleccionar Sección</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Continuar</button>
-</form>
+<div class="container mt-5 pt-5">
+    <a href="{% url 'programacion:aulario_dashboard' %}" class="btn btn-secondary mb-3"><i class="bi bi-arrow-left-circle me-2"></i> Volver al Aulario</a>
+    <h2 class="mb-4">Seleccionar Sección para Programar Horario</h2>
+    <p class="lead">Elige una sección para comenzar a programar o visualizar su horario.</p>
+
+    <div class="card p-4 shadow-sm mb-4">
+        <h5 class="mb-3">Filtra las Secciones</h5>
+        <form method="get" action="{% url 'programacion:seleccionar_seccion' %}" id="filter-form">
+            <div class="row g-3">
+                <div class="col-md-6 col-lg-4">
+                    <label for="{{ form.q.id_for_label }}" class="form-label">{{ form.q.label }}:</label>
+                    {{ form.q|add_class:"form-control" }}
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <label for="{{ form.carrera.id_for_label }}" class="form-label">{{ form.carrera.label }}:</label>
+                    {{ form.carrera|add_class:"form-control" }} {# id='id_filter_carrera' #}
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <label for="{{ form.semestre.id_for_label }}" class="form-label">{{ form.semestre.label }}:</label>
+                    {{ form.semestre|add_class:"form-control" }} {# id='id_filter_semestre' #}
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <label for="{{ form.periodo.id_for_label }}" class="form-label">{{ form.periodo.label }}:</label>
+                    {{ form.periodo|add_class:"form-control" }}
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-3">
+                <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> Aplicar Filtros</button>
+                <a href="{% url 'programacion:seleccionar_seccion' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Limpiar Filtros</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Carrera</th>
+                    <th>Semestre</th>
+                    <th>Período</th>
+                    <th>Turno</th>
+                    <th>Capacidad</th>
+                    <th class="text-center">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for seccion in form.seccion.field.queryset %} {# Iterar directamente sobre el queryset filtrado del campo seccion #}
+                <tr>
+                    <td>{{ seccion.codigo }}</td>
+                    <td>{{ seccion.nombre|default:"N/A" }}</td>
+                    <td>{{ seccion.carrera.nombre }}</td>
+                    <td>{{ seccion.semestre.nombre }}</td>
+                    <td>{{ seccion.periodo.nombre|default:"N/A" }}</td>
+                    <td>{{ seccion.turno }}</td>
+                    <td>{{ seccion.capacidad }}</td>
+                    <td class="text-center">
+                        <a href="{% url 'programacion:programar_horario' seccion_id=seccion.id %}" class="btn btn-info btn-sm" title="Programar Horario">
+                            <i class="bi bi-calendar-week me-1"></i> Seleccionar
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">No hay secciones disponibles que coincidan con los filtros.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Iconos Bootstrap #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const carreraSelect = document.getElementById('id_filter_carrera');
+        const semestreSelect = document.getElementById('id_filter_semestre');
+
+        function loadSemestresForFilter() {
+            const selectedCarreraId = carreraSelect.value;
+            semestreSelect.innerHTML = '<option value="">Todos los Semestres</option>'; // Restablece opciones
+
+            if (!selectedCarreraId) {
+                return;
+            }
+
+            fetch(`/programacion/api/semestres_por_carrera/?carrera_id=${selectedCarreraId}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(semestre => {
+                        const option = document.createElement('option');
+                        option.value = semestre.id;
+                        option.textContent = semestre.nombre;
+                        semestreSelect.appendChild(option);
+                    });
+                    // Intenta re-seleccionar el semestre si ya estaba filtrado antes
+                    const currentSemestreId = "{{ form.semestre.value }}"; // Usa form.semestre.value para el valor actual del filtro
+                    if (currentSemestreId) {
+                        semestreSelect.value = currentSemestreId;
+                    }
+                })
+                .catch(error => console.error('Error al cargar semestres para filtro:', error));
+        }
+
+        // Carga inicial de semestres si ya hay una carrera seleccionada en el filtro
+        if (carreraSelect.value) {
+            loadSemestresForFilter();
+        }
+
+        // Event listener para el cambio de carrera en el filtro
+        carreraSelect.addEventListener('change', loadSemestresForFilter);
+    });
+</script>
 {% endblock %}

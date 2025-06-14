@@ -8,9 +8,25 @@ class Carrera(models.Model):
     def __str__(self):
         return self.nombre
 class Docente(models.Model):
-    nombre = models.CharField(max_length=100, unique=True)
-    dedicacion = models.CharField(max_length=50)
-    carreras = models.ManyToManyField(Carrera, related_name='docentes', blank=True)
+    # 'nombre' se mantiene para el nombre completo, ya que lo usas en otros lugares.
+    # Si quieres nombres y apellidos separados, sería una refactorización mayor.
+    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre Completo")
+    
+    # CAMBIO CLAVE AQUÍ: Permitir nulos y vacíos temporalmente para la migración
+    cedula = models.CharField(max_length=15, unique=True, verbose_name="Cédula de Identidad", blank=True, null=True)
+    telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Número de Teléfono")
+    email = models.EmailField(unique=True, blank=True, null=True, verbose_name="Correo Electrónico")
+    
+    dedicacion = models.CharField(max_length=50, verbose_name="Dedicación")
+    # Muchas-a-muchas con Carrera: un docente puede dar clases en varias carreras
+    carreras = models.ManyToManyField(Carrera, related_name='docentes', blank=True, verbose_name="Carreras Asignadas")
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        verbose_name = "Docente"
+        verbose_name_plural = "Docentes"
 
     def __str__(self):
         return self.nombre
@@ -208,15 +224,46 @@ class HorarioAula(models.Model):
         super().save(*args, **kwargs)
         
 class Seccion(models.Model):
-    codigo = models.CharField(max_length=20, unique=True)  # Ejemplo: 2630D
-    nombre = models.CharField(max_length=100, blank=True)  # Nombre opcional
-    semestre = models.ForeignKey(semestre, on_delete=models.CASCADE, related_name='secciones')    
-    carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
-    # Puedes agregar más campos según tus necesidades, por ejemplo:
-    # turno = models.CharField(max_length=20, blank=True)  # Diurno, Vespertino, etc.
+    TURNO_CHOICES = [ # Añadimos opciones para el campo 'turno'
+        ('Diurno', 'Diurno'),
+        ('Nocturno', 'Nocturno'),
+    ]
+
+    codigo = models.CharField(max_length=20, unique=True, verbose_name="Código de Sección") # Ejemplo: 2630D
+    nombre = models.CharField(max_length=100, blank=True, verbose_name="Nombre de Sección (opcional)") 
+    semestre = models.ForeignKey(semestre, on_delete=models.CASCADE, related_name='secciones', verbose_name="Semestre")    
+    carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE, verbose_name="Carrera")
+    
+    # Nuevos campos sugeridos
+    turno = models.CharField(
+        max_length=10, 
+        choices=TURNO_CHOICES, 
+        default='Diurno', # Valor por defecto
+        verbose_name="Turno"
+    )
+    capacidad = models.PositiveIntegerField(
+        default=0, 
+        help_text="Número máximo de estudiantes", 
+        verbose_name="Capacidad"
+    )
+    periodo = models.ForeignKey( # Vinculamos la sección a un período académico específico
+        Periodo, 
+        on_delete=models.SET_NULL, # Si el período se elimina, la sección no se borra, solo se desvincula.
+        null=True, 
+        blank=True, 
+        related_name='secciones',
+        verbose_name="Período Académico"
+    )
+
+    class Meta:
+        # Esto asegura que no haya dos secciones con el mismo código en la misma carrera en el mismo semestre y periodo
+        unique_together = ('codigo', 'carrera', 'semestre', 'periodo') 
+        verbose_name = "Sección"
+        verbose_name_plural = "Secciones"
 
     def __str__(self):
-        return f"{self.codigo} - {self.carrera.nombre} - Semestre {self.semestre}"
+        return f"{self.codigo} ({self.carrera.nombre} - {self.semestre.nombre}{f' - {self.periodo.nombre}' if self.periodo else ''})"
+
 
 class HorarioSeccion(models.Model):
     seccion = models.ForeignKey(Seccion, on_delete=models.CASCADE, related_name='horarios')

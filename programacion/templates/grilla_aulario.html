@@ -1,52 +1,65 @@
 {% extends "interfaz.html" %}
-{% load extra_filters %}
-{% load dict_extras %}
+{% load static %}
+{% load programacion_filters %}
+
 {% block content %}
-<a href="{% url 'programacion:menu_programacion' %}" class="btn btn-secondary mb-3">Volver</a>
-<h2>Grilla Semanal de Aulas</h2>
-<a href="{% url 'programacion:aula_list' %}" class="btn btn-primary mb-3">Administrar Aulas</a>
-<a href="{% url 'programacion:horario_list' %}" class="btn btn-secondary mb-3">Ver Horarios</a>
-<div class="table-responsive">
-<table class="table table-bordered table-sm text-center align-middle">
-    <thead class="table-dark">
-        <tr>
-            <th>Aula</th>
-            <th>Hora</th>
-            {% for dia in dias %}
-                <th>{{ dia }}</th>
-            {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
+<div class="container-fluid mt-5 pt-5">
+    <h2 class="mb-4">Disponibilidad de Aulas por Día y Hora</h2>
+    <p class="text-muted">Visualización de los bloques de horario asignados a cada aula.</p>
+
+    <div class="row">
         {% for aula in aulas %}
-            {% for hora in horas %}
-                <tr>
-                    {% if forloop.first %}
-                        <td rowspan="{{ horas|length }}" class="fw-bold align-middle bg-secondary text-white border-end border-3 border-dark">{{ aula.nombre }}</td>
-                    {% endif %}
-                    <td>{{ hora.0 }} - {{ hora.1 }}</td>
-                    {% for dia in dias %}
-                        <td>
-                            {% get_dict_item grilla aula.id dia hora.0 as h %}
-                            {% if h %}
-                                <div><strong>{{ h.asignatura.nombre }}</strong></div>
-                                <div>Sección: {{ h.seccion|default:"-" }}</div>
-                                {% if h.docente %}
-                                    <div>Docente: {{ h.docente.nombre }}</div>
-                                {% else %}
-                                    <div class="text-danger"><em>Sin docente asignado</em></div>
-                                {% endif %}
-                            {% endif %}
-                        </td>
-                    {% endfor %}
-                </tr>
-            {% endfor %}
-            <!-- Fila separadora visual -->
-            <tr class="table-secondary">
-                <td colspan="{{ dias|length|add:'2' }}"></td>
-            </tr>
+            <div class="col-12 col-md-6 col-lg-4 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-primary text-white fw-bold">
+                        <i class="bi bi-building"></i> {{ aula.nombre }}
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm text-center align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Hora</th>
+                                        {% for dia in dias %}
+                                            <th>{{ dia }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for hora_tuple in horas %}
+                                        <tr>
+                                            <td class="fw-bold text-nowrap">{{ hora_tuple.0 }} - {{ hora_tuple.1 }}</td>
+                                            {% for dia in dias %}
+                                                {% with key=aula.id|stringformat:"s-"|add:dia|add:"-"|add:hora_tuple.0 %}
+                                                    {% with bloque=grilla|get_item:key %}
+                                                        <td>
+                                                            {% if bloque %}
+                                                                <div class="cell-content text-start p-1 bg-light rounded-2 shadow-sm">
+                                                                    <small class="fw-bold text-primary">{{ bloque.asignatura.codigo }}</small><br>
+                                                                    <small>{{ bloque.asignatura.nombre }}</small><br>
+                                                                    <small class="text-muted">Sección: {{ bloque.horario_seccion.seccion.codigo|default:"-" }}</small><br>
+                                                                    {% if bloque.docente %}
+                                                                        <small class="text-muted">Docente: {{ bloque.docente.nombre }}</small>
+                                                                    {% else %}
+                                                                        <small class="text-danger"><em>Sin Docente</em></small>
+                                                                    {% endif %}
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    {% endwith %}
+                                                {% endwith %}
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         {% endfor %}
-    </tbody>
-</table>
+    </div>
 </div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}

@@ -1,257 +1,382 @@
-<!-- filepath: c:\Users\Usuario\Desktop\sistema-gestion\programacion\templates\programar_horario.html -->
 {% extends "interfaz.html" %}
-{% load dict_extras %}
+{% load static %}
+{% load widget_tweaks %}
+{% load programacion_filters %} {# Carga tu filtro personalizado #}
+
 {% block content %}
-<h2>Horario de la Sección: {{ seccion.codigo }} - {{ seccion.carrera.nombre }} - Semestre {{ seccion.semestre }}</h2>
-<!-- Botón para abrir el modal -->
-<button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalNuevoHorario">
-    + Nuevo Horario
-</button>
-
-<!-- Modal para crear nuevo horario -->
-<div class="modal fade" id="modalNuevoHorario" tabindex="-1" aria-labelledby="modalNuevoHorarioLabel" aria-hidden="true">
-<div class="modal-dialog">
-    <div class="modal-content">
-    <form id="form-nuevo-horario">
-        {% csrf_token %}
-        <div class="modal-header">
-        <h5 class="modal-title" id="modalNuevoHorarioLabel">Nuevo Horario de Sección</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+<div class="container-fluid mt-5 pt-5">
+    <a href="{% url 'programacion:aulario_dashboard' %}" class="btn btn-secondary mb-3"><i class="bi bi-arrow-left-circle me-2"></i> Volver al Aulario</a>
+    
+    <h2 class="mb-4">Horario de la Sección: {{ seccion.codigo }} - {{ seccion.carrera.nombre }} - Semestre {{ seccion.semestre.nombre }}</h2>
+    
+    <div class="card shadow-sm p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Horarios Creados para esta sección:</h4>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newHorarioModal">
+                <i class="bi bi-plus-circle me-2"></i> Nuevo Horario
+            </button>
         </div>
-        <div class="modal-body">
-        {{ form.as_p }}
-        </div>
-        <div class="modal-footer">
-        <button type="submit" class="btn btn-success">Guardar</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        </div>
-    </form>
-    </div>
-</div>
-</div>
-
-<div class="mb-3">
-    <h5>Horarios creados para esta sección:</h5>
-    <ul class="list-group">
-        {% for horario in horarios_seccion %}
-            <li class="list-group-item d-flex justify-content-between align-items-center {% if horario.activo %}list-group-item-success{% endif %}">
-                <span>
-                    {{ horario.periodo.nombre }} | {{ horario.fecha_inicio }} a {{ horario.fecha_fin }}
-                    {% if horario.descripcion %} - {{ horario.descripcion }}{% endif %}
-                    {% if horario.activo %}<strong> (Activo)</strong>{% endif %}
-                </span>
-                <span class="btn-group" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="abrirModalEditarHorario({{ horario.id }})">Editar</button>
-                    <form method="post" action="{% url 'programacion:eliminar_horario_seccion' horario.id %}" style="display:inline;" onsubmit="return confirm('¿Seguro que deseas eliminar este horario?');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
-                    </form>
-                    {% if not horario.activo %}
-                    <form method="post" action="{% url 'programacion:activar_horario_seccion' horario.id %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-primary">Activar</button>
-                    </form>
-                {% endif %}
-            </span>
-            </li>
-        {% empty %}
-            <li class="list-group-item">No hay horarios creados para esta sección.</li>
-        {% endfor %}
-    </ul>
-</div>
-
-<h5>Asignaturas y sesiones</h5>
-<table class="table table-bordered table-sm text-center">
-    <thead>
-        <tr>
-            <th>Asignatura</th>
-            <th>Sesiones Programadas</th>
-            <th>Sesiones Planificadas</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for item in asignaturas_data %}
-        <tr>
-            <td>{{ item.asignatura.nombre }}</td>
-            <td>{{ item.sesiones_programadas }}</td>
-            <td>{{ item.sesiones_planificadas }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-{% if horario_activo %}
-    <div class="mb-3">
-        <h5>Grilla de Horario</h5>
-        <p>Haz doble clic en una celda para editar el bloque horario.</p>
-
+        
+        {% if horarios_seccion %}
         <div class="table-responsive">
-        <table class="table table-bordered text-center align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th>Hora</th>
-                    {% for dia in dias %}
-                        <th>{{ dia }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for hora in horas %}
-                <tr>
-                    <td>{{ hora.0 }} - {{ hora.1 }}</td>
-                    {% for dia in dias %}
-                        <td style="cursor:pointer;" ondblclick="editarCelda('{{ dia }}', '{{ hora.0 }}')">
-                            {% get_dict_item grilla dia|add:"-"|add:hora.0 as h %}
-                            {% if h %}
-                                <div><strong>{{ h.asignatura.nombre }}</strong></div>
-                                <div>Docente: {{ h.docente.nombre|default:"-" }}</div>
-                                <div>Aula: {{ h.aula.nombre|default:"-" }}</div>
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Período</th>
+                        <th>Fechas</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for horario in horarios_seccion %}
+                    <tr id="horario-row-{{ horario.id }}">
+                        <td>{{ horario.periodo.nombre }}</td>
+                        <td>{{ horario.fecha_inicio|date:"d/m/Y" }} - {{ horario.fecha_fin|date:"d/m/Y" }}</td>
+                        <td>{{ horario.descripcion|default:"N/A" }}</td>
+                        <td>
+                            {% if horario.activo %}
+                                <span class="badge bg-success">Activo</span>
                             {% else %}
-                                <span class="text-muted">-</span>
+                                <span class="badge bg-secondary">Inactivo</span>
                             {% endif %}
                         </td>
+                        <td class="text-center">
+                            {% if not horario.activo %}
+                                <button class="btn btn-success btn-sm activate-horario-btn" data-horario-id="{{ horario.id }}" title="Activar Horario">
+                                    <i class="bi bi-check-circle"></i> Activar
+                                </button>
+                            {% endif %}
+                            <button class="btn btn-warning btn-sm ms-1 edit-horario-btn" data-horario-id="{{ horario.id }}" title="Editar Horario">
+                                <i class="bi bi-pencil-square"></i> Editar
+                            </button>
+                            <button class="btn btn-danger btn-sm ms-1 delete-horario-btn" data-horario-id="{{ horario.id }}" title="Eliminar Horario">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
                     {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            No hay horarios creados para esta sección. ¡Crea uno nuevo!
+        </div>
+        {% endif %}
+    </div>
+
+    {# Grilla de Horario Actual (Solo si hay un horario activo) #}
+    {% if horario_activo %}
+    <div class="card shadow-sm p-4 mb-4">
+        <h4 class="mb-3">Grilla de Horario Actual ({{ horario_activo.periodo.nombre }} - {{ horario_activo.fecha_inicio|date:"d/m/Y" }} a {{ horario_activo.fecha_fin|date:"d/m/Y" }})</h4>
+        <p class="text-muted">Haz doble clic en una celda de la grilla para añadir o editar un bloque de horario.</p>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm text-center align-middle horario-grilla">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="min-width: 120px;">Hora</th>
+                        {% for dia in dias %}
+                            <th>{{ dia }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hora_tuple in horas %}
+                        <tr>
+                            <td class="fw-bold">{{ hora_tuple.0 }} - {{ hora_tuple.1 }}</td>
+                            {% for dia in dias %}
+                                {# MODIFICACIÓN CRÍTICA AQUÍ: Asegurar que la clave coincida con la de la vista #}
+                                {% with key=dia|add:"-"|add:hora_tuple.0 %} {# Cambiado para crear "Dia-HH:MM" #}
+                                    {% with bloque=grilla|get_item:key %}
+                                        <td class="grid-cell" data-dia="{{ dia }}" data-hora="{{ hora_tuple.0 }}">
+                                            {% if bloque %}
+                                                <div class="cell-content text-start p-1" 
+                                                    data-asignatura-id="{{ bloque.asignatura.id }}" 
+                                                    data-aula-id="{{ bloque.aula.id }}" 
+                                                    data-docente-id="{{ bloque.docente.id|default:'' }}"
+                                                    data-bloque-id="{{ bloque.id }}">
+                                                    <small class="fw-bold text-primary">{{ bloque.asignatura.codigo }}</small><br>
+                                                    <small>{{ bloque.aula.nombre }}</small><br>
+                                                    <small class="text-muted">{{ bloque.docente.nombre|default:"Sin Docente" }}</small>
+                                                    <button class="btn btn-danger btn-sm float-end remove-block-btn" data-bloque-id="{{ bloque.id }}" title="Eliminar Bloque"><i class="bi bi-x-circle"></i></button>
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                    {% endwith %}
+                                {% endwith %}
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-{% else %}
-    <div class="alert alert-info">
-        Debe crear y activar un horario para esta sección antes de programar bloques.
-    </div>
-{% endif %}
 
-<!-- Modal para agregar/editar bloque horario -->
-        <div class="modal fade" id="modalHorario" tabindex="-1" aria-labelledby="modalHorarioLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-            <form id="form-bloque-horario" method="post">
-                {% csrf_token %}
-                <div class="modal-header">
-                <h5 class="modal-title" id="modalHorarioLabel">Editar Bloque Horario</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
+    {# Tabla de Asignaturas y Sesiones #}
+    <div class="card shadow-sm p-4 mb-4">
+        <h4 class="mb-3">Asignaturas y Sesiones</h4>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Asignatura</th>
+                        <th>Sesiones Programadas</th>
+                        <th>Sesiones Planificadas</th>
+                        <th>Faltantes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for info in asignaturas_info %}
+                    <tr>
+                        <td>{{ info.asignatura.nombre }} ({{ info.asignatura.codigo }})</td>
+                        <td><span class="badge bg-secondary">{{ info.sesiones_programadas }}</span></td>
+                        <td><span class="badge bg-info">{{ info.sesiones_planificadas }}</span></td>
+                        <td>
+                            {% with faltantes=info.sesiones_planificadas|sub:info.sesiones_programadas %}
+                                {% if faltantes > 0 %}
+                                    <span class="badge bg-danger">{{ faltantes }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">Completas</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">No hay asignaturas para esta sección.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+        <div class="alert alert-warning text-center" role="alert">
+            No hay un horario activo para esta sección. Crea o activa uno para ver y programar la grilla.
+        </div>
+    {% endif %}
+</div>
+
+{# Modales #}
+
+{# Modal para Crear Nuevo Horario de Sección #}
+<div class="modal fade" id="newHorarioModal" tabindex="-1" aria-labelledby="newHorarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newHorarioModalLabel">Crear Nuevo Horario para {{ seccion.codigo }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="newHorarioForm">
                 <div class="modal-body">
-                <input type="hidden" name="dia" id="modal-dia">
-                <input type="hidden" name="hora_inicio" id="modal-hora-inicio">
-                <div class="mb-3">
-                    <label for="modal-asignatura" class="form-label">Asignatura</label>
-                    <select name="asignatura" id="modal-asignatura" class="form-select" required>
-                    <option value="">---------</option>
-                    {% for asignatura in asignaturas %}
-                        <option value="{{ asignatura.id }}">{{ asignatura.nombre }}</option>
-                    {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="modal-aula" class="form-label">Aula</label>
-                    <select name="aula" id="modal-aula" class="form-select" required>
-                    <option value="">---------</option>
-                    {% for aula in aulas %}
-                        <option value="{{ aula.id }}">{{ aula.nombre }}</option>
-                    {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="modal-docente" class="form-label">Docente</label>
-                    <select name="docente" id="modal-docente" class="form-select" required>
-                    <option value="">---------</option>
-                    {% for docente in docentes %}
-                        <option value="{{ docente.id }}">{{ docente.nombre }}</option>
-                    {% endfor %}
-                    </select>
-                </div>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ horario_seccion_form.periodo.id_for_label }}" class="form-label">{{ horario_seccion_form.periodo.label }}:</label>
+                        {{ horario_seccion_form.periodo|add_class:"form-control" }}
+                        <div class="text-danger" id="periodo-errors"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ horario_seccion_form.fecha_inicio.id_for_label }}" class="form-label">{{ horario_seccion_form.fecha_inicio.label }}:</label>
+                        {{ horario_seccion_form.fecha_inicio|add_class:"form-control" }}
+                        <div class="text-danger" id="fecha_inicio-errors"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ horario_seccion_form.fecha_fin.id_for_label }}" class="form-label">{{ horario_seccion_form.fecha_fin.label }}:</label>
+                        {{ horario_seccion_form.fecha_fin|add_class:"form-control" }}
+                        <div class="text-danger" id="fecha_fin-errors"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ horario_seccion_form.descripcion.id_for_label }}" class="form-label">{{ horario_seccion_form.descripcion.label }}:</label>
+                        {{ horario_seccion_form.descripcion|add_class:"form-control" }}
+                        <div class="form-text text-muted">{{ horario_seccion_form.descripcion.help_text }}</div>
+                        <div class="text-danger" id="descripcion-errors"></div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        {{ horario_seccion_form.activo|add_class:"form-check-input" }}
+                        <label class="form-check-label" for="{{ horario_seccion_form.activo.id_for_label }}">{{ horario_seccion_form.activo.label }}</label>
+                        <div class="text-danger" id="activo-errors"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                <button type="submit" class="btn btn-success">Guardar</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Horario</button>
                 </div>
             </form>
-            </div>
         </div>
-        </div>
-
-
-<!-- Modal para editar horario -->
-<div class="modal fade" id="modalEditarHorario" tabindex="-1" aria-labelledby="modalEditarHorarioLabel" aria-hidden="true">
-<div class="modal-dialog">
-    <div class="modal-content">
-    <form id="form-editar-horario">
-        {% csrf_token %}
-        <div class="modal-header">
-        <h5 class="modal-title" id="modalEditarHorarioLabel">Editar Horario de Sección</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body" id="editar-horario-body">
-        <!-- Aquí se cargará el formulario por AJAX -->
-        </div>
-        <div class="modal-footer">
-        <button type="submit" class="btn btn-success">Guardar cambios</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        </div>
-    </form>
     </div>
 </div>
+
+{# Modal para Editar Horario de Sección #}
+<div class="modal fade" id="editHorarioModal" tabindex="-1" aria-labelledby="editHorarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editHorarioModalLabel">Editar Horario de Sección</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editHorarioForm">
+                {# Contenido del formulario cargado via AJAX #}
+                <div class="modal-body" id="editHorarioModalBody">
+                    <!-- Formulario de edición se carga aquí -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
+
+{# Modal para Añadir/Editar Bloque de Horario #}
+<div class="modal fade" id="blockModal" tabindex="-1" aria-labelledby="blockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="blockModalLabel">Añadir/Editar Bloque de Horario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="blockForm">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" id="modal_dia" name="dia">
+                    <input type="hidden" id="modal_hora_inicio" name="hora_inicio">
+                    
+                    <div class="mb-3">
+                        <label for="id_asignatura" class="form-label">Asignatura:</label>
+                        <select name="asignatura" id="id_asignatura" class="form-select">
+                            <option value="">Selecciona una asignatura</option>
+                            {% for asignatura in asignaturas_seccion %}
+                                <option value="{{ asignatura.id }}">{{ asignatura.nombre }} ({{ asignatura.codigo }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_aula" class="form-label">Aula:</label>
+                        <select name="aula" id="id_aula" class="form-select">
+                            <option value="">Selecciona un aula</option>
+                            {% for aula_obj in aulas %}
+                                <option value="{{ aula_obj.id }}">{{ aula_obj.nombre }} ({{ aula_obj.tipo }} - Cap: {{ aula_obj.capacidad }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_docente" class="form-label">Docente:</label>
+                        <select name="docente" id="id_docente" class="form-select">
+                            <option value="">Selecciona un docente</option>
+                            {% for docente_obj in docentes %}
+                                <option value="{{ docente_obj.id }}">{{ docente_obj.nombre }} (C.I: {{ docente_obj.cedula }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Bloque</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Modal para Confirmación de Eliminación de Bloque #}
+<div class="modal fade" id="confirmDeleteBlockModal" tabindex="-1" aria-labelledby="confirmDeleteBlockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteBlockModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que deseas eliminar este bloque de horario?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBlockBtn">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{# Modal para Confirmación de Eliminación de Horario de Sección #}
+<div class="modal fade" id="confirmDeleteHorarioModal" tabindex="-1" aria-labelledby="confirmDeleteHorarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteHorarioModalLabel">Confirmar Eliminación de Horario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que deseas eliminar este Horario de Sección? Todos sus bloques asociados se perderán.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteHorarioBtn">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Iconos Bootstrap #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+{# JavaScript para interacciones del horario #}
 <script>
-function editarCelda(dia, hora_inicio) {
-    // Rellena los campos ocultos del modal
-    document.getElementById('modal-dia').value = dia;
-    document.getElementById('modal-hora-inicio').value = hora_inicio;
-    // Limpia los selects (puedes mejorarlo para editar)
-    document.getElementById('modal-asignatura').value = "";
-    document.getElementById('modal-aula').value = "";
-    document.getElementById('modal-docente').value = "";
-    // Muestra el modal (Bootstrap 5)
-    var modal = new bootstrap.Modal(document.getElementById('modalHorario'));
-    modal.show();
-}
+    document.addEventListener('DOMContentLoaded', function() {
+        const seccionId = "{{ seccion.id }}";
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const blockModal = new bootstrap.Modal(document.getElementById('blockModal'));
+        const newHorarioModal = new bootstrap.Modal(document.getElementById('newHorarioModal'));
+        const editHorarioModal = new bootstrap.Modal(document.getElementById('editHorarioModal'));
+        const confirmDeleteBlockModal = new bootstrap.Modal(document.getElementById('confirmDeleteBlockModal'));
+        const confirmDeleteHorarioModal = new bootstrap.Modal(document.getElementById('confirmDeleteHorarioModal'));
 
-document.getElementById('form-bloque-horario').addEventListener('submit', function(e) {
-    e.preventDefault();
-    var form = this;
-    var seccionId = "{{ seccion.id }}";
-    var url = "{% url 'programacion:guardar_bloque_horario' seccion.id %}";
-    var formData = new FormData(form);
+        let currentCell = null; // Para almacenar la celda en la que se hizo doble clic
+        let blockToDeleteId = null; // Para almacenar el ID del bloque a eliminar
+        let horarioToDeleteId = null; // Para almacenar el ID del horario de sección a eliminar
+        let horarioToEditId = null; // Para almacenar el ID del horario de sección a editar
 
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Opcional: recarga la página o actualiza solo la celda
-            location.reload();
-        } else {
-            alert("Error al guardar el bloque horario.");
-        }
-    })
-    .catch(error => {
-        alert("Error de red.");
-    });
-});
+        // --- Manejo del Modal de Bloques de Horario ---
+        document.querySelectorAll('.grid-cell').forEach(cell => {
+            cell.addEventListener('dblclick', function() {
+                currentCell = this;
+                const dia = currentCell.dataset.dia;
+                const hora = currentCell.dataset.hora;
+                const cellContent = currentCell.querySelector('.cell-content');
 
-document.addEventListener('DOMContentLoaded', function() {
-    const formNuevoHorario = document.getElementById('form-nuevo-horario');
-    if (formNuevoHorario) {
-        formNuevoHorario.addEventListener('submit', function(e) {
+                // Llenar datos ocultos del formulario
+                document.getElementById('modal_dia').value = dia;
+                document.getElementById('modal_hora_inicio').value = hora;
+
+                // Resetear selecciones
+                document.getElementById('id_asignatura').value = '';
+                document.getElementById('id_aula').value = '';
+                document.getElementById('id_docente').value = '';
+
+                // Si hay contenido en la celda (bloque existente), precargarlo
+                if (cellContent) {
+                    document.getElementById('id_asignatura').value = cellContent.dataset.asignaturaId || '';
+                    document.getElementById('id_aula').value = cellContent.dataset.aulaId || '';
+                    document.getElementById('id_docente').value = cellContent.dataset.docenteId || '';
+                }
+
+                blockModal.show();
+            });
+        });
+
+        document.getElementById('blockForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            var form = this;
-            var url = "{% url 'programacion:crear_horario_seccion' seccion.id %}";
-            var formData = new FormData(form);
+            const formData = new FormData(this);
 
-            fetch(url, {
+            // Fetch a la URL corregida (sin 'aulario/')
+            fetch(`/programacion/seccion/${seccionId}/guardar_bloque/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    'X-CSRFToken': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: formData
@@ -259,48 +384,249 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    blockModal.hide();
+                    location.reload(); // Recargar la página para ver los cambios
                 } else {
-                    alert("Error al crear el horario.");
+                    alert('Error al guardar el bloque: ' + (data.message || 'Error desconocido.'));
                 }
             })
             .catch(error => {
-                alert("Error de red.");
+                console.error('Error:', error);
+                alert('Ocurrió un error al comunicarse con el servidor.');
             });
         });
-    }
-});
-function abrirModalEditarHorario(horarioId) {
-    fetch(`/programacion/horario_seccion/${horarioId}/editar/`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('editar-horario-body').innerHTML = data.form_html;
-            var modal = new bootstrap.Modal(document.getElementById('modalEditarHorario'));
-            modal.show();
 
-            // Agrega el submit handler al nuevo formulario cargado
-            document.getElementById('form-editar-horario').onsubmit = function(e) {
-                e.preventDefault();
-                var form = this;
-                var formData = new FormData(form);
-                fetch(`/programacion/horario_seccion/${horarioId}/editar/`, {
-                    method: 'POST',
+        // Manejo de la eliminación de bloques individuales
+        document.querySelectorAll('.remove-block-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation(); // Evita que el doble clic en la celda se dispare
+                blockToDeleteId = this.dataset.bloqueId;
+                confirmDeleteBlockModal.show();
+            });
+        });
+
+        document.getElementById('confirmDeleteBlockBtn').addEventListener('click', function() {
+            if (!blockToDeleteId) return;
+
+            fetch(`/programacion/horarios/eliminar/${blockToDeleteId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    confirmDeleteBlockModal.hide();
+                    location.reload(); // Recargar la página
+                } else {
+                    alert('Error al eliminar el bloque: ' + (data.message || 'Error desconocido.'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al comunicarse con el servidor.');
+            });
+        });
+
+        // --- Manejo del Modal para Crear Nuevo Horario de Sección ---
+        document.getElementById('newHorarioForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            // Limpiar errores previos
+            document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+
+            // Fetch a la URL corregida (sin 'aulario/')
+            fetch(`/programacion/seccion/${seccionId}/nuevo_horario/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    newHorarioModal.hide();
+                    location.reload(); // Recargar la página para ver el nuevo horario activo
+                } else {
+                    // Mostrar errores del formulario
+                    if (data.errors) {
+                        for (const field in data.errors) {
+                            const errorDiv = document.getElementById(`${field}-errors`);
+                            if (errorDiv) {
+                                errorDiv.textContent = data.errors[field][0];
+                            } else {
+                                // Errores no de campo específico (ej. __all__)
+                                alert(`Error: ${data.errors[field].join(', ')}`);
+                            }
+                        }
+                    } else {
+                        alert('Error al crear el horario: ' + (data.message || 'Error desconocido.'));
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al comunicarse con el servidor.');
+            });
+        });
+
+
+        // --- Manejo de Editar Horario de Sección ---
+        document.querySelectorAll('.edit-horario-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                horarioToEditId = this.dataset.horarioId;
+                fetch(`/programacion/horario_seccion/${horarioToEditId}/editar/`, {
+                    method: 'GET',
                     headers: {
-                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
                         'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
+                    }
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        location.reload();
+                    if (data.form_html) {
+                        document.getElementById('editHorarioModalBody').innerHTML = data.form_html;
+                        editHorarioModal.show();
                     } else {
-                        document.getElementById('editar-horario-body').innerHTML = data.form_html;
+                        alert('Error al cargar formulario de edición.');
                     }
+                })
+                .catch(error => {
+                    console.error('Error al cargar el formulario de edición:', error);
+                    alert('Ocurrió un error al comunicarse con el servidor.');
                 });
-            };
+            });
         });
-}
+
+        document.getElementById('editHorarioForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            // Limpiar errores previos
+            document.querySelectorAll('#editHorarioModalBody .text-danger').forEach(el => el.textContent = '');
+
+
+            fetch(`/programacion/horario_seccion/${horarioToEditId}/editar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    editHorarioModal.hide();
+                    // Actualizar la fila en la tabla sin recargar la página
+                    const row = document.getElementById(`horario-row-${horarioToEditId}`);
+                    if (row) {
+                        row.children[0].textContent = data.nombre.split(' (')[0]; 
+                        row.children[1].textContent = `${data.fecha_inicio} - ${data.fecha_fin}`; 
+                    }
+                    location.reload(); 
+                } else {
+                    // Mostrar errores del formulario (si el servidor devuelve form_html con errores)
+                    if (data.form_html) {
+                        document.getElementById('editHorarioModalBody').innerHTML = data.form_html;
+                    }
+                    if (data.errors) {
+                        for (const field in data.errors) {
+                            const errorDiv = document.getElementById(`id_${field}_errors`); 
+                            if (errorDiv) {
+                                errorDiv.textContent = data.errors[field][0];
+                            } else {
+                                const inputElement = document.getElementById(`id_${field}`);
+                                if (inputElement) {
+                                    let errorDisplay = inputElement.nextElementSibling;
+                                    if (errorDisplay && errorDisplay.classList.contains('text-danger')) {
+                                        errorDisplay.textContent = data.errors[field][0];
+                                    } else {
+                                        errorDisplay = document.createElement('div');
+                                        errorDisplay.classList.add('text-danger');
+                                        errorDisplay.textContent = data.errors[field][0];
+                                        inputElement.parentNode.insertBefore(errorDisplay, inputElement.nextSibling);
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        alert('Error al guardar cambios: ' + (data.message || 'Error desconocido.'));
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error al guardar cambios:', error);
+                alert('Ocurrió un error al comunicarse con el servidor.');
+            });
+        });
+
+
+        // --- Manejo de Activar Horario de Sección ---
+        document.querySelectorAll('.activate-horario-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const horarioId = this.dataset.horarioId;
+                if (confirm('¿Estás seguro de que deseas activar este horario? El horario actualmente activo para esta sección se desactivará.')) {
+                    fetch(`/programacion/horario_seccion/${horarioId}/activar/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload(); 
+                        } else {
+                            alert('Error al activar el horario: ' + (data.message || 'Error desconocido.'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Ocurrió un error al comunicarse con el servidor.');
+                    });
+                }
+            });
+        });
+
+        // --- Manejo de Eliminar Horario de Sección ---
+        document.querySelectorAll('.delete-horario-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                horarioToDeleteId = this.dataset.horarioId;
+                confirmDeleteHorarioModal.show();
+            });
+        });
+
+        document.getElementById('confirmDeleteHorarioBtn').addEventListener('click', function() {
+            if (!horarioToDeleteId) return;
+
+            fetch(`/programacion/horario_seccion/${horarioToDeleteId}/eliminar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    confirmDeleteHorarioModal.hide();
+                    location.reload(); 
+                } else {
+                    alert('Error al eliminar el horario: ' + (data.message || 'Error desconocido.'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al comunicarse con el servidor.');
+            });
+        });
+    });
 </script>
-{% endblock %}
+{# Fin del script #}
+{% endblock content %}

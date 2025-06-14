@@ -1,21 +1,42 @@
 {% extends "interfaz.html" %}
+{% load static %}
+
 {% block content %}
 <div class="container mt-5">
-    <h2>Detalle de Asignatura</h2>
-    <table class="table table-bordered">
-        <tr><th>Nombre</th><td>{{ asignatura.nombre }}</td></tr>
-        <tr><th>Código</th><td>{{ asignatura.codigo }}</td></tr>
-        <tr><th>Semestre</th><td>{{ asignatura.semestre }}</td></tr>
-        <tr><th>Horas Teóricas</th><td>{{ asignatura.horas_teoricas }}</td></tr>
-        <tr><th>Horas Prácticas</th><td>{{ asignatura.horas_practicas }}</td></tr>
-        <tr><th>Horas Laboratorio</th><td>{{ asignatura.horas_laboratorio }}</td></tr>
-        <tr><th>Diurno</th><td>{{ asignatura.diurno }}</td></tr>
-        <tr><th>UC</th><td>{{ asignatura.uc }}</td></tr>
-        <tr><th>Requisitos</th><td>{{ asignatura.requisitos }}</td></tr>
-        <tr><th>Carrera</th><td>{{ asignatura.carrera.nombre }}</td></tr>
-    </table>
-    <a href="{% url 'programacion:asignaturas' %}" class="btn btn-secondary">Volver</a>
-    <a href="{% url 'programacion:editar_asignatura' asignatura.id %}" class="btn btn-warning">Editar</a>
-    <a href="{% url 'programacion:eliminar_asignatura' asignatura.id %}" class="btn btn-danger">Eliminar</a>
+    <a href="{% url 'programacion:asignaturas' %}" class="btn btn-secondary mb-4"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Asignaturas</a>
+    <h2 class="mb-4">Detalles de la Asignatura: {{ asignatura.nombre }}</h2>
+
+    <div class="card p-4 shadow-sm">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Código:</strong> {{ asignatura.codigo }}</p>
+                <p><strong>Carrera:</strong> {{ asignatura.carrera.nombre }}</p>
+                <p><strong>Semestre:</strong> {{ asignatura.semestre.nombre }}</p>
+                <p><strong>Unidades de Crédito (UC):</strong> {{ asignatura.uc }}</p>
+                <p><strong>Tipo (Diurno/Nocturno):</strong> {{ asignatura.diurno }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Horas Teóricas:</strong> {{ asignatura.horas_teoricas }}</p>
+                <p><strong>Horas Prácticas:</strong> {{ asignatura.horas_practicas }}</p>
+                <p><strong>Horas de Laboratorio:</strong> {{ asignatura.horas_laboratorio }}</p>
+                <p><strong>Total Horas:</strong> {{ asignatura.horas_teoricas|add:asignatura.horas_practicas|add:asignatura.horas_laboratorio }}</p>
+                <p><strong>Requisitos:</strong> 
+                    {% if asignatura.requisitos %}
+                        {{ asignatura.requisitos }}
+                    {% else %}
+                        Ninguno
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-end">
+            <a href="{% url 'programacion:editar_asignatura' asignatura.id %}" class="btn btn-warning me-2"><i class="bi bi-pencil-square"></i> Editar</a>
+            <a href="{% url 'programacion:eliminar_asignatura' asignatura.id %}" class="btn btn-danger"><i class="bi bi-trash"></i> Eliminar</a>
+        </div>
+    </div>
 </div>
+
+{# Iconos Bootstrap #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}

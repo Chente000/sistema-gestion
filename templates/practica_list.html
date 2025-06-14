@@ -1,64 +1,107 @@
 {% extends "interfaz.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
 {% block content %}
-<main class="main-content">
-    <h2 class="mb-3">Mis Prácticas Profesionales</h2>
-    <a href="{% url 'practicas:practica_create' %}" class="btn btn-success mb-3" style="background:#003366;border:none;">
-        <i class="bi bi-plus-circle"></i> Nueva Práctica
-    </a>
-    <div class="card card-custom">
-        <div class="card-header">
-            Prácticas Registradas
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Empresa</th>
-                            <th>Fecha Inicio</th>
-                            <th>Fecha Fin</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for practica in practicas %}
-                        <tr>
-                            <td>{{ practica.empresa }}</td>
-                            <td>{{ practica.fecha_inicio }}</td>
-                            <td>{{ practica.fecha_fin }}</td>
-                            <td>
-                                {% if practica.get_estado_display == "Finalizado" %}
-                                    <span class="badge" style="background:#D90429;">{{ practica.get_estado_display }}</span>
-                                {% elif practica.get_estado_display == "En Proceso" %}
-                                    <span class="badge" style="background:#28a745;">{{ practica.get_estado_display }}</span>
-                                {% elif practica.get_estado_display == "Pendiente" %}
-                                    <span class="badge" style="background:#FFD600;color:#003366;">{{ practica.get_estado_display }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ practica.get_estado_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{% url 'practicas:practica_detail' practica.pk %}" class="btn btn-info btn-sm">
-                                    <i class="bi bi-eye"></i> Ver
-                                </a>
-                                <a href="{% url 'practicas:practica_edit' practica.pk %}" class="btn btn-primary btn-sm" style="background:#003366;border:none;">
-                                    <i class="bi bi-pencil"></i> Editar
-                                </a>
-                                <a href="{% url 'practicas:practica_delete' practica.pk %}" class="btn btn-danger btn-sm" style="background:#D90429;border:none;">
-                                    <i class="bi bi-trash"></i> Eliminar
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center">No hay prácticas registradas.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+<div class="container mt-5 pt-5">
+    <h2 class="mb-4">Mis Prácticas Profesionales</h2>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{% url 'practicas:practica_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle me-2"></i> Nueva Práctica
+        </a>
+        {# Botón para expandir/colapsar el formulario de filtro #}
+        <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+            <i class="bi bi-funnel"></i> Opciones de Filtro
+        </button>
+    </div>
+
+    {# Formulario de Filtro Combinado (colapsable) #}
+    <div class="collapse mb-4 {% if query or filter_carrera_id or filter_estado %}show{% endif %}" id="filterCollapse">
+        <div class="card card-body">
+            <form method="GET" action="{% url 'practicas:practica_list' %}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6 col-lg-5">
+                        <label for="id_search_query" class="form-label">Buscar (Estudiante, Empresa, Tutor, Objetivos, Actividades):</label>
+                        <input type="text" class="form-control" id="id_search_query" name="q" value="{{ query|default:'' }}" placeholder="Ej: Juan Pérez, Empresa X, Proyecto Y">
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <label for="id_carrera_filter" class="form-label">Filtrar por Carrera del Estudiante:</label>
+                        <select class="form-select" id="id_carrera_filter" name="carrera">
+                            <option value="">Todas las Carreras</option>
+                            {% for carrera in carreras %}
+                                <option value="{{ carrera.id }}" {% if filter_carrera_id|stringformat:"s" == carrera.id|stringformat:"s" %}selected{% endif %}>{{ carrera.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label for="id_estado_filter" class="form-label">Filtrar por Estado:</label>
+                        <select class="form-select" id="id_estado_filter" name="estado">
+                            <option value="">Todos los Estados</option>
+                            {% for estado_val, estado_label in estados_choices %}
+                                <option value="{{ estado_val }}" {% if filter_estado == estado_val %}selected{% endif %}>{{ estado_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> Aplicar Filtros</button>
+                    <a href="{% url 'practicas:practica_list' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Limpiar Filtros</a>
+                </div>
+            </form>
         </div>
     </div>
-</main>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Estudiante</th>
+                    <th>Cédula</th>
+                    <th>Empresa</th>
+                    <th>Tutor Externo</th>
+                    <th>Tipo</th>
+                    <th>Modalidad</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for practica in practicas %}
+                <tr>
+                    <td>{{ practica.nombre_estudiante }}</td>
+                    <td>{{ practica.cedula_estudiante }}</td>
+                    <td>{{ practica.nombre_empresa }}</td>
+                    <td>{{ practica.nombre_tutor_externo }}</td>
+                    <td>{{ practica.get_tipo_practica_display }}</td>
+                    <td>{{ practica.get_modalidad_display }}</td>
+                    <td>{{ practica.fecha_inicio|date:"d/m/Y" }}</td>
+                    <td>{{ practica.fecha_fin|date:"d/m/Y" }}</td>
+                    <td><span class="badge 
+                        {% if practica.estado == 'pendiente' %}bg-warning text-dark
+                        {% elif practica.estado == 'aprobada' %}bg-success
+                        {% elif practica.estado == 'finalizada' %}bg-primary
+                        {% elif practica.estado == 'rechazada' %}bg-danger
+                        {% endif %}">{{ practica.get_estado_display }}</span>
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'practicas:practica_detail' practica.pk %}" class="btn btn-info btn-sm" title="Ver Detalles"><i class="bi bi-eye"></i></a>
+                        <a href="{% url 'practicas:practica_edit' practica.pk %}" class="btn btn-warning btn-sm ms-1" title="Editar"><i class="bi bi-pencil-square"></i></a>
+                        <a href="{% url 'practicas:practica_delete' practica.pk %}" class="btn btn-danger btn-sm ms-1" title="Eliminar"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center">No hay prácticas profesionales registradas que coincidan con los filtros.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Iconos Bootstrap #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}

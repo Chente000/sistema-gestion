@@ -1,10 +1,20 @@
 {% extends "interfaz.html" %}
+{% load static %}
+
 {% block content %}
-<h2>Eliminar Sección</h2>
-<p>¿Estás seguro de que deseas eliminar la sección <strong>{{ seccion.codigo }}</strong>?</p>
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">Eliminar</button>
-    <a href="{% url 'programacion:seccion_list' %}" class="btn btn-secondary">Cancelar</a>
-</form>
+<div class="container mt-5">
+    <div class="card p-4 shadow-sm">
+        <h2 class="mb-4 text-danger">Eliminar Sección</h2>
+        <p class="lead">¿Estás seguro de que deseas eliminar la sección <strong>{{ seccion.codigo }} ({{ seccion.nombre|default:"Sin Nombre" }})</strong>?</p>
+        <p class="text-muted">Esta acción es irreversible y eliminará todos los datos asociados a esta sección, incluyendo sus horarios programados.</p>
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger me-2"><i class="bi bi-trash"></i> Eliminar</button>
+            <a href="{% url 'programacion:seccion_list' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Cancelar</a>
+        </form>
+    </div>
+</div>
+
+{# Iconos Bootstrap #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}

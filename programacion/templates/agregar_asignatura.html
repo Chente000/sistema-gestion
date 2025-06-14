@@ -1,12 +1,126 @@
 {% extends "interfaz.html" %}
+{% load static %}
+
 {% block content %}
 <div class="container mt-5">
-    <h2>Agregar Asignatura</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-success">Guardar</button>
-        <a href="{% url 'programacion:asignaturas' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+    <a href="{% url 'programacion:asignaturas' %}" class="btn btn-secondary mb-3"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Asignaturas</a>
+    <h2 class="mb-4">Agregar Asignatura</h2>
+    <div class="card p-4 shadow-sm">
+        <form method="post">
+            {% csrf_token %}
+            
+            {# Renderiza los campos uno por uno para tener más control #}
+            <div class="mb-3">
+                <label for="{{ form.nombre.id_for_label }}" class="form-label">{{ form.nombre.label }}:</label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}<div class="text-danger">{{ form.nombre.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.codigo.id_for_label }}" class="form-label">{{ form.codigo.label }}:</label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}<div class="text-danger">{{ form.codigo.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.carrera.id_for_label }}" class="form-label">{{ form.carrera.label }}:</label>
+                {{ form.carrera }} {# Este campo tiene el ID 'id_carrera' definido en forms.py #}
+                {% if form.carrera.errors %}<div class="text-danger">{{ form.carrera.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.semestre.id_for_label }}" class="form-label">{{ form.semestre.label }}:</label>
+                {{ form.semestre }} {# Este campo tiene el ID 'id_semestre' definido en forms.py #}
+                {% if form.semestre.errors %}<div class="text-danger">{{ form.semestre.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3 row">
+                <div class="col-md-4">
+                    <label for="{{ form.horas_teoricas.id_for_label }}" class="form-label">{{ form.horas_teoricas.label }}:</label>
+                    {{ form.horas_teoricas }}
+                    {% if form.horas_teoricas.errors %}<div class="text-danger">{{ form.horas_teoricas.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.horas_practicas.id_for_label }}" class="form-label">{{ form.horas_practicas.label }}:</label>
+                    {{ form.horas_practicas }}
+                    {% if form.horas_practicas.errors %}<div class="text-danger">{{ form.horas_practicas.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.horas_laboratorio.id_for_label }}" class="form-label">{{ form.horas_laboratorio.label }}:</label>
+                    {{ form.horas_laboratorio }}
+                    {% if form.horas_laboratorio.errors %}<div class="text-danger">{{ form.horas_laboratorio.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <div class="col-md-6">
+                    <label for="{{ form.diurno.id_for_label }}" class="form-label">{{ form.diurno.label }}:</label>
+                    {{ form.diurno }}
+                    {% if form.diurno.errors %}<div class="text-danger">{{ form.diurno.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.uc.id_for_label }}" class="form-label">{{ form.uc.label }}:</label>
+                    {{ form.uc }}
+                    {% if form.uc.errors %}<div class="text-danger">{{ form.uc.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.requisitos.id_for_label }}" class="form-label">{{ form.requisitos.label }}:</label>
+                {{ form.requisitos }}
+                {% if form.requisitos.errors %}<div class="text-danger">{{ form.requisitos.errors }}</div>{% endif %}
+            </div>
+            
+            <button type="submit" class="btn btn-success me-2"><i class="bi bi-save"></i> Guardar Asignatura</button>
+            <a href="{% url 'programacion:asignaturas' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Cancelar</a>
+        </form>
+    </div>
 </div>
+
+{# Iconos Bootstrap #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const carreraSelect = document.getElementById('id_carrera');
+        const semestreSelect = document.getElementById('id_semestre');
+
+        function loadSemestres() {
+            const selectedCarreraId = carreraSelect.value;
+            semestreSelect.innerHTML = '<option value="">Cargando semestres...</option>'; // Mensaje de carga
+
+            if (!selectedCarreraId) {
+                semestreSelect.innerHTML = '<option value="">Selecciona una Carrera Primero</option>';
+                return;
+            }
+
+            fetch(`/programacion/api/semestres_por_carrera/?carrera_id=${selectedCarreraId}`)
+                .then(response => response.json())
+                .then(data => {
+                    semestreSelect.innerHTML = '<option value="">-----------</option>'; // Opción vacía por defecto
+                    data.forEach(semestre => {
+                        const option = document.createElement('option');
+                        option.value = semestre.id;
+                        option.textContent = semestre.nombre;
+                        semestreSelect.appendChild(option);
+                    });
+                    
+                    // Si se está editando una asignatura existente y ya tiene un semestre,
+                    // intenta pre-seleccionar ese semestre.
+                    // Esto se basa en el 'initial' que el formulario ya podría tener si lo pasamos desde la vista.
+                    {% if form.instance.semestre_id %}
+                        semestreSelect.value = "{{ form.instance.semestre_id }}";
+                    {% endif %}
+                })
+                .catch(error => {
+                    console.error('Error al cargar semestres:', error);
+                    semestreSelect.innerHTML = '<option value="">Error al cargar semestres</option>';
+                });
+        }
+
+        // Carga inicial de semestres si ya hay una carrera pre-seleccionada (ej. en editar)
+        if (carreraSelect.value) {
+            loadSemestres();
+        } else {
+            semestreSelect.innerHTML = '<option value="">Selecciona una Carrera Primero</option>';
+        }
+
+        // Escucha cambios en el campo de carrera para cargar los semestres dinámicamente
+        carreraSelect.addEventListener('change', loadSemestres);
+    });
+</script>
 {% endblock %}

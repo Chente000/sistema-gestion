@@ -1,19 +1,85 @@
 {% extends "interfaz.html" %}
+{% load static %}
+
 {% block content %}
 <div class="container mt-5 pt-5">
-    <h2>Detalle de Práctica Profesional</h2>
-    <div class="card mt-4">
-        <div class="card-body">
-            <p><strong>Nombre del Estudiante:</strong> {{ practica.nombre_estudiante }}</p>
-            <p><strong>Cédula del Estudiante:</strong> {{ practica.cedula_estudiante }}</p>
-            <p><strong>Empresa:</strong> {{ practica.empresa }}</p>
-            <p><strong>Tutor de la Empresa:</strong> {{ practica.tutor_empresa }}</p>
-            <p><strong>Fecha de Inicio:</strong> {{ practica.fecha_inicio }}</p>
-            <p><strong>Fecha de Fin:</strong> {{ practica.fecha_fin }}</p>
-            <p><strong>Estado:</strong> {{ practica.get_estado_display }}</p>
-            <p><strong>Observaciones:</strong> {{ practica.observaciones|default:"Sin observaciones" }}</p>
+    <a href="{% url 'practicas:practica_list' %}" class="btn btn-secondary mb-3"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Prácticas</a>
+    <h2 class="mb-4">Detalles de la Práctica Profesional</h2>
+
+    <div class="card p-4 shadow-sm">
+        <h4 class="mb-3">{{ practica.nombre_estudiante }} en {{ practica.nombre_empresa }}</h4>
+        <hr>
+
+        {# --- Sección de Datos del Estudiante --- #}
+        <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="bi bi-person-fill me-2"></i> Datos del Estudiante</h5>
+        <div class="row g-2 mb-4">
+            <div class="col-md-6">
+                <p><strong>Nombre Completo:</strong> {{ practica.nombre_estudiante }}</p>
+                <p><strong>Cédula:</strong> {{ practica.cedula_estudiante }}</p>
+                <p><strong>Teléfono:</strong> {{ practica.telefono_estudiante|default:"N/A" }}</p>
+                <p><strong>Email:</strong> {{ practica.email_estudiante|default:"N/A" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Carrera:</strong> {{ practica.carrera_estudiante.nombre|default:"N/A" }}</p>
+                <p><strong>Semestre:</strong> {{ practica.semestre_estudiante.nombre|default:"N/A" }}</p>
+                <p><strong>Promedio Académico:</strong> {{ practica.promedio_academico|default:"N/A" }}</p>
+            </div>
+        </div>
+
+        {# --- Sección de Datos de la Institución o Empresa Receptora --- #}
+        <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="bi bi-building-fill me-2"></i> Datos de la Institución/Empresa</h5>
+        <div class="row g-2 mb-4">
+            <div class="col-md-6">
+                <p><strong>Nombre:</strong> {{ practica.nombre_empresa }}</p>
+                <p><strong>Área/Departamento:</strong> {{ practica.area_departamento_empresa|default:"N/A" }}</p>
+                <p><strong>Email:</strong> {{ practica.email_empresa|default:"N/A" }}</p>
+                <p><strong>Teléfono:</strong> {{ practica.telefono_empresa|default:"N/A" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Tutor/Supervisor Externo:</strong> {{ practica.nombre_tutor_externo }}</p>
+                <p><strong>Cargo del Supervisor:</strong> {{ practica.cargo_tutor_externo|default:"N/A" }}</p>
+                <p><strong>Dirección:</strong> {{ practica.direccion_empresa|default:"N/A" }}</p>
+            </div>
+        </div>
+
+        {# --- Sección de Detalles de la Práctica Profesional --- #}
+        <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="bi bi-journal-check me-2"></i> Detalles de la Práctica</h5>
+        <div class="row g-2 mb-4">
+            <div class="col-md-6">
+                <p><strong>Tipo de Práctica:</strong> {{ practica.get_tipo_practica_display }}</p>
+                <p><strong>Modalidad:</strong> {{ practica.get_modalidad_display }}</p>
+                <p><strong>Horario:</strong> {{ practica.horario_practica|default:"N/A" }}</p>
+                <p><strong>Estado:</strong> 
+                    <span class="badge 
+                        {% if practica.estado == 'pendiente' %}bg-warning text-dark
+                        {% elif practica.estado == 'aprobada' %}bg-success
+                        {% elif practica.estado == 'finalizada' %}bg-primary
+                        {% elif practica.estado == 'rechazada' %}bg-danger
+                        {% endif %}">{{ practica.get_estado_display }}</span>
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Fecha de Inicio:</strong> {{ practica.fecha_inicio|date:"d/m/Y" }}</p>
+                <p><strong>Fecha de Finalización:</strong> {{ practica.fecha_fin|date:"d/m/Y" }}</p>
+            </div>
+            <div class="col-12">
+                <p><strong>Objetivos:</strong> {{ practica.objetivos_practica|default:"Sin objetivos definidos." }}</p>
+            </div>
+            <div class="col-12">
+                <p><strong>Actividades Específicas:</strong> {{ practica.actividades_especificas|default:"Sin actividades específicas definidas." }}</p>
+            </div>
+            <div class="col-12">
+                <p><strong>Observaciones Adicionales:</strong> {{ practica.observaciones|default:"Ninguna." }}</p>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+            <a href="{% url 'practicas:practica_edit' practica.pk %}" class="btn btn-warning btn-lg me-2"><i class="bi bi-pencil-square me-2"></i> Editar</a>
+            <a href="{% url 'practicas:practica_delete' practica.pk %}" class="btn btn-danger btn-lg"><i class="bi bi-trash me-2"></i> Eliminar</a>
         </div>
     </div>
-    <a href="{% url 'practicas:practica_list' %}" class="btn btn-secondary mt-3">Volver al listado</a>
 </div>
+
+{# Iconos Bootstrap #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}
