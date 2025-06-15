@@ -1,33 +1,52 @@
-{% extends "base.html" %}
+{% extends "interfaz.html" %}
 {% load widget_tweaks %}
+{% block title %}Configurar Registro{% endblock %}
+
 {% block content %}
 <div class="container mt-5 pt-5">
-    <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary mb-3">Volver</a>
-    <h2>Configurar Franja Horaria de Registro</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">Fecha de inicio</label>
-                {{ form.fecha_inicio|add_class:"form-control" }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.hora_inicio.id_for_label }}" class="form-label">Hora de inicio</label>
-                {{ form.hora_inicio|add_class:"form-control" }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">Fecha de fin</label>
-                {{ form.fecha_fin|add_class:"form-control" }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.hora_fin.id_for_label }}" class="form-label">Hora de fin</label>
-                {{ form.hora_fin|add_class:"form-control" }}
-            </div>
-            <div class="col-md-12 mb-3 form-check">
-                {{ form.activa }} <label for="{{ form.activa.id_for_label }}" class="form-check-label">Activar registro</label>
-            </div>
+    <div class="card shadow-sm mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-primary text-white text-center">
+            <h2 class="h5 mb-0">Configurar Horario de Registro de Usuarios</h2>
         </div>
-        <button type="submit" class="btn btn-primary">Guardar</button>
-    </form>
+        <div class="card-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">Fecha de Inicio</label>
+                        {{ form.fecha_inicio|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.hora_inicio.id_for_label }}" class="form-label">Hora de Inicio</label>
+                        {{ form.hora_inicio|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">Fecha de Fin</label>
+                        {{ form.fecha_fin|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.hora_fin.id_for_label }}" class="form-label">Hora de Fin</label>
+                        {{ form.hora_fin|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-12 mb-3 form-check d-flex align-items-center">
+                        {{ form.activa|add_class:"form-check-input me-2" }}
+                        <label for="{{ form.activa.id_for_label }}" class="form-check-label">Activar Registro de Usuarios</label>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i> Guardar Configuración
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

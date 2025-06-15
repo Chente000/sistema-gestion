@@ -1,112 +1,93 @@
-{% extends 'base.html' %}
+{% extends "interfaz.html" %}
+{% block title %}Panel de Administración{% endblock %}
 
 {% block content %}
-<style>
-    body, html {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-    }
-    /* Fondo azul animado */
-    .admin-bg-animated {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(-45deg, #63abf3, #00509e, #003366, #00509e);
-        background-size: 400% 400%;
-        animation: gradientBG 10s ease-in-out infinite;
-    }
-    @keyframes gradientBG {
-        0% {background-position: 0% 50%;}
-        50% {background-position: 100% 50%;}
-        100% {background-position: 0% 50%;}
-    }
-    /* Panel dorado sólido */
-    .admin-card-gold {
-        background: #FFD700 !important;
-        border-radius: 12px;
-        box-shadow: 0 0 24px 0 rgba(0,0,0,0.07);
-        border: none;
-        transition: transform 0.2s;
-    }
-    .admin-card-gold:hover {
-        transform: translateY(-5px) scale(1.03);
-        box-shadow: 0 8px 32px 0 rgba(0,0,0,0.15);
-    }
-    .admin-card-gold .card-title {
-        color: #003366;
-        font-weight: bold;
-    }
-    .admin-card-gold .btn {
-        font-weight: bold;
-    }
-    @media (max-width: 900px) {
-        .admin-bg-animated {
-            padding: 2rem 0;
-        }
-    }
-</style>
-<div class="admin-bg-animated">
-    <div class="container mt-5 pt-5">
-        <h2 class="mb-4 text-center" style="color:#fff; text-shadow: 1px 1px 8px #003366;">Panel de Administrador</h2>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card admin-card-gold shadow-sm mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Usuarios Registrados</h5>
-                        <p class="card-text">Ver y gestionar los usuarios del sistema.</p>
-                        <a href="{% url 'administrador:usuarios_aprobados' %}" class="btn btn-primary w-100">Ver Usuarios</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card admin-card-gold shadow-sm mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Solicitudes Pendientes</h5>
-                        <p class="card-text">Revisa y aprueba nuevas solicitudes de registro.</p>
-                        <a href="{% url 'administrador:revisar_solicitudes' %}" class="btn btn-warning w-100">Revisar</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card admin-card-gold shadow-sm mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Configuración de Registro</h5>
-                        <p class="card-text">Controla el horario de registro de nuevos usuarios.</p>
-                        <a href="{% url 'administrador:configurar_registro' %}" class="btn btn-secondary w-100">Configurar</a>
-                    </div>
+<div class="container mt-5 pt-5">
+    <h2 class="mb-4 text-center text-primary">Panel de Administración Central</h2>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {# Tarjeta para Gestión de Usuarios #}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 rounded-lg">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-4">
+                    <i class="bi bi-people-fill text-info display-4 mb-3"></i>
+                    <h5 class="card-title text-dark fw-bold mb-2">Gestión de Usuarios</h5>
+                    <p class="card-text text-muted mb-3">Ve y gestiona los usuarios del sistema, asigna roles y cargos departamentales.</p>
+                    <a href="{% url 'administrador:usuarios_aprobados' %}" class="btn btn-outline-info w-100">
+                        Ir a Usuarios <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
             </div>
         </div>
+
+        {# Tarjeta para Solicitudes Pendientes #}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 rounded-lg">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-4">
+                    <i class="bi bi-bell-fill text-warning display-4 mb-3"></i>
+                    <h5 class="card-title text-dark fw-bold mb-2">Solicitudes Pendientes</h5>
+                    <p class="card-text text-muted mb-3">Revisa y aprueba nuevas solicitudes de registro de usuarios. (Pendientes: <span class="fw-bold text-danger">{{ num_solicitudes_pendientes }}</span>)</p>
+                    <a href="{% url 'administrador:revisar_solicitudes' %}" class="btn btn-outline-warning w-100">
+                        Revisar Solicitudes <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {# Tarjeta para Configuración de Registro #}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 rounded-lg">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-4">
+                    <i class="bi bi-gear-fill text-success display-4 mb-3"></i>
+                    <h5 class="card-title text-dark fw-bold mb-2">Configuración de Registro</h5>
+                    <p class="card-text text-muted mb-3">Controla la franja horaria y la activación del registro de nuevos usuarios en el sistema.</p>
+                    <a href="{% url 'administrador:configurar_registro' %}" class="btn btn-outline-success w-100">
+                        Configurar Registro <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {# Tarjeta para Registro de Cambios (Logs) - NUEVO #}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 rounded-lg">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-4">
+                    <i class="bi bi-file-earmark-text-fill text-secondary display-4 mb-3"></i>
+                    <h5 class="card-title text-dark fw-bold mb-2">Registro de Cambios (Auditoría)</h5>
+                    <p class="card-text text-muted mb-3">Accede al historial detallado de todas las modificaciones realizadas en el sistema por los administradores.</p>
+                    <a href="{% url 'administrador:registro_cambios' %}" class="btn btn-outline-secondary w-100">
+                        Ver Logs <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        {# Últimos cambios en el panel #}
+        <div class="col-12 mt-4">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-light text-dark fw-bold">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i> Última Actividad Reciente</h5>
+                </div>
+                <div class="card-body">
+                    {% if ultimos_cambios %}
+                        <ul class="list-group list-group-flush">
+                            {% for log in ultimos_cambios %}
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">{{ log.action }} - {{ log.object_repr }}</div>
+                                        <small class="text-muted">{{ log.change_message }}</small>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">{{ log.action_time|date:"d M H:i" }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-center text-muted">No hay actividad reciente para mostrar.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
-{% endblock %}
-
-{% block extra_styles %}
-<style>
-    .border-start { border-left-width: 0 !important; }
-    .border-primary { border-left-color: var(--bs-primary) !important; }
-    .border-success { border-left-color: var(--bs-success) !important; }
-    .border-info   { border-left-color: var(--bs-info) !important; }
-    .border-warning { border-left-color: var(--bs-warning) !important; }
-
-    .card-custom.border-start.border-4 {
-        border-left-width: 4px !important;
-    }
-
-    .text-xs {
-        font-size: .75rem;
-    }
-    .text-gray-300 { color: #dddfeb !important; }
-    .text-gray-800 { color: #5a5c69 !important; }
-
-    .list-group-item-action:hover, .list-group-item-action:focus {
-        background-color: #f8f9fa;
-        color: var(--primary-accent-color, var(--bs-primary));
-    }
-    .list-group-item .bi {
-        color: var(--primary-accent-color, var(--bs-primary));
-    }
-</style>
 {% endblock %}

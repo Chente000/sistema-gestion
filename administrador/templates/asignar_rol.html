@@ -1,29 +1,50 @@
-{% extends "base.html" %}
+{% extends "interfaz.html" %}
+{% load widget_tweaks %}
+{% block title %}Asignar Rol y Cargo{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2>Asignar Rol y Cargo a {{ user.username }}</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label for="rol" class="form-label">Rol</label>
-            <select name="rol" id="rol" class="form-select" required>
-                {% for value, label in roles %}
-                    <option value="{{ value }}" {% if user.rol == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
+<div class="container mt-5 pt-5">
+    <div class="card shadow-sm mx-auto" style="max-width: 500px;">
+        <div class="card-header bg-primary text-white text-center">
+            <h2 class="h5 mb-0">Asignar Rol y Cargo a {{ user_to_edit.get_full_name }} ({{ user_to_edit.username }})</h2>
         </div>
-        <div class="mb-3">
-            <label for="cargo_departamental" class="form-label">Cargo Departamental</label>
-            <select name="cargo_departamental" id="cargo_departamental" class="form-select">
-                <option value="">---------</option>
-                {% for value, label in cargos %}
-                    <option value="{{ value }}" {% if user.cargo_departamental == value %}selected{% endif %}>{{ label }}</option>
+        <div class="card-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">
+                        {{ message }}
+                    </div>
                 {% endfor %}
-            </select>
+            {% endif %}
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.rol.id_for_label }}" class="form-label">{{ form.rol.label }}</label>
+                    {{ form.rol|add_class:"form-select" }}
+                    {% for error in form.rol.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.cargo_departamental.id_for_label }}" class="form-label">{{ form.cargo_departamental.label }}</label>
+                    {{ form.cargo_departamental|add_class:"form-select" }}
+                    {% for error in form.cargo_departamental.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i> Guardar
+                    </button>
+                    <a href="{% url 'administrador:usuarios_aprobados' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-2"></i> Cancelar
+                    </a>
+                </div>
+            </form>
         </div>
-        <button type="submit" class="btn btn-primary">Guardar</button>
-        <a href="{% url 'administrador:usuarios_aprobados' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+    </div>
 </div>
 {% endblock %}

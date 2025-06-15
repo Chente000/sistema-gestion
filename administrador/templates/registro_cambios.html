@@ -1,0 +1,42 @@
+{% extends "interfaz.html" %}
+{% block title %}Registro de Cambios{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left-circle me-2"></i> Volver al Panel
+        </a>
+        <h2 class="mb-0">Registro de Cambios del Sistema</h2>
+    </div>
+
+    {% if logs %}
+        <div class="table-responsive bg-white rounded shadow-sm">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Fecha y Hora</th>
+                        <th scope="col">Usuario</th>
+                        <th scope="col">Acción</th>
+                        <th scope="col">Objeto Afectado</th>
+                        <th scope="col">Detalle del Cambio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                        <tr>
+                            <td>{{ log.action_time|date:"d M Y H:i" }}</td>
+                            <td>{{ log.user.get_full_name|default:log.user.username|default:"N/A" }}</td>
+                            <td><span class="badge bg-info">{{ log.action }}</span></td>
+                            <td>{{ log.object_repr }}</td>
+                            <td>{{ log.change_message }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center mt-4">No hay registros de cambios aún.</div>
+    {% endif %}
+</div>
+{% endblock %}
