@@ -32,7 +32,17 @@ def gestionar_roles_view(request, user_id):
 
 @staff_member_required
 def configurar_registro_view(request):
-    config, created = ConfiguracionRegistro.objects.get_or_create(pk=1)
+    # Proporciona valores por defecto si el registro no existe
+    config, created = ConfiguracionRegistro.objects.get_or_create(
+        pk=1,
+        defaults={
+            'fecha_inicio': timezone.now().date(),
+            'hora_inicio': timezone.now().time(),
+            'fecha_fin': timezone.now().date(),
+            'hora_fin': timezone.now().time(),
+            'activa': False,
+        }
+    )
     if request.method == 'POST':
         form = ConfiguracionRegistroForm(request.POST, instance=config)
         if form.is_valid():

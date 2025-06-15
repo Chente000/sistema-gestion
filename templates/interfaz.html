@@ -218,13 +218,8 @@
                             </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if request.resolver_match.url_name == 'seleccionar_seccion' %}active{% endif %}" href="{% url 'programacion:seleccionar_seccion' %}">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'aulario_dashboard' %}active{% endif %}" href="{% url 'programacion:aulario_dashboard' %}">
                                     <i class="bi bi-building"></i> Aulario
-                            </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.resolver_match.url_name == 'programacion_lista' %}active{% endif %}" href="{% url 'programacion:programacion_lista' %}">
-                                    <i class="bi bi-calendar-week"></i> Programación Académica
                             </a>
                             </li>
                             <li class="nav-item">

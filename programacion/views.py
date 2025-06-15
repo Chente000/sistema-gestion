@@ -1,14 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
-from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, HorarioSeccion, semestre, Periodo
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from datetime import time
+
+from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, HorarioSeccion, semestre
 from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm, HorarioSeccionForm, HorarioAulaBloqueForm, HorarioAulaForm, ProgramacionAcademicaAssignmentForm
 from django.forms import modelformset_factory
 from datetime import datetime
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.template.loader import render_to_string
-from datetime import time, date
-from django.db import transaction
 from django.core.exceptions import ValidationError # Para manejar errores de validación de modelos
 
 
@@ -66,11 +65,6 @@ def eliminar_programacion(request, pk):
         programacion.delete()
         return redirect('programacion:evaluacion_docente') # Redirige a la lista
     return render(request, 'eliminar_programacion.html', {'programacion': programacion}) # Nuevo template
-
-
-# Tu vista menu_programacion (sin cambios)
-def menu_programacion(request):
-    return render(request, 'menu_programacion.html')
 
 # Vista para listar los docentes y aplicar filtros
 def docentes(request):
@@ -597,36 +591,87 @@ def grilla_aulario(request):
         ("19:00", "19:45"), ("19:45", "20:30"), ("20:30", "21:15"), ("21:15", "22:00"),
     ]
 
-    aulas = Aula.objects.all().order_by('nombre')
+    # aulas = Aula.objects.all().order_by('nombre') # ¡Eliminamos esta línea o la modificamos más abajo!
     
-    # Obtener todos los bloques de horarioAula
-    bloques_horario = HorarioAula.objects.select_related('asignatura', 'aula', 'docente', 'horario_seccion__seccion').all()
+    # --- Lógica de Filtros ---
+    docente_filter_id = request.GET.get('docente')
+    seccion_filter_id = request.GET.get('seccion')
+    semestre_filter_id = request.GET.get('semestre')
+    carrera_filter_id = request.GET.get('carrera')
+
+    # Consulta base para todos los bloques de horarioAula
+    bloques_horario_queryset = HorarioAula.objects.select_related(
+        'asignatura', 'aula', 'docente', 'horario_seccion__seccion',
+        'horario_seccion__seccion__carrera', 'horario_seccion__seccion__semestre'
+    ).all()
+
+    # Aplicar filtros si están presentes
+    if docente_filter_id:
+        bloques_horario_queryset = bloques_horario_queryset.filter(docente__id=docente_filter_id)
+    if seccion_filter_id:
+        bloques_horario_queryset = bloques_horario_queryset.filter(horario_seccion__seccion__id=seccion_filter_id)
+    if semestre_filter_id:
+        bloques_horario_queryset = bloques_horario_queryset.filter(horario_seccion__seccion__semestre__id=semestre_filter_id)
+    if carrera_filter_id:
+        bloques_horario_queryset = bloques_horario_queryset.filter(horario_seccion__seccion__carrera__id=carrera_filter_id)
+
+    # Ordenar los bloques horarios para asegurar consistencia en la grilla
+    bloques_horario_queryset = bloques_horario_queryset.order_by(
+        'aula__nombre', 'dia', 'hora_inicio'
+    )
 
     grilla = {}
-    for bloque in bloques_horario:
+    aula_ids_con_horarios_filtrados = set() # Conjunto para almacenar IDs de aulas con horarios filtrados
+
+    for bloque in bloques_horario_queryset: # Usar el queryset filtrado
         # Formato de clave: "aula_id-Dia-HH:MM"
         clave = f"{bloque.aula.id}-{bloque.dia}-{bloque.hora_inicio.strftime('%H:%M')}"
         grilla[clave] = bloque
+        aula_ids_con_horarios_filtrados.add(bloque.aula.id) # Añadir el ID del aula
+
+    # Ahora, filtra la lista de aulas para mostrar solo aquellas que tienen bloques horarios que coinciden con los filtros
+    if aula_ids_con_horarios_filtrados:
+        aulas = Aula.objects.filter(id__in=aula_ids_con_horarios_filtrados).order_by('nombre')
+    else:
+        # Si no hay bloques horarios que coincidan con los filtros, no se muestran aulas.
+        # Esto significa que el filtro es tan restrictivo que ninguna aula tiene horarios con esos criterios.
+        aulas = Aula.objects.none() 
+
+
+    # Obtener todas las opciones para los filtros (se muestran siempre en los selects)
+    docentes = Docente.objects.all().order_by('nombre')
+    secciones = Seccion.objects.all().order_by('codigo')
+    semestres = semestre.objects.all().order_by('nombre')
+    carreras = Carrera.objects.all().order_by('nombre')
 
     # --- DEPURACIÓN AÑADIDA ---
-    print(f"\n--- Depuración de Grilla General (grilla_aulario) ---")
-    print(f"Total de aulas: {len(aulas)}")
-    print(f"Total de bloques HorarioAula encontrados por la consulta .all(): {bloques_horario.count()}")
-    print(f"Total de entradas en el diccionario 'grilla' después de poblarlo: {len(grilla)}")
+    print(f"\n--- Depuración de Grilla General (grilla_aulario) con Filtros ---")
+    print(f"Filtros Recibidos: Docente={docente_filter_id}, Sección={seccion_filter_id}, Semestre={semestre_filter_id}, Carrera={carrera_filter_id}")
+    print(f"Total de aulas que se mostrarán (después de filtrar por horarios): {len(aulas)}")
+    print(f"Total de bloques HorarioAula encontrados (después de filtros): {bloques_horario_queryset.count()}")
+    print(f"Total de entradas en el diccionario 'grilla': {len(grilla)}")
     if len(grilla) > 0:
         print("Ejemplos de claves y contenido en 'grilla' (primeros 5):")
         for i, (k, v) in enumerate(grilla.items()):
             if i >= 5: break
             seccion_codigo = v.horario_seccion.seccion.codigo if v.horario_seccion and hasattr(v.horario_seccion, 'seccion') and v.horario_seccion.seccion else 'N/A'
             print(f"  - Clave: '{k}', Asignatura: {v.asignatura.nombre if v.asignatura else 'N/A'}, Aula: {v.aula.nombre if v.aula else 'N/A'}, Docente: {v.docente.nombre if v.docente else 'N/A'}, Sección: {seccion_codigo}")
-    print("--- Fin Depuración Grilla General ---\n")
+    print("--- Fin Depuración Grilla General con Filtros ---\n")
     # --- FIN DEPURACIÓN ---
 
     return render(request, 'grilla_aulario.html', {
-        'aulas': aulas,
+        'aulas': aulas, # Ahora 'aulas' contiene solo las aulas con horarios filtrados
         'dias': dias,
         'horas': horas,
         'grilla': grilla,
+        'docentes': docentes,
+        'secciones': secciones,
+        'semestres': semestres,
+        'carreras': carreras,
+        'selected_docente': docente_filter_id,
+        'selected_seccion': seccion_filter_id,
+        'selected_semestre': semestre_filter_id,
+        'selected_carrera': carrera_filter_id,
     })
     
 def seccion_list(request):
@@ -835,7 +880,7 @@ def programar_horario(request, seccion_id):
         print(f"Horario Activo ID: {horario_activo.id}, Descripción: {horario_activo.descripcion}")
         print(f"Bloques en la grilla para el horario activo: {horarios_aula_activos.count()} bloques encontrados.")
         for bloque_debug in horarios_aula_activos:
-            print(f"  - ID: {bloque_debug.id}, Asignatura: {bloque_debug.asignatura.nombre if bloque_debug.asignatura else 'N/A'}, Día: {bloque_debug.dia}, Hora: {bloque_debug.hora_inicio.strftime('%H:%M')}")
+            print(f"  - ID: {bloque_debug.id}, Asignatura: {bloque_debug.asignatura.nombre if bloque_debug.asignatura else 'N/A'}, Día: {bloque_debug.dia}, Hora: {bloque_debug.hora_inicio.strftime('%H:%M')}, Aula: {bloque_debug.aula.nombre if bloque_debug.aula else 'N/A'}")
         print("--- Fin Depuración Grilla Sección ---\n")
         # --- FIN DEPURACIÓN ---
 
@@ -916,6 +961,7 @@ def programar_horario(request, seccion_id):
         'horario_seccion_form': HorarioSeccionForm(), 
     })
     
+
 @require_POST
 def guardar_bloque_horario(request, seccion_id):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -925,6 +971,14 @@ def guardar_bloque_horario(request, seccion_id):
             asignatura_id = request.POST.get('asignatura')
             aula_id = request.POST.get('aula')
             docente_id = request.POST.get('docente')
+
+            # Validación: asegúrate de que todos los IDs estén presentes y sean números
+            if not all([asignatura_id, aula_id, docente_id]):
+                return JsonResponse({'success': False, 'message': 'Todos los campos son obligatorios.'}, status=400)
+            if not (asignatura_id.isdigit() and aula_id.isdigit() and docente_id.isdigit()):
+                return JsonResponse({'success': False, 'message': 'ID inválido en los campos.'}, status=400)
+
+            from .models import Seccion, HorarioSeccion, Asignatura, Aula, Docente, HorarioAula
 
             seccion = get_object_or_404(Seccion, id=seccion_id)
             horario_activo = HorarioSeccion.objects.filter(seccion=seccion, activo=True).first()
@@ -938,7 +992,7 @@ def guardar_bloque_horario(request, seccion_id):
 
             hora_inicio = time.fromisoformat(hora_inicio_str)
 
-            hora_fin = None
+            # Determinar hora_fin según tu lógica de bloques
             horas_predefinidas = [
                 ("07:00", "07:45"), ("07:45", "08:30"), ("08:30", "09:15"), ("09:15", "10:00"),
                 ("10:00", "10:45"), ("10:45", "11:30"), ("11:30", "12:15"), ("12:15", "13:00"),
@@ -946,6 +1000,7 @@ def guardar_bloque_horario(request, seccion_id):
                 ("16:00", "16:45"), ("16:45", "17:30"), ("17:30", "18:15"), ("18:15", "19:00"),
                 ("19:00", "19:45"), ("19:45", "20:30"), ("20:30", "21:15"), ("21:15", "22:00"),
             ]
+            hora_fin = None
             for h_ini, h_fin in horas_predefinidas:
                 if h_ini == hora_inicio_str: 
                     hora_fin = time.fromisoformat(h_fin) 
@@ -953,6 +1008,18 @@ def guardar_bloque_horario(request, seccion_id):
             
             if hora_fin is None:
                 return JsonResponse({'success': False, 'message': 'No se pudo determinar la hora de fin para la hora de inicio proporcionada.'}, status=400)
+
+            # Validación de solapamiento de aula
+            conflicto = HorarioAula.objects.filter(
+                aula=aula,
+                dia=dia,
+                hora_inicio__lt=hora_fin,
+                hora_fin__gt=hora_inicio,
+                horario_seccion__activo=True
+            ).exclude(horario_seccion=horario_activo).exists()
+
+            if conflicto:
+                return JsonResponse({'success': False, 'message': '¡El aula ya está ocupada en ese horario!'}, status=400)
 
             semestre_asignatura = asignatura.semestre
 
@@ -973,7 +1040,6 @@ def guardar_bloque_horario(request, seccion_id):
             return JsonResponse({'success': True})
 
         except ValidationError as e:
-            # Captura errores de validación de modelos (ej. unique_together)
             return JsonResponse({'success': False, 'message': f'Error de validación: {e.message}'}, status=400)
         except Exception as e:
             print(f"Error al guardar el bloque horario: {e}")

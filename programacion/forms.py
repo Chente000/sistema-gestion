@@ -3,6 +3,7 @@
 from django import forms
 # Asegúrate de importar todos los modelos necesarios
 from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, semestre
+from django.core.exceptions import ValidationError
 
 class ProgramacionAcademicaForm(forms.ModelForm):
     class Meta:
@@ -228,7 +229,14 @@ class AulaForm(forms.ModelForm):
     class Meta:
         model = Aula
         fields = '__all__'
-        
+        labels = {
+            'capacidad': 'Capacidad Máxima', # Cambiamos la etiqueta aquí para el formulario
+        }
+        widgets = {
+            # Opcional: Podrías usar RadioSelect para el estado si prefieres
+            # 'estado': forms.RadioSelect(attrs={'class': 'form-check-input'})
+        }
+
 
 class HorarioAulaForm(forms.ModelForm):
     class Meta:
@@ -239,6 +247,17 @@ class HorarioAulaBloqueForm(forms.ModelForm):
     class Meta:
         model = HorarioAula
         fields = ['dia', 'hora_inicio', 'hora_fin', 'asignatura', 'seccion', 'semestre', 'carrera']
+
+    def __init__(self, *args, **kwargs):
+        seccion = kwargs.pop('seccion', None)
+        super().__init__(*args, **kwargs)
+        if seccion:
+            self.fields['asignatura'].queryset = Asignatura.objects.filter(
+                carrera=seccion.carrera,
+                semestre=seccion.semestre
+            ).order_by('nombre')
+        else:
+            self.fields['asignatura'].queryset = Asignatura.objects.none()
 
 class SeccionForm(forms.ModelForm):
     carrera = forms.ModelChoiceField(

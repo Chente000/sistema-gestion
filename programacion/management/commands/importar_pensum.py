@@ -37,14 +37,14 @@ class Command(BaseCommand):
                 Asignatura.objects.create(
                     nombre=nombre_asignatura,
                     codigo=str(row.get('CÓDIGO', '')).strip(),
-                    semestre=semestre_nombre,  # Por ahora es CharField
                     horas_teoricas=safe_int(row.get('HORAS_TEORICAS', 0)),
                     horas_practicas=safe_int(row.get('HORAS_PRACTICAS', 0)),
                     horas_laboratorio=safe_int(row.get('HORAS_LABORATORIO', 0)),  # Corrige el nombre aquí
                     diurno=str(row.get('DIURNO', '')).strip(),
                     uc=str(row.get('UC', '')).strip(),
                     requisitos=str(row.get('REQUISITOS', '')).strip(),
-                    carrera=carrera_obj
+                    carrera=carrera_obj,
+                    semestre=semestre_obj,  # Aquí va el objeto, no el string
                 )
         self.stdout.write(self.style.SUCCESS('Importación de pensum académico completada'))
 

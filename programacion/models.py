@@ -168,6 +168,13 @@ class ProgramacionAcademica(models.Model):
         return "Fuera de Rango / No Definido" # Para valores como 4 a 7.9
 
 class Aula(models.Model):
+    # Opciones para el estado del aula
+    ESTADO_CHOICES = [
+        ('disponible', 'Disponible'),
+        ('mantenimiento', 'En Mantenimiento'),
+        ('fuera_servicio', 'Fuera de Servicio'),
+    ]
+
     nombre = models.CharField(max_length=10, unique=True)
     tipo = models.CharField(max_length=50, choices=[
         ('Teórica', 'Teórica'),
@@ -175,12 +182,14 @@ class Aula(models.Model):
         ('Auditorio', 'Auditorio'),
         ('Otro', 'Otro')
     ])
-    capacidad = models.PositiveIntegerField()
+    capacidad = models.PositiveIntegerField() # Renombrado internamente, se refiere a la capacidad máxima
     ubicacion = models.CharField(max_length=100, blank=True)
     observaciones = models.TextField(blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='disponible', help_text="Estado actual del aula")
 
     def __str__(self):
         return f"{self.nombre} ({self.tipo})"
+
 
 class HorarioAula(models.Model):
     aula = models.ForeignKey(Aula, on_delete=models.CASCADE)

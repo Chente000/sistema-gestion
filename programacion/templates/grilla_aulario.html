@@ -1,20 +1,79 @@
 {% extends "interfaz.html" %}
 {% load static %}
 {% load programacion_filters %}
+{% block title %}Grilla de Aulas{% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-5 pt-5">
-    <h2 class="mb-4">Disponibilidad de Aulas por Día y Hora</h2>
-    <p class="text-muted">Visualización de los bloques de horario asignados a cada aula.</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{% url 'programacion:aulario_dashboard' %}" class="btn btn-secondary"><i class="bi bi-arrow-left-circle me-2"></i> Volver al Dashboard</a>
+        <h2>Disponibilidad de Aulas por Día y Hora</h2>
+        <div>
+            <a href="{% url 'programacion:aula_list' %}" class="btn btn-primary me-2"><i class="bi bi-building me-2"></i> Administrar Aulas</a>
+            <a href="{% url 'programacion:seleccionar_seccion' %}" class="btn btn-info"><i class="bi bi-list-ul me-2"></i> Ver Horarios Individuales</a>
+        </div>
+    </div>
 
+    <p class="text-muted">Visualización de los bloques de horario asignados a cada aula. Puedes aplicar filtros para buscar horarios específicos.</p>
+
+    {# Formulario de Filtros #}
+    <div class="card shadow-sm p-4 mb-4">
+        <h4 class="mb-3">Filtrar Horarios</h4>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="id_docente" class="form-label">Docente:</label>
+                <select name="docente" id="id_docente" class="form-select">
+                    <option value="">Todos los docentes</option>
+                    {% for docente in docentes %}
+                        <option value="{{ docente.id }}" {% if selected_docente|stringformat:"s" == docente.id|stringformat:"s" %}selected{% endif %}>
+                            {{ docente.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="id_carrera" class="form-label">Carrera:</label>
+                <select name="carrera" id="id_carrera" class="form-select">
+                    <option value="">Todas las carreras</option>
+                    {% for carrera in carreras %}
+                        <option value="{{ carrera.id }}" {% if selected_carrera|stringformat:"s" == carrera.id|stringformat:"s" %}selected{% endif %}>
+                            {{ carrera.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="id_seccion" class="form-label">Sección:</label>
+                <select name="seccion" id="id_seccion" class="form-select">
+                    <option value="">Todas las secciones</option>
+                    {% for seccion_obj in secciones %}
+                        <option value="{{ seccion_obj.id }}" {% if selected_seccion|stringformat:"s" == seccion_obj.id|stringformat:"s" %}selected{% endif %}>
+                            {{ seccion_obj.codigo }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-filter-circle me-2"></i> Aplicar Filtros</button>
+            </div>
+            <div class="col-md-1 d-grid">
+                <a href="{% url 'programacion:grilla_aulario' %}" class="btn btn-secondary"><i class="bi bi-x-circle me-2"></i> Limpiar</a>
+            </div>
+        </form>
+    </div>
+
+    {# Grillas por Aula #}
     <div class="row">
         {% for aula in aulas %}
             <div class="col-12 col-md-6 col-lg-4 mb-4">
                 <div class="card shadow-sm h-100">
-                    <div class="card-header bg-primary text-white fw-bold">
-                        <i class="bi bi-building"></i> {{ aula.nombre }}
+                    <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-building"></i> {{ aula.nombre }}</span>
+                        <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalAula{{ aula.id }}" title="Ver horario ampliado">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                        </button>
                     </div>
-                    <div class="card-body p-2">
+                    <div class="card-body aula-card-body p-2">
                         <div class="table-responsive">
                             <table class="table table-bordered table-sm text-center align-middle mb-0">
                                 <thead class="table-light">
@@ -30,9 +89,64 @@
                                         <tr>
                                             <td class="fw-bold text-nowrap">{{ hora_tuple.0 }} - {{ hora_tuple.1 }}</td>
                                             {% for dia in dias %}
-                                                {% with key=aula.id|stringformat:"s-"|add:dia|add:"-"|add:hora_tuple.0 %}
+                                                <td>
+                                                    {% with key=aula.id|stringformat:"s-"|add:dia|add:"-"|add:hora_tuple.0 %}
                                                     {% with bloque=grilla|get_item:key %}
-                                                        <td>
+                                                        {% if bloque %}
+                                                            <div class="cell-content text-start p-1 bg-light rounded-2 shadow-sm">
+                                                                <small class="fw-bold text-primary">{{ bloque.asignatura.codigo }}</small><br>
+                                                                <small>{{ bloque.asignatura.nombre }}</small><br>
+                                                                <small class="text-muted">Sección: {{ bloque.horario_seccion.seccion.codigo|default:"-" }}</small><br>
+                                                                {% if bloque.docente %}
+                                                                    <small class="text-muted">Docente: {{ bloque.docente.nombre }}</small>
+                                                                {% else %}
+                                                                    <small class="text-danger"><em>Sin Docente</em></small>
+                                                                {% endif %}
+                                                            </div>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                    {% endwith %}
+                                                </td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Modal para horario ampliado de cada aula #}
+            <div class="modal fade" id="modalAula{{ aula.id }}" tabindex="-1" aria-labelledby="modalAulaLabel{{ aula.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="modalAulaLabel{{ aula.id }}">
+                                <i class="bi bi-building"></i> Horario completo de {{ aula.nombre }}
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm text-center align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Hora</th>
+                                            {% for dia in dias %}
+                                                <th>{{ dia }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for hora_tuple in horas %}
+                                            <tr>
+                                                <td class="fw-bold text-nowrap">{{ hora_tuple.0 }} - {{ hora_tuple.1 }}</td>
+                                                {% for dia in dias %}
+                                                    <td>
+                                                        {# Misma lógica de key que la tabla principal #}
+                                                        {% with key=aula.id|stringformat:"s-"|add:dia|add:"-"|add:hora_tuple.0 %}
+                                                        {% with bloque=grilla|get_item:key %}
                                                             {% if bloque %}
                                                                 <div class="cell-content text-start p-1 bg-light rounded-2 shadow-sm">
                                                                     <small class="fw-bold text-primary">{{ bloque.asignatura.codigo }}</small><br>
@@ -45,14 +159,15 @@
                                                                     {% endif %}
                                                                 </div>
                                                             {% endif %}
-                                                        </td>
-                                                    {% endwith %}
-                                                {% endwith %}
-                                            {% endfor %}
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                                        {% endwith %}
+                                                        {% endwith %}
+                                                    </td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -62,4 +177,10 @@
 </div>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+.aula-card-body {
+    max-height: 500px;
+    overflow-y: auto;
+}
+</style>
 {% endblock %}
