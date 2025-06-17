@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Seccion, Carrera, semestre, Asignatura, Aula, Periodo, HorarioAula, HorarioSeccion, Docente
+from .models import Seccion, Carrera, semestre, Asignatura, Aula, Periodo, HorarioAula, HorarioSeccion, Docente, Facultad, Departamento
 
 @admin.register(Seccion)
 class SeccionAdmin(admin.ModelAdmin):
@@ -15,3 +15,5 @@ admin.site.register(Periodo)
 admin.site.register(HorarioAula)
 admin.site.register(HorarioSeccion)
 admin.site.register(Docente)
+admin.site.register(Facultad)
+admin.site.register(Departamento)

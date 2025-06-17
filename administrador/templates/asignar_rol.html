@@ -6,7 +6,7 @@
 <div class="container mt-5 pt-5">
     <div class="card shadow-sm mx-auto" style="max-width: 500px;">
         <div class="card-header bg-primary text-white text-center">
-            <h2 class="h5 mb-0">Asignar Rol y Cargo a {{ user_to_edit.get_full_name }} ({{ user_to_edit.username }})</h2>
+            <h2 class="h5 mb-0">Asignar Rol, Cargo y Asignaciones a {{ user_to_edit.get_full_name }} ({{ user_to_edit.username }})</h2>
         </div>
         <div class="card-body">
             {% if messages %}
@@ -16,7 +16,7 @@
                     </div>
                 {% endfor %}
             {% endif %}
-            <form method="post" class="space-y-4">
+            <form method="post" id="asignarRolForm" class="space-y-4">
                 {% csrf_token %}
                 
                 <div class="mb-3">
@@ -28,9 +28,26 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="{{ form.cargo_departamental.id_for_label }}" class="form-label">{{ form.cargo_departamental.label }}</label>
-                    {{ form.cargo_departamental|add_class:"form-select" }}
-                    {% for error in form.cargo_departamental.errors %}
+                    <label for="{{ form.cargo.id_for_label }}" class="form-label">{{ form.cargo.label }}</label>
+                    {{ form.cargo|add_class:"form-select" }}
+                    {% for error in form.cargo.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                {# Campos que se mostrarán/ocultarán dinámicamente #}
+                <div class="mb-3" id="departamentoAsignadoDiv" style="display: none;">
+                    <label for="{{ form.departamento_asignado.id_for_label }}" class="form-label">{{ form.departamento_asignado.label }}</label>
+                    {{ form.departamento_asignado|add_class:"form-select" }}
+                    {% for error in form.departamento_asignado.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="mb-3" id="carreraAsignadaDiv" style="display: none;">
+                    <label for="{{ form.carrera_asignada.id_for_label }}" class="form-label">{{ form.carrera_asignada.label }}</label>
+                    {{ form.carrera_asignada|add_class:"form-select" }}
+                    {% for error in form.carrera_asignada.errors %}
                         <div class="text-danger small mt-1">{{ error }}</div>
                     {% endfor %}
                 </div>
@@ -47,4 +64,49 @@
         </div>
     </div>
 </div>
+
+{# Script para la lógica dinámica de campos #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const cargoSelect = document.getElementById('{{ form.cargo.id_for_label }}');
+        const departamentoDiv = document.getElementById('departamentoAsignadoDiv');
+        const carreraDiv = document.getElementById('carreraAsignadaDiv');
+
+        // Mapeo de IDs de Cargo a su propiedad `es_jefatura`
+        // Esto se genera en el backend y se pasa al template.
+        // Por ahora, lo simularemos o lo cargaremos via JS/AJAX si la lista es muy grande.
+        // UNA MEJOR FORMA: PASAR ESTE MAPEO DESDE LA VISTA DE DJANGO
+        const cargosData = {};
+        {% for cargo_obj in form.cargo.field.queryset %}
+            cargosData['{{ cargo_obj.pk }}'] = {
+                es_jefatura: {{ cargo_obj.es_jefatura|yesno:"true,false" }},
+                nombre: "{{ cargo_obj.nombre|escapejs }}"
+            };
+        {% endfor %}
+
+        function toggleAssignmentFields() {
+            const selectedCargoId = cargoSelect.value;
+            const selectedCargo = cargosData[selectedCargoId];
+
+            if (selectedCargo && selectedCargo.es_jefatura) {
+                // Mostrar ambos si es un cargo de jefatura
+                departamentoDiv.style.display = 'block';
+                carreraDiv.style.display = 'block';
+            } else {
+                // Ocultar ambos si no es un cargo de jefatura
+                departamentoDiv.style.display = 'none';
+                carreraDiv.style.display = 'none';
+                // Opcional: Resetear los valores si se ocultan para evitar errores de validación
+                document.getElementById('{{ form.departamento_asignado.id_for_label }}').value = '';
+                document.getElementById('{{ form.carrera_asignada.id_for_label }}').value = '';
+            }
+        }
+
+        // Ejecutar al cargar la página
+        toggleAssignmentFields();
+
+        // Ejecutar cada vez que el cargo seleccionado cambie
+        cargoSelect.addEventListener('change', toggleAssignmentFields);
+    });
+</script>
 {% endblock %}

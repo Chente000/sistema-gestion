@@ -2,10 +2,53 @@ from django.db import models
 from django.core.exceptions import ValidationError
 
 # Create your models here.
+class Facultad(models.Model):
+    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre de la Facultad")
+    descripcion = models.TextField(blank=True, verbose_name="Descripción")
 
-class Carrera(models.Model):
-    nombre = models.CharField(max_length=100, unique=True)
+    class Meta:
+        verbose_name = "Facultad"
+        verbose_name_plural = "Facultades"
+        ordering = ['nombre']
+
     def __str__(self):
+        return self.nombre
+class Departamento(models.Model):
+    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Departamento")
+    facultad = models.ForeignKey(Facultad, on_delete=models.CASCADE, related_name='departamentos', verbose_name="Facultad a la que pertenece")
+    descripcion = models.TextField(blank=True, verbose_name="Descripción")
+
+    class Meta:
+        verbose_name = "Departamento"
+        verbose_name_plural = "Departamentos"
+        ordering = ['nombre']
+
+    def __str__(self):
+        return f"{self.nombre} ({self.facultad.nombre})"
+class Carrera(models.Model):
+    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre de la Carrera")
+    # Agregamos la relación con Departamento
+    departamento = models.ForeignKey(
+        Departamento,
+        on_delete=models.CASCADE,
+        related_name='carreras',
+        verbose_name="Departamento al que pertenece",
+        null=True, # Importante para la primera migración si ya tienes carreras existentes
+        blank=True # Permite que sea opcional en formularios
+    )
+    codigo = models.CharField(max_length=10, unique=True, verbose_name="Código de Carrera", blank=True, null=True)
+    duracion_semestres = models.PositiveIntegerField(verbose_name="Duración en Semestres", blank=True, null=True)
+    descripcion = models.TextField(blank=True, verbose_name="Descripción")
+
+    class Meta:
+        verbose_name = "Carrera"
+        verbose_name_plural = "Carreras"
+        ordering = ['nombre']
+
+    def __str__(self):
+        # Mejora la representación para incluir el departamento si existe
+        if self.departamento:
+            return f"{self.nombre} ({self.departamento.nombre})"
         return self.nombre
 class Docente(models.Model):
     # 'nombre' se mantiene para el nombre completo, ya que lo usas en otros lugares.
@@ -16,10 +59,11 @@ class Docente(models.Model):
     cedula = models.CharField(max_length=15, unique=True, verbose_name="Cédula de Identidad", blank=True, null=True)
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Número de Teléfono")
     email = models.EmailField(unique=True, blank=True, null=True, verbose_name="Correo Electrónico")
-    
+    departemento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='docentes_asignados', blank=True, null=True)
     dedicacion = models.CharField(max_length=50, verbose_name="Dedicación")
     # Muchas-a-muchas con Carrera: un docente puede dar clases en varias carreras
     carreras = models.ManyToManyField(Carrera, related_name='docentes', blank=True, verbose_name="Carreras Asignadas")
+
 
     def __str__(self):
         return self.nombre
@@ -60,6 +104,7 @@ class Periodo(models.Model):
     nombre = models.CharField(max_length=20, unique=True)  # Ej: "1-2025"
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
+    activo = models.BooleanField(default=False)
 
     def __str__(self):
         return self.nombre

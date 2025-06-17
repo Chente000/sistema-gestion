@@ -1,28 +1,141 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
+from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from datetime import time
-
-from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, HorarioSeccion, semestre
-from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm, HorarioSeccionForm, HorarioAulaBloqueForm, HorarioAulaForm, ProgramacionAcademicaAssignmentForm
+from datetime import time, date
+from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, HorarioSeccion, semestre, Departamento
+from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm, HorarioSeccionForm, HorarioAulaBloqueForm, HorarioAulaForm, ProgramacionAcademicaAssignmentForm, CarreraForm
 from django.forms import modelformset_factory
 from datetime import datetime
-from django.core.exceptions import ValidationError # Para manejar errores de validación de modelos
+from django.core.exceptions import ValidationError
+from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from accounts.models import Usuario
+from .permissions import PERMISSIONS
+from .utils import tiene_permiso_departal_o_carrera_util
+from django.core.exceptions import PermissionDenied
+from django.forms import formset_factory
 
+#lISTA DE CARRERAS
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_CARRERA))
+def lista_carreras(request):
+    """
+    Muestra la lista de carreras. Los usuarios con permiso
+    de gestión pueden ver todas, otros solo las de su departamento/carrera.
+    """
+    carreras = Carrera.objects.all().order_by('nombre')
+    puede_gestionar_carreras = request.user.has_permission(PERMISSIONS.MANAGE_CARRERA)
 
+    # Aplicar filtrado granular si el usuario no tiene permiso global MANAGE_CARRERA
+    # y no es superusuario/super_admin.
+    if not (request.user.is_superuser or request.user.is_super_admin_rol) and \
+    not request.user.has_permission(PERMISSIONS.VIEW_CARRERA, obj=None): # Si no tiene permiso VIEW_CARRERA global
+        if request.user.carrera_asignada:
+            carreras = carreras.filter(id=request.user.carrera_asignada.id)
+        elif request.user.departamento_asignado:
+            carreras = carreras.filter(departamento=request.user.departamento_asignado)
+        else:
+            carreras = Carrera.objects.none() # No tiene asignación ni permiso global
+            messages.warning(request, "No tiene permisos para ver carreras o no tiene una carrera/departamento asignado.")
 
+    context = {
+        'carreras': carreras,
+        'puede_gestionar_carreras': puede_gestionar_carreras,
+    }
+    return render(request, 'programacion/carreras/lista_carreras.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARRERA))
+def crear_carrera(request):
+    """Permite crear una nueva carrera."""
+    form = CarreraForm()
+    if request.method == 'POST':
+        form = CarreraForm(request.POST)
+        if form.is_valid():
+            try:
+                carrera = form.save(commit=False)
+                # Si el usuario es un coordinador/jefatura y tiene departamento asignado,
+                # asegurar que la carrera pertenece a su departamento
+                if request.user.is_jefatura and request.user.departamento_asignado and \
+                carrera.departamento != request.user.departamento_asignado:
+                    # Si el usuario tiene MANAGE_CARRERA pero no global, y la carrera no es de su dpto, denegar.
+                    raise PermissionDenied("No tiene permiso para crear carreras fuera de su departamento asignado.")
+                carrera.save()
+                messages.success(request, 'Carrera creada exitosamente.')
+                return redirect('programacion:lista_carreras')
+            except IntegrityError:
+                messages.error(request, 'Ya existe una carrera con ese nombre o código.')
+            except PermissionDenied as e:
+                messages.error(request, str(e))
+        else:
+            messages.error(request, 'Error al crear la carrera. Revise los datos.')
+
+    context = {'form': form, 'accion': 'Crear'}
+    return render(request, 'programacion/carreras/form_carrera.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARRERA))
+def editar_carrera(request, pk):
+    """Permite editar una carrera existente."""
+    carrera = get_object_or_404(Carrera, pk=pk)
+
+    # Verificar permiso granular: el usuario debe tener MANAGE_CARRERA y,
+    # si no es global, debe ser para una carrera de su ámbito.
+    if not request.user.has_permission(PERMISSIONS.MANAGE_CARRERA, obj=carrera):
+        raise PermissionDenied("No tiene permiso para editar esta carrera.")
+
+    form = CarreraForm(instance=carrera)
+    if request.method == 'POST':
+        form = CarreraForm(request.POST, instance=carrera)
+        if form.is_valid():
+            try:
+                carrera = form.save(commit=False)
+                # Re-verificar el departamento si fue cambiado (aunque debería ser manejado por el form)
+                if request.user.is_jefatura and request.user.departamento_asignado and \
+                carrera.departamento != request.user.departamento_asignado:
+                    raise PermissionDenied("No puede mover la carrera a un departamento fuera de su ámbito.")
+                carrera.save()
+                messages.success(request, 'Carrera actualizada exitosamente.')
+                return redirect('programacion:lista_carreras')
+            except IntegrityError:
+                messages.error(request, 'Ya existe una carrera con ese nombre o código.')
+            except PermissionDenied as e:
+                messages.error(request, str(e))
+        else:
+            messages.error(request, 'Error al actualizar la carrera. Revise los datos.')
+
+    context = {'form': form, 'accion': 'Editar', 'carrera': carrera}
+    return render(request, 'programacion/carreras/form_carrera.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARRERA))
+def eliminar_carrera(request, pk):
+    """Permite eliminar una carrera."""
+    carrera = get_object_or_404(Carrera, pk=pk)
+
+    # Verificar permiso granular
+    if not request.user.has_permission(PERMISSIONS.MANAGE_CARRERA, obj=carrera):
+        raise PermissionDenied("No tiene permiso para eliminar esta carrera.")
+
+    if request.method == 'POST':
+        try:
+            carrera.delete()
+            messages.success(request, 'Carrera eliminada exitosamente.')
+        except IntegrityError:
+            messages.error(request, 'No se puede eliminar la carrera porque tiene asignaturas asociadas.')
+        return redirect('programacion:lista_carreras')
+    context = {'carrera': carrera}
+    return render(request, 'programacion/carreras/confirm_delete_carrera.html', context)
+
+# Vista para la evaluación docente
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_CARRERA))
 def evaluacion_docente(request):
-    # select_related mejora el rendimiento al obtener los objetos relacionados en una sola consulta
     programaciones = ProgramacionAcademica.objects.select_related('docente', 'asignatura', 'periodo').all()
-    
-    # Puedes añadir lógica de filtrado aquí si lo deseas, similar a servicio_list.
-    # Por ejemplo:
-    # filter_docente_id = request.GET.get('docente')
-    # if filter_docente_id:
-    #     programaciones = programaciones.filter(docente__id=filter_docente_id)
 
-    # También pasamos los docentes y periodos para posibles filtros en el template
     docentes = Docente.objects.all().order_by('nombre')
     periodos = Periodo.objects.all().order_by('-fecha_inicio') # Asumiendo que Periodo ya tiene fecha_inicio
 
@@ -30,11 +143,12 @@ def evaluacion_docente(request):
         'programaciones': programaciones,
         'docentes': docentes,
         'periodos': periodos,
-        # Pasa los valores de filtro actuales si implementas filtros aquí
-        # 'filter_docente_id': filter_docente_id,
+
     })
 
 # Vista para crear una nueva programación académica / evaluación
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE))
 def crear_programacion(request):
     if request.method == 'POST':
         form = ProgramacionAcademicaForm(request.POST)
@@ -47,7 +161,8 @@ def crear_programacion(request):
         form = ProgramacionAcademicaForm()
     return render(request, 'crear_programacion.html', {'form': form}) # Nuevo template
 
-# Vista para editar una programación académica / evaluación existente
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE))
 def editar_programacion(request, pk):
     programacion = get_object_or_404(ProgramacionAcademica, pk=pk)
     if request.method == 'POST':
@@ -59,6 +174,8 @@ def editar_programacion(request, pk):
         form = ProgramacionAcademicaForm(instance=programacion)
     return render(request, 'editar_programacion.html', {'form': form, 'programacion': programacion}) # Pasar la instancia
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE))
 def eliminar_programacion(request, pk):
     programacion = get_object_or_404(ProgramacionAcademica, pk=pk)
     if request.method == 'POST':
@@ -66,7 +183,9 @@ def eliminar_programacion(request, pk):
         return redirect('programacion:evaluacion_docente') # Redirige a la lista
     return render(request, 'eliminar_programacion.html', {'programacion': programacion}) # Nuevo template
 
-# Vista para listar los docentes y aplicar filtros
+# Vista para listar los DOCENTES y aplicar filtros
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_DOCENTE))
 def docentes(request):
     query = request.GET.get('q', '')
     carrera_id = request.GET.get('carrera')
@@ -136,6 +255,8 @@ def docentes(request):
     })
 
 # Vista para agregar un nuevo docente
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_DOCENTE))
 def agregar_docente(request):
     if request.method == 'POST':
         form = DocenteForm(request.POST)
@@ -147,6 +268,8 @@ def agregar_docente(request):
     return render(request, 'agregar_docente.html', {'form': form})
 
 # Vista para editar un docente existente
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_DOCENTE))
 def editar_docente(request, pk): 
     docente = get_object_or_404(Docente, pk=pk)
     if request.method == 'POST':
@@ -159,6 +282,8 @@ def editar_docente(request, pk):
     return render(request, 'editar_docente.html', {'form': form, 'docente': docente})
 
 # Vista para eliminar un docente (maneja GET para confirmación y POST para eliminación)
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_DOCENTE))
 def eliminar_docente(request, pk): 
     docente = get_object_or_404(Docente, pk=pk)
     if request.method == 'POST':
@@ -166,9 +291,9 @@ def eliminar_docente(request, pk):
         return redirect('programacion:docentes')
     return render(request, 'docente_confirm_delete.html', {'docente': docente})
 
-# <--- NOTA: La función 'docente_confirm_delete' ha sido eliminada por ser redundante.
-
-# Vista para asignar asignaturas a un docente
+# --- VISTAS PARA ASIGNAR ASIGNATURAS A DOCENTES ---
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_DOCENTE))
 def asignar_asignaturas(request, pk):
     docente = get_object_or_404(Docente, pk=pk)
     
@@ -315,6 +440,8 @@ def api_asignaturas_por_carrera_semestre(request):
 # Vistas de ProgramacionAcademica existentes (se mantienen sin cambios importantes aquí)
 # def evaluacion_docente(request): ...
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_ASIGNATURA))
 def asignaturas(request):
     query = request.GET.get('q', '')
     carrera_id = request.GET.get('carrera')
@@ -351,11 +478,14 @@ def asignaturas(request):
         'filter_semestre_id': semestre_id, # Usar 'filter_semestre_id' para el template
     })
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_EVALUACION_DOCENTE))
 def programacion_lista(request):
     programaciones = ProgramacionAcademica.objects.all()
     return render(request, 'programacion_lista.html', {'programaciones': programaciones})
 
-
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_ASIGNATURA))
 def agregar_asignatura(request):
     if request.method == 'POST':
         form = AsignaturaForm(request.POST)
@@ -378,6 +508,8 @@ def agregar_asignatura(request):
         'semestres_all': semestres_qs, # Pasa todos los semestres para que el JS pueda filtrar
     })
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_ASIGNATURA))
 def editar_asignatura(request, asignatura_id):
     asignatura = get_object_or_404(Asignatura, id=asignatura_id)
     if request.method == 'POST':
@@ -402,6 +534,8 @@ def editar_asignatura(request, asignatura_id):
         'semestres_all': semestres_qs, # Pasa los semestres filtrados por la carrera de la asignatura
     })
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_ASIGNATURA))
 def eliminar_asignatura(request, asignatura_id):
     asignatura = get_object_or_404(Asignatura, id=asignatura_id)
     if request.method == 'POST':
@@ -409,48 +543,22 @@ def eliminar_asignatura(request, asignatura_id):
         return redirect('programacion:asignaturas')
     return render(request, 'eliminar_asignatura.html', {'asignatura': asignatura})
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_ASIGNATURA))
 def detalle_asignatura(request, asignatura_id):
     asignatura = get_object_or_404(Asignatura, id=asignatura_id)
     return render(request, 'detalle_asignatura.html', {'asignatura': asignatura})
 
-def asignar_asignaturas(request, docente_id):
-    docente = get_object_or_404(Docente, id=docente_id)
-    if request.method == 'POST':
-        form = AsignarAsignaturasForm(request.POST, docente=docente)
-        if form.is_valid():
-            carrera = form.cleaned_data['carrera']
-            asignaturas = form.cleaned_data['asignaturas']
-            periodo = form.cleaned_data['periodo']
-            ProgramacionAcademica.objects.filter(
-                docente=docente,
-                periodo=periodo,
-                asignatura__carrera=carrera
-            ).exclude(asignatura__in=asignaturas).delete()
-            for asignatura in asignaturas:
-                ProgramacionAcademica.objects.get_or_create(
-                    docente=docente,
-                    asignatura=asignatura,
-                    periodo=periodo
-                )
-            # Redirige a la misma página para seguir editando
-            return redirect('programacion:docentes')
-    else:
-        form = AsignarAsignaturasForm(
-            docente=docente,
-            initial={
-                'periodo': request.GET.get('periodo'),
-                'carrera': request.GET.get('carrera')
-            }
-        )
-    return render(request, 'asignar_asignaturas.html', {'form': form, 'docente': docente})
-def aulario(request):
-    return render(request, 'aulario.html')
-
 # --- Aulas ---
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_AULA))
 def aula_list(request):
     aulas = Aula.objects.all()
     return render(request, 'aula_list.html', {'aulas': aulas})
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_AULA))
 def aula_create(request):
     if request.method == 'POST':
         form = AulaForm(request.POST)
@@ -461,6 +569,8 @@ def aula_create(request):
         form = AulaForm()
     return render(request, 'aula_form.html', {'form': form})
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_AULA))
 def aula_edit(request, pk):
     aula = get_object_or_404(Aula, pk=pk)
     if request.method == 'POST':
@@ -472,6 +582,8 @@ def aula_edit(request, pk):
         form = AulaForm(instance=aula)
     return render(request, 'aula_form.html', {'form': form})
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_AULA))
 def aula_delete(request, pk):
     aula = get_object_or_404(Aula, pk=pk)
     if request.method == 'POST':
@@ -480,10 +592,14 @@ def aula_delete(request, pk):
     return render(request, 'aula_confirm_delete.html', {'aula': aula})
 
 # --- Horarios ---
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_HORARIO_AULA))
 def horario_list(request):
     horarios = HorarioAula.objects.select_related('aula', 'asignatura', 'carrera').all()
     return render(request, 'horario_list.html', {'horarios': horarios})
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_HORARIO_AULA))
 def horario_create(request):
     aulas = Aula.objects.all()
     aula_id = request.GET.get('aula')
@@ -548,6 +664,8 @@ def horario_create(request):
         'grilla': grilla,
     })
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_HORARIO_AULA))
 def horario_edit(request, pk):
     horario = get_object_or_404(HorarioAula, pk=pk)
     if request.method == 'POST':
@@ -559,6 +677,8 @@ def horario_edit(request, pk):
         form = HorarioAulaForm(instance=horario)
     return render(request, 'horario_form.html', {'form': form})
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_HORARIO_AULA))
 @require_POST # Asegura que solo acepte peticiones POST
 def horario_delete(request, pk):
     horario = get_object_or_404(HorarioAula, pk=pk)
@@ -580,7 +700,8 @@ def horario_delete(request, pk):
     # Para peticiones GET no AJAX, mostrar página de confirmación
     return render(request, 'horario_confirm_delete.html', {'horario': horario})
 
-
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_HORARIO_AULA))
 def grilla_aulario(request):
     dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
     horas = [
@@ -644,21 +765,6 @@ def grilla_aulario(request):
     semestres = semestre.objects.all().order_by('nombre')
     carreras = Carrera.objects.all().order_by('nombre')
 
-    # --- DEPURACIÓN AÑADIDA ---
-    print(f"\n--- Depuración de Grilla General (grilla_aulario) con Filtros ---")
-    print(f"Filtros Recibidos: Docente={docente_filter_id}, Sección={seccion_filter_id}, Semestre={semestre_filter_id}, Carrera={carrera_filter_id}")
-    print(f"Total de aulas que se mostrarán (después de filtrar por horarios): {len(aulas)}")
-    print(f"Total de bloques HorarioAula encontrados (después de filtros): {bloques_horario_queryset.count()}")
-    print(f"Total de entradas en el diccionario 'grilla': {len(grilla)}")
-    if len(grilla) > 0:
-        print("Ejemplos de claves y contenido en 'grilla' (primeros 5):")
-        for i, (k, v) in enumerate(grilla.items()):
-            if i >= 5: break
-            seccion_codigo = v.horario_seccion.seccion.codigo if v.horario_seccion and hasattr(v.horario_seccion, 'seccion') and v.horario_seccion.seccion else 'N/A'
-            print(f"  - Clave: '{k}', Asignatura: {v.asignatura.nombre if v.asignatura else 'N/A'}, Aula: {v.aula.nombre if v.aula else 'N/A'}, Docente: {v.docente.nombre if v.docente else 'N/A'}, Sección: {seccion_codigo}")
-    print("--- Fin Depuración Grilla General con Filtros ---\n")
-    # --- FIN DEPURACIÓN ---
-
     return render(request, 'grilla_aulario.html', {
         'aulas': aulas, # Ahora 'aulas' contiene solo las aulas con horarios filtrados
         'dias': dias,
@@ -674,6 +780,8 @@ def grilla_aulario(request):
         'selected_carrera': carrera_filter_id,
     })
     
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_SECCION))
 def seccion_list(request):
     query = request.GET.get('q', '')
     carrera_id = request.GET.get('carrera')
@@ -716,6 +824,8 @@ def seccion_list(request):
         'filter_periodo_id': periodo_id, # Pasar el ID del período seleccionado
     })
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_SECCION))
 def seccion_create(request):
     if request.method == 'POST':
         form = SeccionForm(request.POST)
@@ -737,6 +847,8 @@ def seccion_create(request):
         'semestres_all': semestres_all, # Para la carga dinámica en JS
     })
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_SECCION))
 def seccion_edit(request, pk):
     seccion = get_object_or_404(Seccion, pk=pk)
     if request.method == 'POST':
@@ -763,6 +875,8 @@ def seccion_edit(request, pk):
         'semestres_all': semestres_all, # Para la carga dinámica en JS
     })
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_SECCION))
 def seccion_delete(request, pk):
     seccion = get_object_or_404(Seccion, pk=pk)
     if request.method == 'POST':
@@ -770,6 +884,8 @@ def seccion_delete(request, pk):
         return redirect('programacion:seccion_list')
     return render(request, 'seccion_confirm_delete.html', {'seccion': seccion})
     
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_SECCION))
 def seleccionar_seccion(request):
     query = request.GET.get('q', '')
     carrera_id = request.GET.get('carrera')
@@ -825,7 +941,8 @@ def seleccionar_seccion(request):
         'filter_periodo_id': periodo_id,
     })
 
-        
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_HORARIO_SECCION))
 def aulario_dashboard(request):
     # Obtener todos los horarios de sección activos
     # Estos representan las "grillas activas" de las que hablas
@@ -839,6 +956,8 @@ def aulario_dashboard(request):
         'secciones': secciones, # Secciones disponibles para crear un nuevo horario
     })
 
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_HORARIO_SECCION))
 def programar_horario(request, seccion_id):
     seccion = get_object_or_404(Seccion, id=seccion_id)
     horarios_seccion = seccion.horarios.order_by('fecha_inicio')
@@ -875,15 +994,6 @@ def programar_horario(request, seccion_id):
             clave = f"{h.dia}-{h.hora_inicio.strftime('%H:%M')}"
             grilla[clave] = h
         
-        # --- DEPURACIÓN: Bloques en la grilla para el horario activo ---
-        print(f"\n--- Depuración: Grilla de la Sección '{seccion.codigo}' ---")
-        print(f"Horario Activo ID: {horario_activo.id}, Descripción: {horario_activo.descripcion}")
-        print(f"Bloques en la grilla para el horario activo: {horarios_aula_activos.count()} bloques encontrados.")
-        for bloque_debug in horarios_aula_activos:
-            print(f"  - ID: {bloque_debug.id}, Asignatura: {bloque_debug.asignatura.nombre if bloque_debug.asignatura else 'N/A'}, Día: {bloque_debug.dia}, Hora: {bloque_debug.hora_inicio.strftime('%H:%M')}, Aula: {bloque_debug.aula.nombre if bloque_debug.aula else 'N/A'}")
-        print("--- Fin Depuración Grilla Sección ---\n")
-        # --- FIN DEPURACIÓN ---
-
     # Filtrar asignaturas por carrera y semestre de la sección
     asignaturas = Asignatura.objects.filter(
         carrera=seccion.carrera,
@@ -891,47 +1001,18 @@ def programar_horario(request, seccion_id):
     ).order_by('nombre')
 
     asignaturas_info = []
-    # --- DEPURACIÓN: Cálculo de Sesiones Programadas ---
-    print(f"\n--- Depuración: Cálculo de Sesiones Programadas para Sección '{seccion.codigo}' ---")
     if horario_activo:
         for asignatura in asignaturas:
-            # Obtener los bloques de HorarioAula para la asignatura específica en el horario activo
-            # Usamos list() para forzar la evaluación del queryset y poder imprimir sus detalles
-            bloques_programados_asignatura = HorarioAula.objects.filter(
+            sesiones_programadas = HorarioAula.objects.filter(
                 horario_seccion=horario_activo,
                 asignatura=asignatura
-            )
-            sesiones_programadas = bloques_programados_asignatura.count()
-            sesiones_planificadas = asignatura.horas_teoricas + asignatura.horas_practicas
-
+            ).count()
+            sesiones_planificadas = asignatura.horas_teoricas + asignatura.horas_practicas + asignatura.horas_laboratorio
             asignaturas_info.append({
-                'asignatura': asignatura, # El objeto Asignatura
+                'asignatura': asignatura,
                 'sesiones_programadas': sesiones_programadas,
                 'sesiones_planificadas': sesiones_planificadas,
             })
-            
-            # Imprimir los detalles de la consulta
-            print(f"Asignatura: '{asignatura.nombre}' (ID: {asignatura.id})")
-            print(f"  - Consulta para sesiones programadas: HorarioAula.objects.filter(horario_seccion={horario_activo.id}, asignatura={asignatura.id})")
-            print(f"  - Sesiones programadas encontradas (count): {sesiones_programadas}")
-            if sesiones_programadas > 0:
-                print(f"  - Detalles de bloques encontrados:")
-                for b_debug in bloques_programados_asignatura:
-                    print(f"    - Bloque ID: {b_debug.id}, Día: {b_debug.dia}, Hora: {b_debug.hora_inicio.strftime('%H:%M')}, Aula: {b_debug.aula.nombre if b_debug.aula else 'N/A'}")
-            else:
-                print(f"  - No se encontraron bloques para esta asignatura en el horario activo.")
-
-    else:
-        print(f"No hay un horario activo para esta sección, sesiones programadas serán 0.")
-        for asignatura in asignaturas:
-            sesiones_planificadas = asignatura.horas_teoricas + asignatura.horas_practicas
-            asignaturas_info.append({
-                'asignatura': asignatura, 
-                'sesiones_programadas': 0, # Cero si no hay horario activo
-                'sesiones_planificadas': sesiones_planificadas,
-            })
-    print("--- Fin Depuración Sesiones Programadas ---\n")
-    # --- FIN DEPURACIÓN ---
 
     return render(request, 'programar_horario.html', {
         'seccion': seccion,
@@ -963,6 +1044,8 @@ def programar_horario(request, seccion_id):
     
 
 @require_POST
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_HORARIO_AULA))
 def guardar_bloque_horario(request, seccion_id):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         try:
@@ -1049,6 +1132,8 @@ def guardar_bloque_horario(request, seccion_id):
 
 
 @require_POST
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_HORARIO_SECCION))
 def crear_horario_seccion(request, seccion_id):
     seccion = get_object_or_404(Seccion, id=seccion_id)
     form = HorarioSeccionForm(request.POST)
@@ -1062,22 +1147,9 @@ def crear_horario_seccion(request, seccion_id):
     else:
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-def editar_horario_seccion(request, horario_id):
-    horario = get_object_or_404(HorarioSeccion, id=horario_id)
-    if request.method == 'POST':
-        form = HorarioSeccionForm(request.POST, instance=horario)
-        if form.is_valid():
-            form.save()
-            return JsonResponse({'success': True, 'nombre': horario.__str__(), 'fecha_inicio': horario.fecha_inicio.strftime('%d/%m/%Y'), 'fecha_fin': horario.fecha_fin.strftime('%d/%m/%Y')})
-        else:
-            html = render_to_string('horario_seccion_edit_modal_content.html', {'form': form, 'horario': horario}, request)
-            return JsonResponse({'success': False, 'form_html': html, 'errors': form.errors}, status=400)
-    else:
-        form = HorarioSeccionForm(instance=horario)
-        html = render_to_string('horario_seccion_edit_modal_content.html', {'form': form, 'horario': horario}, request)
-        return JsonResponse({'form_html': html})
-
-
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_HORARIO_SECCION))
 def editar_horario_seccion(request, horario_id):
     horario = get_object_or_404(HorarioSeccion, id=horario_id)
     if request.method == 'POST':
@@ -1094,6 +1166,26 @@ def editar_horario_seccion(request, horario_id):
         return JsonResponse({'form_html': html})
 
 @require_POST
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_HORARIO_SECCION))
+def editar_horario_seccion(request, horario_id):
+    horario = get_object_or_404(HorarioSeccion, id=horario_id)
+    if request.method == 'POST':
+        form = HorarioSeccionForm(request.POST, instance=horario)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True, 'nombre': horario.__str__(), 'fecha_inicio': horario.fecha_inicio.strftime('%d/%m/%Y'), 'fecha_fin': horario.fecha_fin.strftime('%d/%m/%Y')})
+        else:
+            html = render_to_string('horario_seccion_edit_modal_content.html', {'form': form, 'horario': horario}, request)
+            return JsonResponse({'success': False, 'form_html': html, 'errors': form.errors}, status=400)
+    else:
+        form = HorarioSeccionForm(instance=horario)
+        html = render_to_string('horario_seccion_edit_modal_content.html', {'form': form, 'horario': horario}, request)
+        return JsonResponse({'form_html': html})
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_HORARIO_SECCION))
 def activar_horario_seccion(request, horario_id):
     horario_a_activar = get_object_or_404(HorarioSeccion, id=horario_id)
     seccion_id = horario_a_activar.seccion.id
@@ -1103,6 +1195,8 @@ def activar_horario_seccion(request, horario_id):
     return JsonResponse({'success': True, 'seccion_id': seccion_id}) 
 
 @require_POST
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_HORARIO_SECCION))
 def eliminar_horario_seccion(request, horario_id):
     horario = get_object_or_404(HorarioSeccion, id=horario_id)
     seccion_id = horario.seccion.id 

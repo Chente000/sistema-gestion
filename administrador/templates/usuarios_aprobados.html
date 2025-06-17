@@ -1,5 +1,6 @@
 {% extends "interfaz.html" %}
 {% load static %}
+{% load widget_tweaks %} {# Asegúrate de cargar widget_tweaks si lo usas en otros formularios #}
 {% block title %}Usuarios Aprobados{% endblock %}
 
 {% block content %}
@@ -29,7 +30,9 @@
                         <th scope="col">Cédula</th>
                         <th scope="col">Teléfono</th>
                         <th scope="col">Rol</th>
-                        <th scope="col">Cargo Departamental</th>
+                        <th scope="col">Cargo</th> {# Ahora es 'Cargo' #}
+                        <th scope="col">Departamento Asignado</th> {# Nuevo campo #}
+                        <th scope="col">Carrera Asignada</th> {# Nuevo campo #}
                         <th scope="col">Acciones</th>
                     </tr>
                 </thead>
@@ -46,15 +49,29 @@
                                 </span>
                             </td>
                             <td>
-                                {% if usuario.cargo_departamental %}
-                                    <span class="badge bg-secondary">{{ usuario.get_cargo_departamental_display }}</span>
+                                {% if usuario.cargo %}
+                                    <span class="badge bg-secondary">{{ usuario.cargo.nombre }}</span> {# Muestra el nombre del Cargo #}
                                 {% else %}
                                     <span class="text-muted fst-italic">No asignado</span>
                                 {% endif %}
                             </td>
                             <td>
+                                {% if usuario.departamento_asignado %}
+                                    <span class="badge bg-secondary">{{ usuario.departamento_asignado.nombre }}</span> {# Muestra el nombre del Departamento #}
+                                {% else %}
+                                    <span class="text-muted fst-italic">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if usuario.carrera_asignada %}
+                                    <span class="badge bg-secondary">{{ usuario.carrera_asignada.nombre }}</span> {# Muestra el nombre de la Carrera #}
+                                {% else %}
+                                    <span class="text-muted fst-italic">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
                                 <a href="{% url 'administrador:asignar_rol' usuario.id %}" class="btn btn-sm btn-warning me-2">
-                                    <i class="bi bi-pencil-square"></i> Asignar Rol
+                                    <i class="bi bi-pencil-square"></i> Asignar
                                 </a>
                                 <form action="{% url 'administrador:eliminar_usuario' usuario.id %}" method="post" class="d-inline">
                                     {% csrf_token %}

@@ -16,5 +16,20 @@ urlpatterns = [
     path('rechazar_solicitud/<int:solicitud_id>/', views.rechazar_solicitud, name='rechazar_solicitud'),
     path('eliminar_usuario/<int:usuario_id>/', views.eliminar_usuario, name='eliminar_usuario'),
     path('registro_cambios/', views.ver_registro_cambios, name='registro_cambios'), # Nueva URL para el registro de cambios
+    # --- NUEVAS URLs para Gestión de Datos Maestros (MOVIDAS DESDE programacion) ---
+    path('facultades/', views.lista_facultades, name='lista_facultades'),
+    path('facultades/crear/', views.crear_facultad, name='crear_facultad'),
+    path('facultades/editar/<int:pk>/', views.editar_facultad, name='editar_facultad'),
+    path('facultades/eliminar/<int:pk>/', views.eliminar_facultad, name='eliminar_facultad'),
+
+    path('departamentos/', views.lista_departamentos, name='lista_departamentos'),
+    path('departamentos/crear/', views.crear_departamento, name='crear_departamento'),
+    path('departamentos/editar/<int:pk>/', views.editar_departamento, name='editar_departamento'),
+    path('departamentos/eliminar/<int:pk>/', views.eliminar_departamento, name='eliminar_departamento'),
+
+    path('periodos/', views.lista_periodos, name='lista_periodos'),
+    path('periodos/crear/', views.crear_periodo, name='crear_periodo'),
+    path('periodos/editar/<int:pk>/', views.editar_periodo, name='editar_periodo'),
+    path('periodos/eliminar/<int:pk>/', views.eliminar_periodo, name='eliminar_periodo'),
 ]
 

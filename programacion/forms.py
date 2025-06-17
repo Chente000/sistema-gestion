@@ -64,6 +64,20 @@ class DocenteForm(forms.ModelForm):
             'dedicacion': 'Dedicación',
         }
 
+class CarreraForm(forms.ModelForm):
+    class Meta:
+        model = Carrera
+        fields = ['nombre', 'codigo', 'descripcion']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+        labels = {
+            'nombre': 'Nombre de la Carrera',
+            'codigo': 'Código de la Carrera',
+            'descripcion': 'Descripción de la Carrera',
+        }
 class AsignarAsignaturasForm(forms.Form):
     periodo = forms.ModelChoiceField(
         queryset=Periodo.objects.all().order_by('-fecha_inicio'), 
