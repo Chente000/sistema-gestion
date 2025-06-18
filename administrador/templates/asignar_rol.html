@@ -1,8 +1,8 @@
-{% extends "interfaz.html" %}
+{% extends "panel_administrador.html" %}
 {% load widget_tweaks %}
 {% block title %}Asignar Rol y Cargo{% endblock %}
 
-{% block content %}
+{% block content_admin_panel %}
 <div class="container mt-5 pt-5">
     <div class="card shadow-sm mx-auto" style="max-width: 500px;">
         <div class="card-header bg-primary text-white text-center">
@@ -109,4 +109,4 @@
         cargoSelect.addEventListener('change', toggleAssignmentFields);
     });
 </script>
-{% endblock %}
+{% endblock content_admin_panel %}

@@ -1,7 +1,7 @@
-{% extends "interfaz.html" %}
+{% extends "panel_administrador.html" %}
 {% block title %}Editar Período{% endblock %}
 
-{% block content %}
+{% block content_admin_panel %}
 <div class="container mt-5 pt-5">
     <h2 class="mb-4 text-primary">Editar Período: {{ periodo.nombre }}</h2>
 
@@ -37,4 +37,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
+{% endblock content_admin_panel %}

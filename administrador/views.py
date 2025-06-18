@@ -18,10 +18,10 @@ import importlib  # <-- Agrega esta línea para importar importlib
 from django.contrib.contenttypes.models import ContentType
 
 # Importa tus modelos y formularios
-from accounts.models import SolicitudUsuario, Usuario # Asegúrate de importar Usuario (tu CustomUser)
+from accounts.models import SolicitudUsuario, Usuario, Cargo # Asegúrate de importar Usuario (tu CustomUser)
 from programacion.models import Facultad, Periodo, Departamento, Carrera # Importa los modelos necesarios
 from administrador.models import ConfiguracionRegistro, LogEntry # Importa LogEntry
-from .forms import ConfiguracionRegistroForm, UserRoleCargoForm, PeriodoForm, FacultadForm, DepartamentoForm, CarreraForm # Importa el nuevo formulario
+from .forms import ConfiguracionRegistroForm, UserRoleCargoForm, PeriodoForm, FacultadForm, DepartamentoForm, CarreraForm, CargoForm # Importa el nuevo formulario
 from administrador.utils import log_change
 
 User = get_user_model() # Obtiene tu modelo de usuario personalizado (accounts.Usuario)
@@ -82,6 +82,8 @@ def panel_administrador_view(request):
         "can_view_all_permissions": request.user.has_permission(PERMISSIONS.MANAGE_USERS) or request.user.is_super_admin_rol,
         "can_manage_carreras": user.has_permission(PERMISSIONS.MANAGE_CARRERA),
         "can_manage_periodos": user.has_permission(PERMISSIONS.MANAGE_PERIODO),
+        'can_manage_cargos': request.user.has_permission(PERMISSIONS.MANAGE_CARGOS),
+
         "num_solicitudes_pendientes": SolicitudUsuario.objects.filter(estado='Pendiente').count(),
         "ultimos_cambios": LogEntry.objects.order_by('-action_time')[:5],
     }
@@ -602,4 +604,94 @@ def lista_todos_los_permisos(request):
         'all_permissions': all_permissions_sorted,
     }
     return render(request, 'lista_todos_los_permisos.html', context) # ¡Nueva plantilla!
+
+# --- VISTAS PARA LA GESTIÓN DE CARGOS ---
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARGOS))
+def lista_cargos(request):
+    cargos = Cargo.objects.all().order_by('nombre')
+    context = {
+        'cargos': cargos,
+        'puede_gestionar_cargos': request.user.has_permission(PERMISSIONS.MANAGE_CARGOS)
+    }
+    return render(request, 'lista_cargos.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARGOS))
+def crear_cargo(request):
+    if request.method == 'POST':
+        form = CargoForm(request.POST)
+        if form.is_valid():
+            try:
+                cargo = form.save()
+                log_change(request.user, cargo, 'cargo_created', f"Cargo '{cargo.nombre}' creado.")
+                messages.success(request, 'Cargo creado exitosamente.')
+                return redirect('administrador:lista_cargos')
+            except IntegrityError:
+                messages.error(request, 'Ya existe un cargo con ese nombre.')
+            except Exception as e:
+                messages.error(request, f'Error al crear el cargo: {e}')
+        else:
+            messages.error(request, 'Error al crear el cargo. Por favor, revisa los datos.')
+    else:
+        form = CargoForm()
+    return render(request, 'form_cargo.html', {'form': form, 'action': 'Crear'})
+
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARGOS))
+def editar_cargo(request, pk):
+    cargo = get_object_or_404(Cargo, pk=pk)
+    
+    # Solo permite editar cargos si el usuario tiene permiso sobre 'MANAGE_CARGOS'
+    # Considerar si en el futuro necesitas granularidad por cargo (ej. admin solo edita ciertos cargos)
+    if not request.user.has_permission(PERMISSIONS.MANAGE_CARGOS):
+        messages.error(request, "No tienes permiso para editar este cargo.")
+        return redirect('administrador:lista_cargos')
+
+    if request.method == 'POST':
+        form = CargoForm(request.POST, instance=cargo)
+        if form.is_valid():
+            old_name = cargo.nombre
+            try:
+                cargo_updated = form.save()
+                log_change(request.user, cargo_updated, 'cargo_updated', f"Cargo '{old_name}' actualizado. Nombre: {cargo_updated.nombre}.")
+                messages.success(request, 'Cargo actualizado exitosamente.')
+                return redirect('administrador:lista_cargos')
+            except IntegrityError:
+                messages.error(request, 'Ya existe un cargo con ese nombre.')
+            except Exception as e:
+                messages.error(request, f'Error al actualizar el cargo: {e}')
+        else:
+            messages.error(request, 'Error al actualizar el cargo. Por favor, revisa los datos.')
+    else:
+        form = CargoForm(instance=cargo)
+    return render(request, 'form_cargo.html', {'form': form, 'action': 'Editar'})
+
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARGOS))
+def eliminar_cargo(request, pk):
+    cargo = get_object_or_404(Cargo, pk=pk)
+    
+    if not request.user.has_permission(PERMISSIONS.MANAGE_CARGOS):
+        messages.error(request, "No tienes permiso para eliminar este cargo.")
+        return redirect('administrador:lista_cargos')
+
+    # Antes de eliminar, verifica si hay usuarios asociados a este cargo
+    if cargo.usuarios_con_este_cargo.exists():
+        messages.error(request, f"No se puede eliminar el cargo '{cargo.nombre}' porque está asignado a usuarios. Por favor, reasigna a esos usuarios antes de intentar eliminar este cargo.")
+        return redirect('administrador:lista_cargos')
+
+    if request.method == 'POST':
+        try:
+            log_change(request.user, cargo, 'cargo_deleted', f"Cargo '{cargo.nombre}' eliminado.")
+            cargo.delete()
+            messages.success(request, 'Cargo eliminado exitosamente.')
+        except Exception as e:
+            messages.error(request, f"Error al eliminar el cargo: {e}")
+        return redirect('administrador:lista_cargos')
+    return render(request, 'confirmar_eliminar.html', {'obj': cargo, 'entity_name': 'Cargo'})
 

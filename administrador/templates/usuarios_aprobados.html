@@ -1,9 +1,9 @@
-{% extends "interfaz.html" %}
+{% extends "panel_administrador.html" %}
 {% load static %}
 {% load widget_tweaks %} {# Asegúrate de cargar widget_tweaks si lo usas en otros formularios #}
 {% block title %}Usuarios Aprobados{% endblock %}
 
-{% block content %}
+{% block content_admin_panel %}
 <div class="container mt-5 pt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary">
@@ -89,4 +89,4 @@
         <div class="alert alert-info text-center">No hay usuarios aprobados.</div>
     {% endif %}
 </div>
-{% endblock %}
+{% endblock content_admin_panel %}

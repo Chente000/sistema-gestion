@@ -1,7 +1,7 @@
-{% extends "interfaz.html" %}
+{% extends "panel_administrador.html" %}
 {% block title %}Gestión de Departamentos{% endblock %}
 
-{% block content %}
+{% block content_admin_panel %}
 <div class="container mt-5 pt-5">
         <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary">
             <i class="bi bi-arrow-left-circle me-2"></i> Volver al Panel
@@ -57,4 +57,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
+{% endblock content_admin_panel %}

@@ -13,7 +13,7 @@ from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from accounts.models import Usuario
-from .permissions import PERMISSIONS
+from administrador.permissions import PERMISSIONS
 from .utils import tiene_permiso_departal_o_carrera_util
 from django.core.exceptions import PermissionDenied
 from django.forms import formset_factory

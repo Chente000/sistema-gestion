@@ -1,8 +1,8 @@
-{% extends 'interfaz.html' %}
+{% extends "panel_administrador.html" %}
 
 {% block title %}Lista de Facultades{% endblock %}
 
-{% block content %}
+{% block content_admin_panel %}
 <div class="container mt-4">
         <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary">
             <i class="bi bi-arrow-left-circle me-2"></i> Volver al Panel
@@ -56,4 +56,4 @@
         <p class="text-muted">No hay facultades registradas.</p>
     {% endif %}
 </div>
-{% endblock %}
+{% endblock content_admin_panel %}

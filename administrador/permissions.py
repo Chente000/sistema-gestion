@@ -9,6 +9,9 @@ class PERMISSIONS:
     # Permisos para la Configuración del Sistema
     MANAGE_CONFIGURACION_REGISTRO = 'administrador.manage_configuracion_registro'
     VIEW_LOGS = 'administrador.view_logs'
+    
+    MANAGE_CARGOS = 'administrador.manage_cargos' # Permiso para crear, editar y eliminar cargos
+
 
     # Permisos para la gestión de Estructura Organizacional
     VIEW_FACULTAD = 'administrador.view_facultad'
@@ -24,6 +27,28 @@ class PERMISSIONS:
     VIEW_PERIODO = 'administrador.view_periodo'
     MANAGE_PERIODO = 'administrador.manage_periodo' # Crear, editar, eliminar períodos
     
-    # Nota: Los permisos para Asignaturas, Secciones, Horarios, Docentes, Aulas, TipoAula
-    # se espera que residan en 'programacion/permissions.py' si son manejados desde allí
-    # o si se desea que un coordinador tenga un alcance limitado fuera del panel de administrador principal.
+    # Permisos para Programación y evaluacion Académica
+    # Permisos generales de visualización
+    VIEW_ASIGNATURA = 'programacion.view_asignatura'
+    VIEW_SECCION = 'programacion.view_seccion'
+    VIEW_HORARIO_SECCION = 'programacion.view_horarioseccion'
+    VIEW_HORARIO_AULA = 'programacion.view_horarioaula'
+    VIEW_DOCENTE = 'programacion.view_docente'
+    VIEW_AULA = 'programacion.view_aula'
+    VIEW_EVALUACION_DOCENTE = 'programacion.view_programacionacademica'
+
+    # Permisos de gestión (crear, editar, eliminar)
+    MANAGE_ASIGNATURA = 'programacion.manage_asignatura'
+    MANAGE_SECCION = 'programacion.manage_seccion'
+    MANAGE_HORARIO_AULA = 'programacion.manage_horarioaula'
+    MANAGE_HORARIO_SECCION = 'programacion.manage_horarioseccion'
+    MANAGE_DOCENTE = 'programacion.manage_docente'
+    MANAGE_AULA = 'programacion.manage_aula'
+    MANAGE_EVALUACION_DOCENTE = 'programacion.manage_programacionacademica'
+
+    # Permisos específicos y granulares
+    MANAGE_OWN_SECCION_HORARIO = 'programacion.manage_own_seccion_horario' # Un profesor gestiona sus propias secciones/horarios
+
+    # Permisos de Usuario y Solicitudes de Usuario (aunque están en la app accounts)
+    MANAGE_USERS = 'accounts.manage_users'
+    APPROVE_USER_REQUESTS = 'accounts.approve_user_requests'
