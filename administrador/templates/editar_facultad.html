@@ -1,17 +1,16 @@
 {% extends "interfaz.html" %}
-{% block title %}Crear Nuevo Departamento{% endblock %}
+{% block title %}Editar Facultad{% endblock %}
 
 {% block content %}
 <div class="container mt-5 pt-5">
-    <h2 class="mb-4 text-primary">Crear Nuevo Departamento</h2>
+    <h2 class="mb-4 text-primary">Editar Facultad: {{ facultad.nombre }}</h2>
 
-    {# Formulario para añadir un nuevo departamento #}
+    {# Formulario para editar una facultad existente #}
     <div class="card shadow-sm border-0 rounded-lg">
         <div class="card-body p-4">
-            <form method="post" action="{% url 'administrador:crear_departamento' %}">
+            <form method="post" action="{% url 'administrador:editar_facultad' facultad.pk %}">
                 {% csrf_token %}
 
-                {# Recorrer los campos del formulario de Django y aplicar clases de Bootstrap #}
                 {% for field in form %}
                     <div class="mb-3">
                         <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
@@ -27,11 +26,11 @@
 
                 {# Botones de acción #}
                 <div class="d-flex justify-content-end mt-4">
-                    <a href="{% url 'administrador:lista_departamentos' %}" class="btn btn-outline-secondary me-2 rounded-pill px-4 py-2">
+                    <a href="{% url 'administrador:lista_facultades' %}" class="btn btn-outline-secondary me-2 rounded-pill px-4 py-2">
                         <i class="bi bi-x-circle me-2"></i> Cancelar
                     </a>
                     <button type="submit" class="btn btn-success rounded-pill px-4 py-2">
-                        <i class="bi bi-save me-2"></i> Guardar Departamento
+                        <i class="bi bi-save me-2"></i> Actualizar Facultad
                     </button>
                 </div>
             </form>

@@ -7,17 +7,22 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from django.contrib import messages
-from django.db import transaction # Para transacciones atómicas
+from django.db import transaction, IntegrityError # Para transacciones atómicas e IntegrityError
 from datetime import time # Importa time para los defaults de hora
+from .permissions import PERMISSIONS
+from django.core.exceptions import PermissionDenied
+
+import importlib  # <-- Agrega esta línea para importar importlib
 
 # Para el sistema de log
 from django.contrib.contenttypes.models import ContentType
 
 # Importa tus modelos y formularios
 from accounts.models import SolicitudUsuario, Usuario # Asegúrate de importar Usuario (tu CustomUser)
-from programacion.models import Facultad, Periodo, Departamento # Importa los modelos necesarios
+from programacion.models import Facultad, Periodo, Departamento, Carrera # Importa los modelos necesarios
 from administrador.models import ConfiguracionRegistro, LogEntry # Importa LogEntry
-from .forms import ConfiguracionRegistroForm, UserRoleCargoForm, PeriodoForm, FacultadForm, DepartamentoForm # Importa el nuevo formulario
+from .forms import ConfiguracionRegistroForm, UserRoleCargoForm, PeriodoForm, FacultadForm, DepartamentoForm, CarreraForm # Importa el nuevo formulario
+from administrador.utils import log_change
 
 User = get_user_model() # Obtiene tu modelo de usuario personalizado (accounts.Usuario)
 
@@ -65,34 +70,38 @@ def log_change(user_making_change, obj_affected, action_type, message_detail):
 # --- Vistas del Panel de Administrador ---
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
 def panel_administrador_view(request):
-    num_solicitudes_pendientes = SolicitudUsuario.objects.filter(estado='Pendiente').count()
-    num_usuarios_activos = User.objects.filter(is_active=True).count()
-    ultimos_cambios = LogEntry.objects.order_by('-action_time')[:5]
-
+    user = request.user
     context = {
-        'num_solicitudes_pendientes': num_solicitudes_pendientes,
-        'num_usuarios_activos': num_usuarios_activos,
-        'ultimos_cambios': ultimos_cambios, 
+        "can_manage_users": user.has_permission(PERMISSIONS.MANAGE_USERS),
+        "can_approve_requests": user.has_permission(PERMISSIONS.APPROVE_USER_REQUESTS),
+        "can_manage_config": user.has_permission(PERMISSIONS.MANAGE_CONFIGURACION_REGISTRO),
+        "can_view_logs": user.has_permission(PERMISSIONS.VIEW_LOGS),
+        "can_manage_facultades": user.has_permission(PERMISSIONS.MANAGE_FACULTAD),
+        "can_manage_departamentos": user.has_permission(PERMISSIONS.MANAGE_DEPARTAMENTO),
+        "can_view_all_permissions": request.user.has_permission(PERMISSIONS.MANAGE_USERS) or request.user.is_super_admin_rol,
+        "can_manage_carreras": user.has_permission(PERMISSIONS.MANAGE_CARRERA),
+        "can_manage_periodos": user.has_permission(PERMISSIONS.MANAGE_PERIODO),
+        "num_solicitudes_pendientes": SolicitudUsuario.objects.filter(estado='Pendiente').count(),
+        "ultimos_cambios": LogEntry.objects.order_by('-action_time')[:5],
     }
-    return render(request, 'panel_administrador.html', context)
+    return render(request, "panel_administrador.html", context)
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_USERS))
 def crear_usuario_view(request):
     messages.info(request, "La creación directa de usuarios se gestiona a través de la aprobación de solicitudes.")
     return redirect('administrador:revisar_solicitudes')
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_USERS))
 def usuarios_aprobados(request):
     usuarios = User.objects.exclude(is_superuser=True).order_by('last_name', 'first_name')
     return render(request, 'usuarios_aprobados.html', {'usuarios': usuarios})
 
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_USERS))
 def asignar_rol(request, user_id):
     user_to_edit = get_object_or_404(User, pk=user_id)
     # --- Lógica de Permisos ---
@@ -211,12 +220,14 @@ def asignar_rol(request, user_id):
         }
     )
 
-@staff_member_required # Django staff_member_required es suficiente para un staff/admin
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.APPROVE_USER_REQUESTS))
 def revisar_solicitudes(request):
     pendientes = SolicitudUsuario.objects.filter(estado='Pendiente').order_by('fecha_solicitud')
     return render(request, 'revisar_solicitudes.html', {'pendientes': pendientes})
 
-@staff_member_required
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.APPROVE_USER_REQUESTS))
 def aprobar_solicitud(request, solicitud_id):
     solicitud = get_object_or_404(SolicitudUsuario, pk=solicitud_id, estado='Pendiente')
     try:
@@ -242,7 +253,8 @@ def aprobar_solicitud(request, solicitud_id):
         messages.error(request, f"Error al aprobar la solicitud: {e}")
     return redirect('administrador:revisar_solicitudes')
 
-@staff_member_required
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.APPROVE_USER_REQUESTS))
 def rechazar_solicitud(request, solicitud_id):
     solicitud = get_object_or_404(SolicitudUsuario, pk=solicitud_id, estado='Pendiente')
     try:
@@ -257,7 +269,8 @@ def rechazar_solicitud(request, solicitud_id):
         messages.error(request, f"Error al rechazar la solicitud: {e}")
     return redirect('administrador:revisar_solicitudes')
 
-@staff_member_required
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CONFIGURACION_REGISTRO))
 def configurar_registro_view(request):
     config, created = ConfiguracionRegistro.objects.get_or_create(
         pk=1,
@@ -281,7 +294,8 @@ def configurar_registro_view(request):
         form = ConfiguracionRegistroForm(instance=config)
     return render(request, 'configurar_registro.html', {'form': form})
 
-@staff_member_required
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_USERS))
 def eliminar_usuario(request, usuario_id):
     usuario = get_object_or_404(User, id=usuario_id)
     # Refinar estas comprobaciones de permisos para eliminación es buena práctica.
@@ -311,7 +325,7 @@ def eliminar_usuario(request, usuario_id):
     return redirect('administrador:usuarios_aprobados')
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_LOGS))
 def ver_registro_cambios(request):
     logs = LogEntry.objects.order_by('-action_time')
     context = {'logs': logs}
@@ -320,13 +334,13 @@ def ver_registro_cambios(request):
 # --- Vistas para Facultades (MOVIDAS DESDE PROGRAMACION) ---
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_FACULTAD))
 def lista_facultades(request):
     facultades = Facultad.objects.all().order_by('nombre')
     return render(request, 'lista_facultades.html', {'facultades': facultades})
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_FACULTAD))
 def crear_facultad(request):
     if request.method == 'POST':
         form = FacultadForm(request.POST)
@@ -337,10 +351,10 @@ def crear_facultad(request):
             return redirect('administrador:lista_facultades')
     else:
         form = FacultadForm()
-    return render(request, 'crear_editar_facultad.html', {'form': form, 'action': 'Crear'})
+    return render(request, 'crear_facultad.html', {'form': form, 'action': 'Crear'})
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_FACULTAD))
 def editar_facultad(request, pk):
     facultad = get_object_or_404(Facultad, pk=pk)
     if request.method == 'POST':
@@ -356,7 +370,7 @@ def editar_facultad(request, pk):
     return render(request, 'crear_editar_facultad.html', {'form': form, 'action': 'Editar'})
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_FACULTAD))
 def eliminar_facultad(request, pk):
     facultad = get_object_or_404(Facultad, pk=pk)
     if request.method == 'POST':
@@ -369,13 +383,13 @@ def eliminar_facultad(request, pk):
 # --- Vistas para Departamentos (MOVIDAS DESDE PROGRAMACION) ---
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_DEPARTAMENTO))
 def lista_departamentos(request):
     departamentos = Departamento.objects.all().order_by('nombre')
     return render(request, 'lista_departamentos.html', {'departamentos': departamentos})
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_DEPARTAMENTO))
 def crear_departamento(request):
     if request.method == 'POST':
         form = DepartamentoForm(request.POST)
@@ -389,7 +403,7 @@ def crear_departamento(request):
     return render(request, 'crear_editar_departamento.html', {'form': form, 'action': 'Crear'})
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_DEPARTAMENTO))
 def editar_departamento(request, pk):
     departamento = get_object_or_404(Departamento, pk=pk)
     if request.method == 'POST':
@@ -406,7 +420,7 @@ def editar_departamento(request, pk):
     return render(request, 'crear_editar_departamento.html', {'form': form, 'action': 'Editar'})
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_DEPARTAMENTO))
 def eliminar_departamento(request, pk):
     departamento = get_object_or_404(Departamento, pk=pk)
     if request.method == 'POST':
@@ -419,13 +433,13 @@ def eliminar_departamento(request, pk):
 # --- Vistas para Períodos Académicos (MOVIDAS DESDE PROGRAMACION) ---
 
 @login_required
-@user_passes_test(es_admin_o_superuser) # Solo admins/superusuarios pueden gestionar períodos académicos
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_PERIODO))
 def lista_periodos(request):
     periodos = Periodo.objects.all().order_by('-fecha_inicio')
-    return render(request, 'lista_periodos_academicos.html', {'periodos': periodos})
+    return render(request, 'lista_periodos.html', {'periodos': periodos})
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_PERIODO))
 def crear_periodo(request):
     if request.method == 'POST':
         form = PeriodoForm(request.POST)
@@ -433,13 +447,13 @@ def crear_periodo(request):
             periodo = form.save()
             log_change(request.user, periodo, 'periodo_created', f"Período Académico '{periodo.nombre}' creado.")
             messages.success(request, 'Período académico creado exitosamente.')
-            return redirect('administrador:lista_periodos_academicos')
+            return redirect('administrador:lista_periodos')
     else:
         form = PeriodoForm()
-    return render(request, 'crear_editar_periodo_academico.html', {'form': form, 'action': 'Crear'})
+    return render(request, 'crear_editar_periodo.html', {'form': form, 'action': 'Crear'})
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_PERIODO))
 def editar_periodo(request, pk):
     periodo = get_object_or_404(Periodo, pk=pk)
     if request.method == 'POST':
@@ -449,18 +463,143 @@ def editar_periodo(request, pk):
             periodo_updated = form.save()
             log_change(request.user, periodo_updated, 'periodo_updated', f"Período Académico '{old_name}' actualizado. Nombre: {periodo_updated.nombre}, Activo: {periodo_updated.activo}.")
             messages.success(request, 'Período académico actualizado exitosamente.')
-            return redirect('administrador:lista_periodos_academicos')
+            return redirect('administrador:lista_periodos')
     else:
         form = PeriodoForm(instance=periodo)
-    return render(request, 'crear_editar_periodo_academico.html', {'form': form, 'action': 'Editar'})
+    return render(request, 'crear_editar_periodo.html', {'form': form, 'action': 'Editar'})
 
 @login_required
-@user_passes_test(es_admin_o_superuser)
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_PERIODO))
 def eliminar_periodo(request, pk):
     periodo = get_object_or_404(Periodo, pk=pk)
     if request.method == 'POST':
         log_change(request.user, periodo, 'periodo_deleted', f"Período Académico '{periodo.nombre}' eliminado.")
         periodo.delete()
         messages.success(request, 'Período académico eliminado exitosamente.')
-        return redirect('administrador:lista_periodos_academicos')
+        return redirect('administrador:lista_periodos')
     return render(request, 'confirmar_eliminar.html', {'obj': periodo, 'entity_name': 'Período Académico'})
+
+#lISTA DE CARRERAS
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_CARRERA))
+def lista_carreras(request):
+    """
+    Muestra la lista de carreras. Los usuarios con permiso
+    de gestión pueden ver todas, otros solo las de su departamento/carrera.
+    """
+    carreras = Carrera.objects.all().order_by('nombre')
+    puede_gestionar_carreras = request.user.has_permission(PERMISSIONS.MANAGE_CARRERA)
+
+    # Aplicar filtrado granular si el usuario no tiene permiso global MANAGE_CARRERA
+    # y no es superusuario/super_admin.
+    if not (request.user.is_superuser or request.user.is_super_admin_rol) and \
+    not request.user.has_permission(PERMISSIONS.VIEW_CARRERA, obj=None): # Si no tiene permiso VIEW_CARRERA global
+        if request.user.carrera_asignada:
+            carreras = carreras.filter(id=request.user.carrera_asignada.id)
+        elif request.user.departamento_asignado:
+            carreras = carreras.filter(departamento=request.user.departamento_asignado)
+        else:
+            carreras = Carrera.objects.none() # No tiene asignación ni permiso global
+            messages.warning(request, "No tiene permisos para ver carreras o no tiene una carrera/departamento asignado.")
+
+    context = {
+        'carreras': carreras,
+        'puede_gestionar_carreras': puede_gestionar_carreras,
+    }
+    return render(request, 'lista_carrera.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARRERA))
+def crear_carrera(request):
+    if request.method == 'POST':
+        form = CarreraForm(request.POST)
+        if form.is_valid():
+            carrera = form.save()
+            log_change(request.user, carrera, 'carrera_created', f"Carrera '{carrera.nombre}' creada.")
+            messages.success(request, 'Carrera creada exitosamente.')
+            return redirect('administrador:lista_carrera')
+    else:
+        form = CarreraForm()
+    return render(request, 'crear_carrera.html', {'form': form})
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARRERA))
+def editar_carrera(request, pk):
+    carrera = get_object_or_404(Carrera, pk=pk)
+    if request.method == 'POST':
+        form = CarreraForm(request.POST, instance=carrera)
+        if form.is_valid():
+            carrera = form.save()
+            log_change(request.user, carrera, 'carrera_edited', f"Carrera '{carrera.nombre}' editada.")
+            messages.success(request, 'Carrera editada exitosamente.')
+            return redirect('administrador:lista_carrera')
+    else:
+        form = CarreraForm(instance=carrera)
+    return render(request, 'editar_carrera.html', {'form': form, 'carrera': carrera})
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARRERA))
+def eliminar_carrera(request, pk):
+    carrera = get_object_or_404(Carrera, pk=pk)
+    if request.method == 'POST':
+        log_change(request.user, carrera, 'carrera_deleted', f"Carrera '{carrera.nombre}' eliminada.")
+        carrera.delete()
+        messages.success(request, 'Carrera eliminada exitosamente.')
+        return redirect('administrador:lista_carrera')
+    return render(request, 'confirmar_eliminar.html', {'obj': carrera, 'entity_name': 'carrera'})
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_USERS) or u.is_super_admin_rol) # Solo super_admin_rol o quien pueda gestionar usuarios
+def lista_todos_los_permisos(request):
+    """
+    Recopila y muestra una lista de todos los permisos definidos en las aplicaciones del sistema.
+    """
+    all_permissions = []
+    
+    # Lista de apps donde esperamos encontrar un 'permissions.py' con una clase 'PERMISSIONS'
+    # Puedes ajustar esta lista si no todas tus apps tienen permisos o si tienen nombres diferentes.
+    apps_with_permissions = [
+        'administrador',
+        'programacion',
+        # Agrega aquí tus otras apps cuando las crees, por ejemplo:
+        # 'servicio',
+        # 'practicas',
+        # 'accounts' # Si accounts tuviera permisos propios aparte de los roles.
+    ]
+
+    for app_name in apps_with_permissions:
+        try:
+            # Importa dinámicamente el módulo permissions de la app
+            permissions_module = importlib.import_module(f'{app_name}.permissions')
+            
+            # Asume que la clase de permisos se llama PERMISSIONS
+            if hasattr(permissions_module, 'PERMISSIONS'):
+                permissions_class = permissions_module.PERMISSIONS
+                
+                # Itera sobre los atributos de la clase PERMISSIONS
+                for attr_name in dir(permissions_class):
+                    # Filtra solo los atributos que no son métodos especiales ni internos
+                    if not attr_name.startswith('__') and not callable(getattr(permissions_class, attr_name)):
+                        permission_value = getattr(permissions_class, attr_name)
+                        all_permissions.append({
+                            'app': app_name,
+                            'name': attr_name,
+                            'value': permission_value
+                        })
+        except ImportError:
+            # La app no tiene un módulo permissions.py o no tiene la clase PERMISSIONS
+            # Puedes registrar esto si quieres, o simplemente ignorarlo.
+            pass
+        except Exception as e:
+            # Captura cualquier otro error durante la importación o el procesamiento
+            print(f"Error al cargar permisos de la app '{app_name}': {e}")
+            messages.error(request, f"Error al cargar permisos de la app '{app_name}'. Contacte al administrador del sistema.")
+
+    # Ordenar los permisos por nombre de la aplicación y luego por nombre del permiso
+    all_permissions_sorted = sorted(all_permissions, key=lambda p: (p['app'], p['name']))
+
+    context = {
+        'all_permissions': all_permissions_sorted,
+    }
+    return render(request, 'lista_todos_los_permisos.html', context) # ¡Nueva plantilla!
+

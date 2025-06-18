@@ -1,0 +1,60 @@
+{% extends "interfaz.html" %}
+{% block title %}Gestión de Departamentos{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+        <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left-circle me-2"></i> Volver al Panel
+        </a>
+    <h2 class="mb-4 text-primary">Gestión de Departamentos</h2>
+
+    {# Botón para crear nuevo departamento #}
+    <div class="mb-4">
+        <a href="{% url 'administrador:crear_departamento' %}" class="btn btn-primary shadow-sm rounded-pill px-4 py-2">
+            <i class="bi bi-plus-circle me-2"></i> Crear Nuevo Departamento
+        </a>
+    </div>
+
+    {# Tabla para listar los departamentos #}
+    <div class="card shadow-sm border-0 rounded-lg">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th scope="col" class="text-dark">Nombre</th>
+                            <th scope="col" class="text-dark">Código</th>
+                            <th scope="col" class="text-dark">Facultad</th>
+                            <th scope="col" class="text-dark text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {# Iterar sobre los departamentos. Asume que pasas una lista de 'departamentos'. #}
+                        {% if departamentos %}
+                            {% for departamento in departamentos %}
+                            <tr>
+                                <td>{{ departamento.nombre }}</td>
+                                <td>{{ departamento.codigo|default:"N/A" }}</td>
+                                <td>{{ departamento.facultad.nombre|default:"N/A" }}</td> {# Asume que departamento tiene un objeto facultad #}
+                                <td class="text-center">
+                                    <a href="{% url 'administrador:editar_departamento' departamento.pk %}" class="btn btn-sm btn-outline-info me-2 rounded-pill">
+                                        <i class="bi bi-pencil-fill"></i> Editar
+                                    </a>
+                                    <a href="{% url 'administrador:eliminar_departamento' departamento.pk %}" class="btn btn-sm btn-outline-danger rounded-pill">
+                                        <i class="bi bi-trash-fill"></i> Eliminar
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No hay departamentos para mostrar.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

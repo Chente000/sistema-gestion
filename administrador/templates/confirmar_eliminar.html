@@ -1,0 +1,30 @@
+{% extends 'interfaz.html' %}
+
+{% block title %}Confirmar Eliminación{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <div class="card shadow">
+        <div class="card-body">
+            <h2 class="card-title text-danger mb-4">Confirmar Eliminación</h2>
+            <p class="mb-3">
+                ¿Estás seguro de que quieres eliminar el siguiente {{ entity_name }}?
+            </p>
+            <p class="fw-bold text-danger mb-4">
+                {{ obj }}
+            </p>
+            <div class="d-flex justify-content-end gap-2">
+                <form method="post" class="me-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        Sí, Eliminar
+                    </button>
+                </form>
+                <a href="javascript:history.back()" class="btn btn-secondary">
+                    Cancelar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

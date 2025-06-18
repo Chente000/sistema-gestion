@@ -3,7 +3,6 @@
 # Clase para agrupar los nombres de los permisos
 class PERMISSIONS:
     # Permisos generales de visualización
-    VIEW_CARRERA = 'programacion.view_carrera'
     VIEW_ASIGNATURA = 'programacion.view_asignatura'
     VIEW_SECCION = 'programacion.view_seccion'
     VIEW_HORARIO_SECCION = 'programacion.view_horarioseccion'
@@ -13,7 +12,6 @@ class PERMISSIONS:
     VIEW_EVALUACION_DOCENTE = 'programacion.view_programacionacademica'
 
     # Permisos de gestión (crear, editar, eliminar)
-    MANAGE_CARRERA = 'programacion.manage_carrera'
     MANAGE_ASIGNATURA = 'programacion.manage_asignatura'
     MANAGE_SECCION = 'programacion.manage_seccion'
     MANAGE_HORARIO_AULA = 'programacion.manage_horarioaula'

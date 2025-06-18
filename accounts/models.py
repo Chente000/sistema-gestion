@@ -106,14 +106,31 @@ class Usuario(AbstractUser):
         return self.cargo and self.cargo.es_jefatura
 
     def has_permission(self, permission_name, obj=None):
-        if self.cargo and hasattr(self.cargo, 'permissions') and self.cargo.permissions:
+        """
+        Verifica si el usuario tiene un permiso específico.
+        permission_name: string como 'programacion.manage_carrera'
+        obj: el objeto sobre el cual se verifica el permiso (opcional, para permisos granulares)
+        """
+        # Superusuarios de Django siempre tienen todos los permisos
+        if self.is_superuser:
+            return True
+
+        # Administradores con rol 'super_admin' o 'admin' tienen todos los permisos de gestión
+        if self.is_admin_rol:
+            return True
+
+        # Si el usuario tiene un Cargo asignado
+        if self.cargo and self.cargo.permissions:
+            # Comprueba si el permiso está explícitamente en el JSONField del Cargo
             if self.cargo.permissions.get(permission_name, False):
+                # Si el permiso general está concedido por el Cargo,
+                # y se proporciona un objeto, aplica la lógica de granularidad (departamento/carrera).
                 if obj:
-                    # Importa aquí, dentro del método, para evitar el ciclo
-                    from programacion.utils import tiene_permiso_departal_o_carrera_util
+                    from administrador.utils import tiene_permiso_departal_o_carrera_util
                     return tiene_permiso_departal_o_carrera_util(self, obj)
-                return True
-        return False
+                return True  # Permiso concedido por Cargo sin objeto específico (permiso global para esa acción)
+
+        return False  # Permiso no concedido por ningún medio
 
 
 # --- Modelo SolicitudUsuario (se mantiene, pero se ajusta si `rol` se convierte en FK) ---

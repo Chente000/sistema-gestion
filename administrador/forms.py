@@ -2,7 +2,7 @@
 
 from django import forms
 from .models import ConfiguracionRegistro
-from programacion.models import Facultad, Periodo
+from programacion.models import Facultad, Periodo, Carrera
 from django.contrib.auth import get_user_model
 
 # Importa el modelo Usuario desde accounts/models.py
@@ -10,7 +10,6 @@ from accounts.models import Usuario as CustomUser
 from accounts.models import Cargo, Departamento, Carrera
 
 User = get_user_model() # Aunque no se usa directamente aquí, es una buena práctica
-
 
 class ConfiguracionRegistroForm(forms.ModelForm):
     class Meta:
@@ -113,3 +112,17 @@ class PeriodoForm(forms.ModelForm):
             'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
+class CarreraForm(forms.ModelForm):
+    class Meta:
+        model = Carrera
+        fields = ['nombre', 'codigo', 'descripcion']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+        labels = {
+            'nombre': 'Nombre de la Carrera',
+            'codigo': 'Código de la Carrera',
+            'descripcion': 'Descripción de la Carrera',
+        }

@@ -59,7 +59,7 @@ class Docente(models.Model):
     cedula = models.CharField(max_length=15, unique=True, verbose_name="Cédula de Identidad", blank=True, null=True)
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Número de Teléfono")
     email = models.EmailField(unique=True, blank=True, null=True, verbose_name="Correo Electrónico")
-    departemento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='docentes_asignados', blank=True, null=True)
+    departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='docentes_asignados', blank=True, null=True)
     dedicacion = models.CharField(max_length=50, verbose_name="Dedicación")
     # Muchas-a-muchas con Carrera: un docente puede dar clases en varias carreras
     carreras = models.ManyToManyField(Carrera, related_name='docentes', blank=True, verbose_name="Carreras Asignadas")

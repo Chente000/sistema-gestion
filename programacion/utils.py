@@ -34,7 +34,7 @@ def tiene_permiso_departal_o_carrera_util(user, obj):
                 return True
             elif isinstance(obj, HorarioAula) and obj.carrera == user.carrera_asignada:
                 return True
-            elif isinstance(obj, Docente) and user.departamento_asignado and obj.departemento == user.departamento_asignado:
+            elif isinstance(obj, Docente) and user.departamento_asignado and obj.departamento == user.departamento_asignado:
                 return True
 
         # Verificación por departamento asignado
@@ -49,7 +49,7 @@ def tiene_permiso_departal_o_carrera_util(user, obj):
                 return True
             elif isinstance(obj, HorarioAula) and obj.carrera.departamento == user.departamento_asignado:
                 return True
-            elif isinstance(obj, Docente) and obj.departemento == user.departamento_asignado:
+            elif isinstance(obj, Docente) and obj.departamento == user.departamento_asignado:
                 return True
 
     # Lógica específica para profesores (gestionan sus propias secciones/horarios)

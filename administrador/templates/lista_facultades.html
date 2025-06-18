@@ -1,0 +1,59 @@
+{% extends 'interfaz.html' %}
+
+{% block title %}Lista de Facultades{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+        <a href="{% url 'administrador:panel_administrador' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left-circle me-2"></i> Volver al Panel
+        </a>
+    <h1 class="mb-4 text-primary">Gestión de Facultades</h1>
+
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-end mb-3">
+            <a href="{% url 'administrador:crear_facultad' %}" class="btn btn-primary">
+                Crear Nueva Facultad
+            </a>
+    </div>
+
+    {% if facultades %}
+        <div class="table-responsive shadow rounded">
+            <table class="table table-bordered table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for facultad in facultades %}
+                    <tr>
+                        <td>{{ facultad.nombre }}</td>
+                        <td>{{ facultad.codigo }}</td>
+                        <td>{{ facultad.descripcion|default:"N/A" }}</td>
+                        <td>
+                            <a href="{% url 'administrador:editar_facultad' facultad.pk %}" class="btn btn-sm btn-outline-primary me-2">Editar</a>
+                            <a href="{% url 'administrador:eliminar_facultad' facultad.pk %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-muted">No hay facultades registradas.</p>
+    {% endif %}
+</div>
+{% endblock %}

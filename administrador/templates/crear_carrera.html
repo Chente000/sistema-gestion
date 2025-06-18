@@ -1,37 +1,37 @@
 {% extends "interfaz.html" %}
-{% block title %}Crear Nuevo Departamento{% endblock %}
+{% block title %}Crear Nueva Carrera{% endblock %}
 
 {% block content %}
 <div class="container mt-5 pt-5">
-    <h2 class="mb-4 text-primary">Crear Nuevo Departamento</h2>
+    <h2 class="mb-4 text-primary">Crear Nueva Carrera</h2>
 
-    {# Formulario para añadir un nuevo departamento #}
+    {# Formulario para añadir una nueva carrera #}
     <div class="card shadow-sm border-0 rounded-lg">
         <div class="card-body p-4">
-            <form method="post" action="{% url 'administrador:crear_departamento' %}">
-                {% csrf_token %}
+            <form method="post" action="{% url 'administrador:crear_carrera' %}">
+                {% csrf_token %} {# Token de seguridad de Django #}
 
                 {# Recorrer los campos del formulario de Django y aplicar clases de Bootstrap #}
                 {% for field in form %}
                     <div class="mb-3">
                         <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-                        {{ field }}
+                        {{ field }} {# El widget del campo (input, select, textarea) #}
                         {% if field.help_text %}
                             <div class="form-text text-muted">{{ field.help_text }}</div>
                         {% endif %}
                         {% for error in field.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            <div class="invalid-feedback d-block">{{ error }}</div> {# Muestra errores de validación #}
                         {% endfor %}
                     </div>
                 {% endfor %}
 
                 {# Botones de acción #}
                 <div class="d-flex justify-content-end mt-4">
-                    <a href="{% url 'administrador:lista_departamentos' %}" class="btn btn-outline-secondary me-2 rounded-pill px-4 py-2">
+                    <a href="{% url 'administrador:lista_carrera' %}" class="btn btn-outline-secondary me-2 rounded-pill px-4 py-2">
                         <i class="bi bi-x-circle me-2"></i> Cancelar
                     </a>
                     <button type="submit" class="btn btn-success rounded-pill px-4 py-2">
-                        <i class="bi bi-save me-2"></i> Guardar Departamento
+                        <i class="bi bi-save me-2"></i> Guardar Carrera
                     </button>
                 </div>
             </form>

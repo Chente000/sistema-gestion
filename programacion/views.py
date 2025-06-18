@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from datetime import time, date
 from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, HorarioSeccion, semestre, Departamento
-from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm, HorarioSeccionForm, HorarioAulaBloqueForm, HorarioAulaForm, ProgramacionAcademicaAssignmentForm, CarreraForm
+from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm, HorarioSeccionForm, HorarioAulaBloqueForm, HorarioAulaForm, ProgramacionAcademicaAssignmentForm
 from django.forms import modelformset_factory
 from datetime import datetime
 from django.core.exceptions import ValidationError
@@ -18,121 +18,9 @@ from .utils import tiene_permiso_departal_o_carrera_util
 from django.core.exceptions import PermissionDenied
 from django.forms import formset_factory
 
-#lISTA DE CARRERAS
-@login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_CARRERA))
-def lista_carreras(request):
-    """
-    Muestra la lista de carreras. Los usuarios con permiso
-    de gestión pueden ver todas, otros solo las de su departamento/carrera.
-    """
-    carreras = Carrera.objects.all().order_by('nombre')
-    puede_gestionar_carreras = request.user.has_permission(PERMISSIONS.MANAGE_CARRERA)
-
-    # Aplicar filtrado granular si el usuario no tiene permiso global MANAGE_CARRERA
-    # y no es superusuario/super_admin.
-    if not (request.user.is_superuser or request.user.is_super_admin_rol) and \
-    not request.user.has_permission(PERMISSIONS.VIEW_CARRERA, obj=None): # Si no tiene permiso VIEW_CARRERA global
-        if request.user.carrera_asignada:
-            carreras = carreras.filter(id=request.user.carrera_asignada.id)
-        elif request.user.departamento_asignado:
-            carreras = carreras.filter(departamento=request.user.departamento_asignado)
-        else:
-            carreras = Carrera.objects.none() # No tiene asignación ni permiso global
-            messages.warning(request, "No tiene permisos para ver carreras o no tiene una carrera/departamento asignado.")
-
-    context = {
-        'carreras': carreras,
-        'puede_gestionar_carreras': puede_gestionar_carreras,
-    }
-    return render(request, 'programacion/carreras/lista_carreras.html', context)
-
-@login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARRERA))
-def crear_carrera(request):
-    """Permite crear una nueva carrera."""
-    form = CarreraForm()
-    if request.method == 'POST':
-        form = CarreraForm(request.POST)
-        if form.is_valid():
-            try:
-                carrera = form.save(commit=False)
-                # Si el usuario es un coordinador/jefatura y tiene departamento asignado,
-                # asegurar que la carrera pertenece a su departamento
-                if request.user.is_jefatura and request.user.departamento_asignado and \
-                carrera.departamento != request.user.departamento_asignado:
-                    # Si el usuario tiene MANAGE_CARRERA pero no global, y la carrera no es de su dpto, denegar.
-                    raise PermissionDenied("No tiene permiso para crear carreras fuera de su departamento asignado.")
-                carrera.save()
-                messages.success(request, 'Carrera creada exitosamente.')
-                return redirect('programacion:lista_carreras')
-            except IntegrityError:
-                messages.error(request, 'Ya existe una carrera con ese nombre o código.')
-            except PermissionDenied as e:
-                messages.error(request, str(e))
-        else:
-            messages.error(request, 'Error al crear la carrera. Revise los datos.')
-
-    context = {'form': form, 'accion': 'Crear'}
-    return render(request, 'programacion/carreras/form_carrera.html', context)
-
-@login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARRERA))
-def editar_carrera(request, pk):
-    """Permite editar una carrera existente."""
-    carrera = get_object_or_404(Carrera, pk=pk)
-
-    # Verificar permiso granular: el usuario debe tener MANAGE_CARRERA y,
-    # si no es global, debe ser para una carrera de su ámbito.
-    if not request.user.has_permission(PERMISSIONS.MANAGE_CARRERA, obj=carrera):
-        raise PermissionDenied("No tiene permiso para editar esta carrera.")
-
-    form = CarreraForm(instance=carrera)
-    if request.method == 'POST':
-        form = CarreraForm(request.POST, instance=carrera)
-        if form.is_valid():
-            try:
-                carrera = form.save(commit=False)
-                # Re-verificar el departamento si fue cambiado (aunque debería ser manejado por el form)
-                if request.user.is_jefatura and request.user.departamento_asignado and \
-                carrera.departamento != request.user.departamento_asignado:
-                    raise PermissionDenied("No puede mover la carrera a un departamento fuera de su ámbito.")
-                carrera.save()
-                messages.success(request, 'Carrera actualizada exitosamente.')
-                return redirect('programacion:lista_carreras')
-            except IntegrityError:
-                messages.error(request, 'Ya existe una carrera con ese nombre o código.')
-            except PermissionDenied as e:
-                messages.error(request, str(e))
-        else:
-            messages.error(request, 'Error al actualizar la carrera. Revise los datos.')
-
-    context = {'form': form, 'accion': 'Editar', 'carrera': carrera}
-    return render(request, 'programacion/carreras/form_carrera.html', context)
-
-@login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_CARRERA))
-def eliminar_carrera(request, pk):
-    """Permite eliminar una carrera."""
-    carrera = get_object_or_404(Carrera, pk=pk)
-
-    # Verificar permiso granular
-    if not request.user.has_permission(PERMISSIONS.MANAGE_CARRERA, obj=carrera):
-        raise PermissionDenied("No tiene permiso para eliminar esta carrera.")
-
-    if request.method == 'POST':
-        try:
-            carrera.delete()
-            messages.success(request, 'Carrera eliminada exitosamente.')
-        except IntegrityError:
-            messages.error(request, 'No se puede eliminar la carrera porque tiene asignaturas asociadas.')
-        return redirect('programacion:lista_carreras')
-    context = {'carrera': carrera}
-    return render(request, 'programacion/carreras/confirm_delete_carrera.html', context)
-
 # Vista para la evaluación docente
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_CARRERA))
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_EVALUACION_DOCENTE))
 def evaluacion_docente(request):
     programaciones = ProgramacionAcademica.objects.select_related('docente', 'asignatura', 'periodo').all()
 
