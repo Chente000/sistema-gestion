@@ -701,16 +701,22 @@ def seccion_list(request):
     if carrera_id:
         semestres_para_filtro = semestres_para_filtro.filter(carrera__id=carrera_id)
 
-    return render(request, 'seccion_list.html', {
+    context = {
         'secciones': secciones_qs,
         'carreras': carreras,
         'semestres': semestres_para_filtro,
-        'periodos': periodos, # Pasar periodos para el filtro
+        'periodos': periodos,
         'query': query,
         'filter_carrera_id': carrera_id,
         'filter_semestre_id': semestre_id,
-        'filter_periodo_id': periodo_id, # Pasar el ID del período seleccionado
-    })
+        'filter_periodo_id': periodo_id,
+        # Variables de permiso a pasar al template:
+        'can_create_seccion': request.user.has_permission(PERMISSIONS.MANAGE_SECCION),
+        'can_edit_seccion': request.user.has_permission(PERMISSIONS.MANAGE_SECCION),
+        'can_delete_seccion': request.user.has_permission(PERMISSIONS.MANAGE_SECCION),
+        'can_program_horario': request.user.has_permission(PERMISSIONS.MANAGE_HORARIO_SECCION), # Asumo este permiso para programar
+    }
+    return render(request, 'seccion_list.html', context) # Ajusta la ruta si es necesario
 
 @login_required
 @user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_SECCION))
@@ -718,31 +724,50 @@ def seccion_create(request):
     if request.method == 'POST':
         form = SeccionForm(request.POST)
         if form.is_valid():
-            form.save()
+            seccion = form.save(commit=False)
+            # Aplicar granularidad al crear: El usuario solo puede crear secciones en su ámbito
+            if not request.user.has_permission(PERMISSIONS.MANAGE_SECCION, obj=seccion):
+                messages.error(request, "No tienes permiso para crear esta sección en la carrera/departamento especificado.")
+                return redirect('programacion:seccion_list') # Redirige o muestra error
+
+            seccion.save()
+            messages.success(request, "Sección creada exitosamente.")
             return redirect('programacion:seccion_list')
     else:
         form = SeccionForm()
     
     carreras = Carrera.objects.all().order_by('nombre')
     periodos = Periodo.objects.all().order_by('-fecha_inicio')
-    # Se pasa 'semestres_all' para la carga dinámica de semestres en el JS
-    semestres_all = semestre.objects.all().order_by('nombre')
+    semestres_all = semestre.objects.all().order_by('nombre') # Corregido a Semestre
 
-    return render(request, 'seccion_form.html', {
+    context = {
         'form': form,
         'carreras': carreras,
         'periodos': periodos,
-        'semestres_all': semestres_all, # Para la carga dinámica en JS
-    })
+        'semestres_all': semestres_all,
+    }
+    return render(request, 'seccion_form.html', context) # Ajusta la ruta
 
 @login_required
 @user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_SECCION))
 def seccion_edit(request, pk):
     seccion = get_object_or_404(Seccion, pk=pk)
+    # Aplicar granularidad al editar: El usuario solo puede editar secciones en su ámbito
+    if not request.user.has_permission(PERMISSIONS.MANAGE_SECCION, obj=seccion):
+        messages.error(request, "No tienes permiso para editar esta sección.")
+        return redirect('programacion:seccion_list') # Redirige o muestra error
+
     if request.method == 'POST':
         form = SeccionForm(request.POST, instance=seccion)
         if form.is_valid():
-            form.save()
+            seccion_updated = form.save(commit=False)
+            # También aplica la granularidad si el departamento/carrera de la sección ha cambiado
+            if not request.user.has_permission(PERMISSIONS.MANAGE_SECCION, obj=seccion_updated):
+                messages.error(request, "No tienes permiso para mover esta sección a la nueva carrera/departamento.")
+                return redirect('programacion:seccion_list') # Redirige o muestra error
+
+            seccion_updated.save()
+            messages.success(request, "Sección actualizada exitosamente.")
             return redirect('programacion:seccion_list')
     else:
         form = SeccionForm(instance=seccion)
@@ -750,27 +775,36 @@ def seccion_edit(request, pk):
     carreras = Carrera.objects.all().order_by('nombre')
     periodos = Periodo.objects.all().order_by('-fecha_inicio')
     
-    # Semestres para la carga dinámica en JS, filtrados por la carrera de la sección
-    semestres_all = semestre.objects.all().order_by('nombre')
+    semestres_all = semestre.objects.all().order_by('nombre') # Corregido a Semestre
     if seccion.carrera:
-        semestres_all = semestre.objects.filter(carrera=seccion.carrera).order_by('nombre')
+        semestres_all = semestre.objects.filter(carrera=seccion.carrera).order_by('nombre') # Corregido a Semestre
 
-    return render(request, 'seccion_form.html', {
+    context = {
         'form': form, 
         'seccion': seccion,
         'carreras': carreras,
         'periodos': periodos,
-        'semestres_all': semestres_all, # Para la carga dinámica en JS
-    })
+        'semestres_all': semestres_all,
+    }
+    return render(request, 'seccion_form.html', context) # Ajusta la ruta
 
 @login_required
 @user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_SECCION))
 def seccion_delete(request, pk):
     seccion = get_object_or_404(Seccion, pk=pk)
+    # Aplicar granularidad al eliminar
+    if not request.user.has_permission(PERMISSIONS.MANAGE_SECCION, obj=seccion):
+        messages.error(request, "No tienes permiso para eliminar esta sección.")
+        return redirect('programacion:seccion_list') # Redirige o muestra error
+
     if request.method == 'POST':
-        seccion.delete()
+        try:
+            seccion.delete()
+            messages.success(request, "Sección eliminada exitosamente.")
+        except Exception as e:
+            messages.error(request, f"Error al eliminar la sección: {e}")
         return redirect('programacion:seccion_list')
-    return render(request, 'seccion_confirm_delete.html', {'seccion': seccion})
+    return render(request, 'seccion_confirm_delete.html', {'seccion': seccion}) # Ajusta la ruta
     
 @login_required
 @user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_SECCION))

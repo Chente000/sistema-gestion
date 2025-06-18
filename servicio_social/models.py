@@ -3,6 +3,7 @@ from django.conf import settings
 # Importar tus modelos Carrera y Semestre si ya existen
 # Asegúrate de que los nombres de los modelos coincidan con los tuyos (ej. 'Semestre' vs 'semestre')
 from programacion.models import Carrera, semestre # Asumo que tu modelo se llama 'semestre' con 's' minúscula.
+from administrador.permissions import PERMISSIONS
 
 class ServicioSocial(models.Model):
     ESTADO_CHOICES = [
@@ -103,6 +104,16 @@ class ServicioSocial(models.Model):
     class Meta:
         verbose_name = "Servicio Social"
         verbose_name_plural = "Servicios Sociales"
+        app_label = 'servicio_social'  # en minúsculas y guion bajo
+        permissions = [
+            # Utilizamos los nombres de los permisos definidos en PERMISSIONS
+            (PERMISSIONS.VIEW_PROYECTO_SERVICIO_SOCIAL.split('.')[-1], "Puede ver proyectos de Servicio Social"),
+            (PERMISSIONS.ADD_PROYECTO_SERVICIO_SOCIAL.split('.')[-1], "Puede añadir proyectos de Servicio Social"),
+            (PERMISSIONS.CHANGE_PROYECTO_SERVICIO_SOCIAL.split('.')[-1], "Puede modificar proyectos de Servicio Social"),
+            (PERMISSIONS.DELETE_PROYECTO_SERVICIO_SOCIAL.split('.')[-1], "Puede eliminar proyectos de Servicio Social"),
+            (PERMISSIONS.EXPORT_PROYECTO_SERVICIO_SOCIAL_PDF.split('.')[-1], "Puede exportar proyectos de Servicio Social a PDF"),
+            (PERMISSIONS.EXPORT_PROYECTO_SERVICIO_SOCIAL_EXCEL.split('.')[-1], "Puede exportar proyectos de Servicio Social a Excel"),
+        ]
 
 
 class EstudianteServicioSocial(models.Model):

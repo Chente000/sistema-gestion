@@ -52,3 +52,12 @@ class PERMISSIONS:
     # Permisos de Usuario y Solicitudes de Usuario (aunque están en la app accounts)
     MANAGE_USERS = 'accounts.manage_users'
     APPROVE_USER_REQUESTS = 'accounts.approve_user_requests'
+
+    # Permisos de Servicio Social (ahora al mismo nivel)
+    VIEW_PROYECTO_SERVICIO_SOCIAL = "servicio_social.view_proyecto_servicio_social"
+    ADD_PROYECTO_SERVICIO_SOCIAL = "servicio_social.add_proyecto_servicio_social"
+    CHANGE_PROYECTO_SERVICIO_SOCIAL = "servicio_social.change_proyecto_servicio_social"
+    DELETE_PROYECTO_SERVICIO_SOCIAL = "servicio_social.delete_proyecto_servicio_social"
+    EXPORT_PROYECTO_SERVICIO_SOCIAL_PDF = "servicio_social.export_proyecto_servicio_social_pdf"
+    EXPORT_PROYECTO_SERVICIO_SOCIAL_EXCEL = "servicio_social.export_proyecto_servicio_social_excel"
+
