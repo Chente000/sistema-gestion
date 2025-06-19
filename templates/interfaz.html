@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema Gestión{% endblock %}</title>
+    <title>{% block title %}SIG-UNEFA{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -12,26 +12,45 @@
         :root {
             --sidebar-width: 260px;
             --topbar-height: 65px;
-            --primary-accent-color: #003366;
-            --sidebar-bg: #003366;
-            --sidebar-link-color: #FFD600;
-            --sidebar-link-hover-bg: #002244;
-            --sidebar-link-active-color: #FFD600;
-            --sidebar-brand-color: #FFD600;
-            --content-bg: #F5F6FA;
-            --text-color-main: #003366;
-            --border-color-soft: #FFD600;
-            --danger-color: #D90429;
+            --primary-accent-color: #003366; /* Azul oscuro corporativo */
+            --secondary-accent-color: #FFD600; /* Amarillo/Dorado vibrante */
+            --sidebar-bg: var(--primary-accent-color);
+            --sidebar-link-color: rgba(255, 255, 255, 0.85); /* Blanco ligeramente transparente */
+            --sidebar-link-hover-bg: #002244; /* Azul aún más oscuro */
+            --sidebar-link-active-bg: #002B55; /* Un tono intermedio */
+            --sidebar-link-active-color: var(--secondary-accent-color);
+            --sidebar-brand-color: var(--secondary-accent-color);
+            --content-bg: #F8F9FA; /* Blanco grisáceo para el fondo del contenido */
+            --text-color-main: #343a40; /* Texto oscuro general */
+            --border-color-soft: rgba(255, 255, 255, 0.15); /* Borde sutil para sidebar */
+            --danger-color: #DC3545; /* Rojo de Bootstrap */
+            --info-color: #17A2B8; /* Azul claro de Bootstrap */
+            --warning-color: #FFC107; /* Amarillo de Bootstrap */
+            --success-color: #28A745; /* Verde de Bootstrap */
         }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--content-bg);
-            padding-left: var(--sidebar-width);
-            padding-top: var(--topbar-height);
+            padding-left: var(--sidebar-width); /* Espacio para el sidebar fijo */
+            padding-top: var(--topbar-height); /* Espacio para la topbar fija */
             color: var(--text-color-main);
             font-size: 0.925rem;
             line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: padding-left 0.3s ease; /* Transición suave para el toggle */
+            box-sizing: border-box; /* Asegura que padding no sume al width/height */
         }
+
+        /* Contenedor principal para el layout */
+        #wrapper {
+            display: flex;
+            flex: 1;
+        }
+
+        /* Sidebar */
         .sidebar {
             position: fixed;
             top: 0; left: 0; bottom: 0;
@@ -40,12 +59,18 @@
             background-color: var(--sidebar-bg);
             color: var(--sidebar-link-color);
             padding: 0;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.07);
+            box-shadow: 3px 0 10px rgba(0,0,0,0.15);
+            transition: width 0.3s ease, transform 0.3s ease;
         }
+        .sidebar.collapsed {
+            width: 0;
+            transform: translateX(-100%);
+        }
+
         .sidebar-header {
             padding: 1.1rem 1.5rem;
             text-align: center;
-            border-bottom: 1px solid #FFD600;
+            border-bottom: 1px solid var(--border-color-soft);
             height: var(--topbar-height);
             display: flex;
             align-items: center;
@@ -58,7 +83,12 @@
             text-decoration: none;
             display: flex;
             align-items: center;
+            opacity: 1;
+            transition: opacity 0.3s ease;
         }
+        .sidebar.collapsed .sidebar-header .navbar-brand { opacity: 0; }
+
+
         .sidebar-header .navbar-brand .bi {
             margin-right: 10px;
             font-size: 1.7rem;
@@ -77,6 +107,7 @@
         .sidebar-sticky::-webkit-scrollbar { width: 6px; }
         .sidebar-sticky::-webkit-scrollbar-track { background: var(--sidebar-bg); }
         .sidebar-sticky::-webkit-scrollbar-thumb { background-color: var(--sidebar-link-hover-bg); border-radius: 3px; }
+
         .nav-link {
             color: var(--sidebar-link-color);
             padding: 0.75rem 1.75rem;
@@ -90,13 +121,13 @@
         .nav-link:hover {
             background-color: var(--sidebar-link-hover-bg);
             color: var(--sidebar-link-active-color);
-            border-left-color: var(--primary-accent-color);
+            border-left-color: var(--secondary-accent-color);
         }
         .nav-link.active {
             color: var(--sidebar-link-active-color);
-            background-color: var(--sidebar-link-hover-bg);
+            background-color: var(--sidebar-link-active-bg);
             font-weight: 600;
-            border-left-color: var(--primary-accent-color);
+            border-left-color: var(--secondary-accent-color);
         }
         .nav-link .bi {
             margin-right: 15px;
@@ -107,79 +138,165 @@
         }
         .nav-link:hover .bi { transform: scale(1.1); }
         .sidebar hr {
-            border-top: 1px solid #FFD600;
+            border-top: 1px solid var(--border-color-soft);
             margin: 1rem 1.5rem;
         }
+
+        /* Top Navbar */
         .top-navbar {
             position: fixed;
             top: 0; right: 0; left: var(--sidebar-width);
             height: var(--topbar-height);
             background-color: #fff;
-            border-bottom: 2px solid var(--primary-accent-color);
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             padding: 0 1.75rem;
             z-index: 1020;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
-            transition: left 0.3s;
+            transition: left 0.3s ease;
+        }
+        body.sidebar-collapsed .top-navbar {
+            left: 0;
+        }
+
+        .top-navbar .toggle-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--primary-accent-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: color 0.2s;
+        }
+        .top-navbar .toggle-btn:hover {
+            color: var(--secondary-accent-color);
+        }
+
+        .top-navbar .user-info {
+            display: flex;
+            align-items: center;
         }
         .top-navbar .user-greeting {
-            color: #555;
+            color: var(--text-color-main);
             margin-right: 1.25rem;
             font-size: 0.9rem;
         }
         .top-navbar .user-greeting strong {
             color: var(--primary-accent-color);
-            font-weight: 500;
+            font-weight: 600;
         }
-        .top-navbar .btn-logout {
-            border-color: var(--danger-color);
-            color: var(--danger-color);
-            font-weight: 500;
-            font-size: 0.85rem;
-            padding: 0.3rem 0.75rem;
-        }
-        .top-navbar .btn-logout:hover {
-            background-color: var(--danger-color);
-            color: #fff;
-        }
-        .top-navbar .btn-logout .bi { margin-right: 5px; }
+
+        /* Main Content */
         .main-content {
-            padding: 1.75rem;
-            transition: margin-left 0.3s;
+            flex-grow: 1;
+            margin-left: 0;
+            padding: 1.75rem; /* Padding general para el contenido dentro de main */
+            box-sizing: border-box;
+            transition: padding-left 0.3s ease;
+            /* La tabla necesita el espacio completo, no la limites aquí. */
+            /* Quitar: width: calc(100% - var(--sidebar-width)); */
         }
+        /* La clase `col-12` dentro del `container-fluid` manejará el 100% del ancho disponible */
+        /* Ya no es necesario ajustar el padding-left de main-content según el sidebar,
+           el padding-left del `body` ya lo maneja. */
+
+        /* Card Custom (para el contenido) */
         .card-custom {
             background-color: #fff;
             border: none;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 12px rgba(0,51,102,0.07);
+            border-radius: 0.75rem;
+            box-shadow: 0 6px 20px rgba(0,51,102,0.1);
             margin-bottom: 1.75rem;
+            /* No le pongas max-width aquí si quieres que la tabla sea fluida */
+            /* margin-left: auto; */
+            /* margin-right: auto; */
         }
         .card-custom .card-header {
             color: var(--primary-accent-color);
-            border-bottom: 1px solid var(--border-color-soft);
-            font-weight: 600;
-            font-size: 1.1rem;
-            padding: 1rem 1.5rem;
+            background-color: #F8F9FA;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 700;
+            font-size: 1.15rem;
+            padding: 1rem 1.75rem;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
         }
-        .card-custom .card-body { padding: 1.5rem; }
+        .card-custom .card-body { padding: 1.75rem; }
         .card-custom .card-footer {
-            border-top: 1px solid var(--border-color-soft);
-            padding: 1rem 1.5rem;
+            border-top: 1px solid #dee2e6;
+            padding: 1rem 1.75rem;
+            background-color: #F8F9FA;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
         }
-        @media (max-width: 992px) {
-            body { padding-left: 0; }
-            .sidebar { width: 0; }
-            .top-navbar { left: 0; }
+
+        /* Botones personalizados (para consistencia con Bootstrap) */
+        .btn-primary { background-color: var(--primary-accent-color); border-color: var(--primary-accent-color); }
+        .btn-primary:hover { background-color: #002244; border-color: #002244; }
+        .btn-success { background-color: var(--success-color); border-color: var(--success-color); }
+        .btn-success:hover { background-color: #218838; border-color: #1e7e38; }
+        .btn-info { background-color: var(--info-color); border-color: var(--info-color); }
+        .btn-info:hover { background-color: #138496; border-color: #117a8b; }
+        .btn-warning { background-color: var(--warning-color); border-color: var(--warning-color); }
+        .btn-warning:hover { background-color: #e0a800; border-color: #d39e00; }
+        .btn-danger { background-color: var(--danger-color); border-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #c82333; border-color: #bd2130; }
+        .btn-secondary { background-color: #6c757d; border-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; border-color: #545b62; }
+        
+        /* Dropdown para el usuario */
+        .navbar-nav .dropdown-menu {
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .navbar-nav .dropdown-item {
+            color: var(--text-color-main);
+            padding: 0.6rem 1.2rem;
+        }
+        .navbar-nav .dropdown-item:hover {
+            background-color: #e9ecef;
+            color: var(--primary-accent-color);
+        }
+
+        /* Estilos responsivos */
+        @media (max-width: 991.98px) { /* Para pantallas más pequeñas que large (Bootstrap 'lg' breakpoint) */
+            body { padding-left: 0; } /* Elimina el padding izquierdo fijo del body en móvil */
+            .sidebar {
+                width: var(--sidebar-width);
+                transform: translateX(-100%); /* Oculto por defecto */
+                top: 0;
+                left: 0;
+                bottom: 0;
+                height: 100vh; /* Ocupa toda la altura visible */
+            }
+            .sidebar.show { /* Clase añadida por JS para mostrar */
+                transform: translateX(0);
+            }
+            .top-navbar {
+                left: 0; /* Siempre ocupa todo el ancho */
+            }
+            .main-content {
+                padding-left: 1rem; /* Padding más pequeño en móvil */
+                padding-right: 1rem;
+                padding-top: 1rem; /* Un poco de padding arriba para el contenido en móvil */
+            }
+        }
+        
+        /* Ajuste para que el cuerpo se mueva cuando el sidebar se despliega en móvil */
+        body.sidebar-open {
+            overflow: hidden; /* Evita el scroll del contenido mientras el sidebar está abierto */
         }
     </style>
 </head>
 <body>
-    <nav class="sidebar">
+    <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <a class="navbar-brand" href="{% url 'home:home' %}">
+            <a class="navbar-brand">
                 <i class="bi bi-buildings-fill"></i>
-                <span>GestiónUni</span>
+                <span>SIG-UNEFA</span> {# Añadido texto para la marca #}
             </a>
         </div>
         <div class="sidebar-sticky">
@@ -193,39 +310,39 @@
                 <hr>
                 <!-- Menú desplegable para Prog. Académica -->
                 <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#progAcademicaMenu" role="button" aria-expanded="false" aria-controls="progAcademicaMenu">
+                    <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#progAcademicaMenu" role="button" aria-expanded="{% if 'programacion' in request.resolver_match.app_name %}true{% else %}false{% endif %}" aria-controls="progAcademicaMenu">
                         <span>
                             <i class="bi bi-calendar2-check-fill"></i>
-                            Prog. Académica
+                            Prog. y Evaluación Académica
                         </span>
-                        <i class="bi bi-chevron-down small"></i>
+                        <i class="bi bi-chevron-down small collapse-icon {% if 'programacion' in request.resolver_match.app_name %}rotate-180{% endif %}"></i>
                     </a>
                     <div class="collapse {% if 'programacion' in request.resolver_match.app_name %}show{% endif %}" id="progAcademicaMenu">
                         <ul class="nav flex-column ms-3">
                             <li class="nav-item">
                                 <a class="nav-link {% if request.resolver_match.url_name == 'docentes' %}active{% endif %}" href="{% url 'programacion:docentes' %}">
                                     <i class="bi bi-person-badge"></i> Docentes
-                            </a>
+                                </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {% if request.resolver_match.url_name == 'asignaturas' %}active{% endif %}" href="{% url 'programacion:asignaturas' %}">
                                     <i class="bi bi-journal-bookmark"></i> Asignaturas
-                            </a>
+                                </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {% if request.resolver_match.url_name == 'seccion_list' %}active{% endif %}" href="{% url 'programacion:seccion_list' %}">
                                     <i class="bi bi-grid-3x3-gap"></i> Secciones
-                            </a>
+                                </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {% if request.resolver_match.url_name == 'aulario_dashboard' %}active{% endif %}" href="{% url 'programacion:aulario_dashboard' %}">
                                     <i class="bi bi-building"></i> Aulario
-                            </a>
+                                </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {% if request.resolver_match.url_name == 'evaluacion_docente' %}active{% endif %}" href="{% url 'programacion:evaluacion_docente' %}">
                                     <i class="bi bi-clipboard-check"></i> Evaluación Docente
-                            </a>
+                                </a>
                             </li>
                         </ul>
                     </div>
@@ -234,7 +351,7 @@
                 <li class="nav-item">
                     <a class="nav-link {% if 'servicio_social' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'servicio_social:servicio_list' %}">
                         <i class="bi bi-people-fill"></i>
-                        <span>Servicio Social</span>
+                        <span>Servicio Comunitario</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -249,22 +366,140 @@
                         <span>Coordinaciones</span>
                     </a>
                 </li>
+                <hr>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'administrador' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'administrador:panel_administrador' %}">
+                        <i class="bi bi-gear-fill"></i>
+                        <span>Administración</span>
+                    </a>
+                </li>
             </ul>
         </div>
     </nav>
-    <header class="top-navbar">
-        <div class="user-greeting ms-auto">
-            Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong>
+
+    <header class="top-navbar" id="topNavbar">
+        <button class="toggle-btn" id="sidebarToggle">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="user-info">
+            <div class="user-greeting">
+                Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong>
+            </div>
+            <div class="dropdown">
+                <a class="btn btn-outline-secondary dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-person-circle"></i> {{ user.username }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" href="">Perfil</a></li>
+                    <li><a class="dropdown-item" href="">Configuración</a></li> {# Asumo esta URL #}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% url 'accounts:cerrar_sesion' %}">Cerrar Sesión</a></li>
+                </ul>
+            </div>
         </div>
-        <a href="{% url 'accounts:cerrar_sesion' %}" class="btn btn-outline-danger btn-logout">
-            <i class="bi bi-box-arrow-right"></i> Salir
-        </a>
     </header>
+
     <main class="main-content">
-        {% block content %}
-        <!-- Aquí va el contenido específico de cada vista -->
-        {% endblock %}
+        {# MODIFICADO: Eliminado el `col-md-10 col-lg-9 col-xl-8` para permitir ancho completo #}
+        {# La clase `container-fluid` es suficiente para el padding lateral y la fluidez #}
+        <div class="container-fluid">
+            <div class="row"> {# Ya no necesitas `justify-content-center` aquí #}
+                <div class="col-12"> {# La columna ocupa el 100% del ancho disponible de la fila #}
+                    {% block content %}
+                    <!-- Aquí va el contenido específico de cada vista (tu tabla dentro de una tarjeta) -->
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
     </main>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.getElementById('sidebarToggle');
+            const body = document.body;
+
+            // Función para alternar el estado del sidebar
+            function toggleSidebar() {
+                sidebar.classList.toggle('collapsed');
+                body.classList.toggle('sidebar-collapsed');
+                // En escritorio, también alterna la visibilidad de la marca del sidebar
+                const brand = sidebar.querySelector('.sidebar-header .navbar-brand');
+                if (brand) {
+                    if (sidebar.classList.contains('collapsed')) {
+                        brand.style.opacity = '0';
+                        brand.style.pointerEvents = 'none'; // Deshabilita clics
+                    } else {
+                        brand.style.opacity = '1';
+                        brand.style.pointerEvents = 'auto'; // Habilita clics
+                    }
+                }
+            }
+
+            // Manejar el clic del botón de toggle
+            if (toggleButton) {
+                toggleButton.addEventListener('click', toggleSidebar);
+            }
+
+            // Lógica para que los íconos de colapso roten
+            document.querySelectorAll('.nav-link[data-bs-toggle="collapse"]').forEach(link => {
+                link.addEventListener('click', function() {
+                    const icon = this.querySelector('.collapse-icon');
+                    if (icon) {
+                        icon.classList.toggle('rotate-180');
+                    }
+                });
+            });
+
+            // Ajuste inicial para móviles: colapsar sidebar por defecto
+            if (window.innerWidth < 992) {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sidebar-collapsed');
+                // En móvil, el botón de toggle debe mostrar el sidebar superpuesto
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', function() {
+                        sidebar.classList.toggle('show'); 
+                        body.classList.toggle('sidebar-open');
+                    });
+                }
+            } else {
+                // En escritorio, el sidebar por defecto está expandido
+                sidebar.classList.remove('collapsed');
+                body.classList.remove('sidebar-collapsed');
+            }
+
+            // Opcional: Cerrar sidebar en móvil si se hace clic fuera
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth < 992 && sidebar.classList.contains('show')) {
+                    if (!sidebar.contains(event.target) && !toggleButton.contains(event.target)) {
+                        sidebar.classList.remove('show');
+                        body.classList.remove('sidebar-open');
+                    }
+                }
+            });
+
+            // Ajuste al redimensionar la ventana
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 992) {
+                    // Si pasa a escritorio, asegurarse de que el sidebar no esté en estado 'show' de móvil
+                    sidebar.classList.remove('show');
+                    body.classList.remove('sidebar-open');
+                    // En escritorio, el sidebar siempre se "pega" a la izquierda del contenido.
+                    if (!body.classList.contains('sidebar-collapsed')) { 
+                        sidebar.classList.remove('collapsed');
+                    }
+                    body.style.overflow = ''; 
+
+                } else { // Si pasa a móvil
+                    if (!sidebar.classList.contains('show')) {
+                        sidebar.classList.add('collapsed');
+                        body.classList.add('sidebar-collapsed');
+                    }
+                }
+            });
+
+        });
+    </script>
 </body>
 </html>

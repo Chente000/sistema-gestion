@@ -8,11 +8,12 @@ app_name = 'programacion'
 urlpatterns = [
     # URLs para Evaluación Docente
     path('evaluacion_docente/', views.evaluacion_docente, name='evaluacion_docente'),
-    path('evaluacion/crear/', views.crear_programacion, name='crear_programacion'),
-    path('evaluacion/<int:pk>/editar/', views.editar_programacion, name='editar_programacion'),
-    path('evaluacion/<int:pk>/eliminar/', views.eliminar_programacion, name='eliminar_programacion'),    
+    path('evalucion-docente/nueva/', views.nueva_evaluacion_docente, name='nueva_evaluacion_docente'),
+    path('evaluaciones/editar/<int:pk>/', views.editar_evaluacion_docente, name='editar_evaluacion_docente'),
+    path('evaluaciones/eliminar/<int:pk>/', views.eliminar_evaluacion_docente, name='eliminar_evaluacion_docente'),
     # URLs para Docentes
     path('docentes/', views.docentes, name='docentes'),
+    path('docentes/<int:docente_id>/detalle/', views.detalle_docente, name='detalle_docente'),
     path('docentes/agregar/', views.agregar_docente, name='agregar_docente'),
     path('docentes/<int:pk>/editar/', views.editar_docente, name='editar_docente'),
     path('docentes/eliminar/<int:pk>/', views.eliminar_docente, name='eliminar_docente'), 

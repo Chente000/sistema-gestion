@@ -7,45 +7,107 @@
         <h2 class="card-title text-center mb-4">Agregar Nuevo Docente</h2>
         <form method="post">
             {% csrf_token %}
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="{{ form.nombre.id_for_label }}" class="form-label">{{ form.nombre.label }}</label>
-                    {{ form.nombre }}
-                    {% if form.nombre.errors %}<div class="text-danger">{{ form.nombre.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label for="{{ form.cedula.id_for_label }}" class="form-label">{{ form.cedula.label }}</label>
-                    {{ form.cedula }}
-                    {% if form.cedula.errors %}<div class="text-danger">{{ form.cedula.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label for="{{ form.telefono.id_for_label }}" class="form-label">{{ form.telefono.label }}</label>
-                    {{ form.telefono }}
-                    {% if form.telefono.errors %}<div class="text-danger">{{ form.telefono.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
-                    {{ form.email }}
-                    {% if form.email.errors %}<div class="text-danger">{{ form.email.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label for="{{ form.dedicacion.id_for_label }}" class="form-label">{{ form.dedicacion.label }}</label>
-                    {{ form.dedicacion }}
-                    {% if form.dedicacion.errors %}<div class="text-danger">{{ form.dedicacion.errors }}</div>{% endif %}
-                </div>
-                <div class="col-12">
-                    <label class="form-label">{{ form.carreras.label }}</label>
-                    <div class="form-check-group"> {# Para agrupar checkboxes si es necesario #}
-                        {% for checkbox in form.carreras %}
-                            <div class="form-check">
-                                {{ checkbox.tag }}
-                                <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
-                            </div>
-                        {% endfor %}
+
+            <!-- DATOS BÁSICOS -->
+            <fieldset class="border rounded-3 p-3 mb-4">
+                <legend class="float-none w-auto px-3 fs-5">Datos Básicos</legend>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.nombre.id_for_label }}" class="form-label">{{ form.nombre.label }}</label>
+                        {{ form.nombre }}
+                        {% if form.nombre.errors %}<div class="text-danger">{{ form.nombre.errors }}</div>{% endif %}
                     </div>
-                    {% if form.carreras.errors %}<div class="text-danger">{{ form.carreras.errors }}</div>{% endif %}
+                    <div class="col-md-6">
+                        <label for="{{ form.cedula.id_for_label }}" class="form-label">{{ form.cedula.label }}</label>
+                        {{ form.cedula }}
+                        {% if form.cedula.errors %}<div class="text-danger">{{ form.cedula.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.telefono.id_for_label }}" class="form-label">{{ form.telefono.label }}</label>
+                        {{ form.telefono }}
+                        {% if form.telefono.errors %}<div class="text-danger">{{ form.telefono.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<div class="text-danger">{{ form.email.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.dedicacion.id_for_label }}" class="form-label">{{ form.dedicacion.label }}</label>
+                        {{ form.dedicacion }}
+                        {% if form.dedicacion.errors %}<div class="text-danger">{{ form.dedicacion.errors }}</div>{% endif %}
+                    </div>
                 </div>
-            </div>
+            </fieldset>
+
+            <!-- DATOS ACADÉMICOS Y PROFESIONALES -->
+            <fieldset class="border rounded-3 p-3 mb-4">
+                <legend class="float-none w-auto px-3 fs-5">Datos Académicos y Profesionales</legend>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.titulo_profesional.id_for_label }}" class="form-label">{{ form.titulo_profesional.label }}</label>
+                        {{ form.titulo_profesional }}
+                        {% if form.titulo_profesional.errors %}<div class="text-danger">{{ form.titulo_profesional.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.categoria_docente.id_for_label }}" class="form-label">{{ form.categoria_docente.label }}</label>
+                        {{ form.categoria_docente }}
+                        {% if form.categoria_docente.errors %}<div class="text-danger">{{ form.categoria_docente.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.anios_experiencia.id_for_label }}" class="form-label">{{ form.anios_experiencia.label }}</label>
+                        {{ form.anios_experiencia }}
+                        {% if form.anios_experiencia.errors %}<div class="text-danger">{{ form.anios_experiencia.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.areas_especializacion.id_for_label }}" class="form-label">{{ form.areas_especializacion.label }}</label>
+                        {{ form.areas_especializacion }}
+                        {% if form.areas_especializacion.errors %}<div class="text-danger">{{ form.areas_especializacion.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label for="{{ form.postgrados.id_for_label }}" class="form-label">{{ form.postgrados.label }}</label>
+                        {{ form.postgrados }}
+                        {% if form.postgrados.errors %}<div class="text-danger">{{ form.postgrados.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- DATOS LABORALES Y ADMINISTRATIVOS -->
+            <fieldset class="border rounded-3 p-3 mb-4">
+                <legend class="float-none w-auto px-3 fs-5">Datos Laborales y Administrativos</legend>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.fecha_ingreso.id_for_label }}" class="form-label">{{ form.fecha_ingreso.label }}</label>
+                        {{ form.fecha_ingreso }}
+                        {% if form.fecha_ingreso.errors %}<div class="text-danger">{{ form.fecha_ingreso.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.tipo_contrato.id_for_label }}" class="form-label">{{ form.tipo_contrato.label }}</label>
+                        {{ form.tipo_contrato }}
+                        {% if form.tipo_contrato.errors %}<div class="text-danger">{{ form.tipo_contrato.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.horario_laboral.id_for_label }}" class="form-label">{{ form.horario_laboral.label }}</label>
+                        {{ form.horario_laboral }}
+                        {% if form.horario_laboral.errors %}<div class="text-danger">{{ form.horario_laboral.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- CARRERAS ASIGNADAS -->
+            <fieldset class="border rounded-3 p-3 mb-4">
+                <legend class="float-none w-auto px-3 fs-5">Carreras Asignadas</legend>
+                <div class="form-check-group">
+                    {% for checkbox in form.carreras %}
+                        <div class="form-check">
+                            {{ checkbox.tag }}
+                            <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if form.carreras.errors %}<div class="text-danger">{{ form.carreras.errors }}</div>{% endif %}
+            </fieldset>
+
             <div class="d-flex justify-content-between mt-4">
                 <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-save me-2"></i> Guardar Docente</button>
                 <a href="{% url 'programacion:docentes' %}" class="btn btn-secondary btn-lg"><i class="bi bi-x-circle me-2"></i> Cancelar</a>

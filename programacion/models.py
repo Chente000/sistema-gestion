@@ -61,6 +61,15 @@ class Docente(models.Model):
     email = models.EmailField(unique=True, blank=True, null=True, verbose_name="Correo Electrónico")
     departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='docentes_asignados', blank=True, null=True)
     dedicacion = models.CharField(max_length=50, verbose_name="Dedicación")
+    # ...existing fields...
+    titulo_profesional = models.CharField(max_length=100, blank=True, null=True, verbose_name="Título profesional")
+    postgrados = models.TextField(blank=True, null=True, verbose_name="Postgrados (maestrías, doctorados)")
+    areas_especializacion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Áreas de especialización")
+    categoria_docente = models.CharField(max_length=50, blank=True, null=True, verbose_name="Categoría docente")
+    anios_experiencia = models.PositiveIntegerField(blank=True, null=True, verbose_name="Años de experiencia")
+    fecha_ingreso = models.DateField(blank=True, null=True, verbose_name="Fecha de ingreso a la institución")
+    tipo_contrato = models.CharField(max_length=50, blank=True, null=True, verbose_name="Tipo de contrato")
+    horario_laboral = models.CharField(max_length=100, blank=True, null=True, verbose_name="Horario laboral")
     # Muchas-a-muchas con Carrera: un docente puede dar clases en varias carreras
     carreras = models.ManyToManyField(Carrera, related_name='docentes', blank=True, verbose_name="Carreras Asignadas")
 

@@ -1,0 +1,37 @@
+<!-- templates/403.html -->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Denegado (403)</title>
+    <!-- Incluye Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-md mx-auto">
+        <h1 class="text-6xl font-bold text-red-600 mb-4">403</h1>
+        <h2 class="text-3xl font-semibold text-gray-800 mb-4">Acceso Denegado</h2>
+        <p class="text-gray-600 mb-6">No tienes permiso para acceder a esta página. Si crees que esto es un error, por favor contacta al administrador.</p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="{% url 'accounts:login' %}" class="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition duration-300 shadow-md">
+                Iniciar Sesión
+            </a>
+            <a href="{% url 'programacion:evaluacion_docente' %}" class="bg-gray-200 text-gray-800 px-6 py-3 rounded-md hover:bg-gray-300 transition duration-300 shadow-md">
+                Volver a Evaluaciones
+            </a>
+            <!-- Ajusta la URL según tu página principal o dashboard -->
+            <a href="{% url 'home' %}" class="bg-gray-200 text-gray-800 px-6 py-3 rounded-md hover:bg-gray-300 transition duration-300 shadow-md">
+                Ir a Inicio
+            </a>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,44 @@
+{% extends "interfaz.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow p-4 mb-4">
+        <h2 class="card-title text-center mb-4">Detalle del Docente</h2>
+        <h4 class="mb-3">{{ docente.nombre }}</h4>
+        <hr>
+        <h5>Datos Básicos</h5>
+        <ul>
+            <li><strong>Cédula:</strong> {{ docente.cedula }}</li>
+            <li><strong>Teléfono:</strong> {{ docente.telefono }}</li>
+            <li><strong>Email:</strong> {{ docente.email }}</li>
+            <li><strong>Dedicación:</strong> {{ docente.dedicacion }}</li>
+        </ul>
+        <h5>Datos Académicos y Profesionales</h5>
+        <ul>
+            <li><strong>Título profesional:</strong> {{ docente.titulo_profesional }}</li>
+            <li><strong>Postgrados:</strong> {{ docente.postgrados }}</li>
+            <li><strong>Áreas de especialización:</strong> {{ docente.areas_especializacion }}</li>
+            <li><strong>Categoría docente:</strong> {{ docente.categoria_docente }}</li>
+            <li><strong>Años de experiencia:</strong> {{ docente.anios_experiencia }}</li>
+        </ul>
+        <h5>Datos Laborales y Administrativos</h5>
+        <ul>
+            <li><strong>Fecha de ingreso:</strong> {{ docente.fecha_ingreso }}</li>
+            <li><strong>Tipo de contrato:</strong> {{ docente.tipo_contrato }}</li>
+            <li><strong>Horario laboral:</strong> {{ docente.horario_laboral }}</li>
+        </ul>
+        <h5>Carreras Asignadas</h5>
+        <ul>
+            {% for carrera in docente.carreras.all %}
+                <li>{{ carrera.nombre }}</li>
+            {% empty %}
+                <li>Sin carrera asignada</li>
+            {% endfor %}
+        </ul>
+        <div class="mt-4">
+            <a href="{% url 'programacion:docentes' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

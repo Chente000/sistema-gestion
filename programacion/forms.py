@@ -1,6 +1,8 @@
 # En tu archivo programacion/forms.py
 
 from django import forms
+from django.forms import modelformset_factory
+
 # Asegúrate de importar todos los modelos necesarios
 from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, semestre
 from django.core.exceptions import ValidationError
@@ -38,6 +40,56 @@ class ProgramacionAcademicaForm(forms.ModelForm):
             'juicio_valor': 'Observaciones / Juicio de Valor General',
         }
 
+class EvaluacionBaseForm(forms.ModelForm):
+    # Asegúrate de que Asignatura se cargue con form-control
+    asignatura = forms.ModelChoiceField(
+        queryset=Asignatura.objects.all().order_by('nombre'),
+        label="Asignatura",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = ProgramacionAcademica
+        # Exclude 'docente' and 'periodo' as they are handled globally
+        # También excluimos los campos de 'juicio' que se calculan en JS, asumiendo que no se guardan en el modelo.
+        exclude = ['docente', 'periodo', 'juicio_acompanamiento', 'juicio_autoevaluacion', 'juicio_evaluacion_estudiante'] 
+        
+        widgets = {
+            'fecha_evaluacion': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'score_acompanamiento': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}),
+            'entrego_autoevaluacion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'autoevaluacion_score': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '60'}),
+            'evaluacion_estudiante_score': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '10'}),
+            'docente_evaluador': forms.Select(attrs={'class': 'form-control'}),
+            'juicio_valor': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'fue_evaluada': forms.CheckboxInput(attrs={'class': 'form-check-input'}), # Added this if it's part of the form
+        }
+        labels = {
+            'asignatura': 'Asignatura a Evaluar',
+            'fecha_evaluacion': 'Fecha de Evaluación',
+            'score_acompanamiento': 'Puntaje de Acompañamiento',
+            'entrego_autoevaluacion': '¿Entregó Autoevaluación?',
+            'autoevaluacion_score': 'Puntaje Autoevaluación',
+            'evaluacion_estudiante_score': 'Puntaje Evaluación Estudiante',
+            'docente_evaluador': 'Docente Evaluador',
+            'juicio_valor': 'Juicio de Valor General',
+            'observaciones': 'Observaciones',
+            'fue_evaluada': '¿Fue Evaluada?',
+        }
+        help_texts = {
+            'score_acompanamiento': 'Puntaje de 0 a 100.',
+            'autoevaluacion_score': 'Puntaje de 0 a 60.',
+            'evaluacion_estudiante_score': 'Puntaje de 1 a 10.',
+            'juicio_valor': 'Observaciones y juicio general del evaluador.',
+        }
+
+EvaluacionFormSet = modelformset_factory(
+    ProgramacionAcademica,
+    form=EvaluacionBaseForm,
+    extra=1, # Puedes ajustar el número de formularios vacíos
+    can_delete=True
+)
 class DocenteForm(forms.ModelForm):
     carreras = forms.ModelMultipleChoiceField(
         queryset=Carrera.objects.all(),
@@ -48,36 +100,27 @@ class DocenteForm(forms.ModelForm):
 
     class Meta:
         model = Docente
-        fields = ['nombre', 'cedula', 'telefono', 'email', 'dedicacion', 'carreras']
+        fields = [
+            'nombre', 'cedula', 'telefono', 'email', 'dedicacion', 'carreras',
+            'titulo_profesional', 'postgrados', 'areas_especializacion', 'categoria_docente',
+            'anios_experiencia', 'fecha_ingreso', 'tipo_contrato', 'horario_laboral'
+        ]
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'cedula': forms.TextInput(attrs={'class': 'form-control'}),
             'telefono': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'dedicacion': forms.TextInput(attrs={'class': 'form-control'}),
-        }
-        labels = {
-            'nombre': 'Nombre Completo del Docente',
-            'cedula': 'Cédula de Identidad',
-            'telefono': 'Teléfono',
-            'email': 'Correo Electrónico',
-            'dedicacion': 'Dedicación',
+            'titulo_profesional': forms.TextInput(attrs={'class': 'form-control'}),
+            'postgrados': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'areas_especializacion': forms.TextInput(attrs={'class': 'form-control'}),
+            'categoria_docente': forms.TextInput(attrs={'class': 'form-control'}),
+            'anios_experiencia': forms.NumberInput(attrs={'class': 'form-control'}),
+            'fecha_ingreso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo_contrato': forms.TextInput(attrs={'class': 'form-control'}),
+            'horario_laboral': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
-class CarreraForm(forms.ModelForm):
-    class Meta:
-        model = Carrera
-        fields = ['nombre', 'codigo', 'descripcion']
-        widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-        }
-        labels = {
-            'nombre': 'Nombre de la Carrera',
-            'codigo': 'Código de la Carrera',
-            'descripcion': 'Descripción de la Carrera',
-        }
 class AsignarAsignaturasForm(forms.Form):
     periodo = forms.ModelChoiceField(
         queryset=Periodo.objects.all().order_by('-fecha_inicio'), 

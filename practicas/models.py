@@ -100,6 +100,7 @@ class PracticaProfesional(models.Model):
         verbose_name = "Práctica Profesional"
         verbose_name_plural = "Prácticas Profesionales"
         ordering = ['-fecha_inicio'] # Ordenar por fecha de inicio descendente
+        
 
     def __str__(self):
         return f"Práctica de {self.nombre_estudiante} en {self.nombre_empresa}"

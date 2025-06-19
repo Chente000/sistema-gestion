@@ -43,6 +43,5 @@ urlpatterns = [
     path('cargos/crear/', views.crear_cargo, name='crear_cargo'),
     path('cargos/editar/<int:pk>/', views.editar_cargo, name='editar_cargo'),
     path('cargos/eliminar/<int:pk>/', views.eliminar_cargo, name='eliminar_cargo'),
-
 ]
 

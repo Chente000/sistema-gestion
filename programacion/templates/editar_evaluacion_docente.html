@@ -1,0 +1,115 @@
+{% extends "interfaz.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow p-4 mb-4">
+        <h2 class="card-title text-center mb-4">Editar Evaluación Docente</h2>
+        <p class="text-center text-muted">Editando evaluación para: <strong>{{ evaluacion.docente.nombre }}</strong> de la asignatura <strong>{{ evaluacion.asignatura.nombre }}</strong> en el período <strong>{{ evaluacion.periodo.nombre }}</strong></p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                {% for field in form.visible_fields %}
+                    <div class="col-md-6">
+                        {# Manual rendering for 'fue_evaluada' and 'entrego_autoevaluacion' as Bootstrap switches #}
+                        {% if field.name == 'fue_evaluada' or field.name == 'entrego_autoevaluacion' %}
+                            <div class="form-check form-switch mt-4 pt-2">
+                                {{ field|attr:"class:form-check-input" }}
+                                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+                                {% if field.help_text %}<div class="form-text text-muted">{{ field.help_text }}</div>{% endif %}
+                            </div>
+                        {% else %}
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {% render_field field class="form-control" %}
+                            {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+                            {% if field.help_text %}<div class="form-text text-muted">{{ field.help_text }}</div>{% endif %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                {# Campos de "Juicio" que se calculan dinámicamente en el frontend #}
+                {# Usaremos los IDs para JavaScript dinámico, similar a nueva_evaluacion_docente #}
+                <div class="col-md-4">
+                    <label for="juicio_acompanamiento" class="form-label">Juicio Acompañamiento</label>
+                    <input type="text" id="juicio_acompanamiento" class="form-control" readonly value="N/A">
+                </div>
+                <div class="col-md-4">
+                    <label for="juicio_autoevaluacion" class="form-label">Juicio Autoevaluación</label>
+                    <input type="text" id="juicio_autoevaluacion" class="form-control" readonly value="N/A">
+                </div>
+                <div class="col-md-4">
+                    <label for="juicio_evaluacion_estudiante" class="form-label">Juicio Evaluación Estudiante</label>
+                    <input type="text" id="juicio_evaluacion_estudiante" class="form-control" readonly value="N/A">
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-4">
+                <button type="submit" class="btn btn-success btn-lg">Guardar Cambios</button>
+                <a href="{% url 'programacion:evaluacion_docente' %}" class="btn btn-secondary btn-lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Función para obtener el juicio de valor (la misma que en nueva_evaluacion_docente.html)
+    function getJuicio(score, type) {
+        score = parseFloat(score);
+        if (isNaN(score) || score < 0) return "N/A";
+
+        if (type === 'acompanamiento') {
+            if (score >= 0 && score <= 70) return "DEFICIENTE";
+            if (score >= 71 && score <= 85) return "BUENO";
+            if (score >= 86 && score <= 94) return "SOBRESALIENTE";
+            if (score >= 95 && score <= 100) return "EXCELENTE";
+        } else if (type === 'autoevaluacion') {
+            if (score >= 0 && score <= 24) return "DEFICIENTE";
+            if (score >= 25 && score <= 35) return "REGULAR";
+            if (score >= 36 && score <= 44) return "BUENO";
+            if (score >= 45 && score <= 60) return "SOBRESALIENTE";
+        } else if (type === 'estudiante') {
+            if (score >= 1 && score <= 3.9) return "DEFICIENTE";
+            if (score >= 4 && score <= 7.9) return "REGULAR"; 
+            if (score >= 8 && score <= 10) return "EXCELENTE";
+        }
+        return "Fuera de Rango";
+    }
+
+    // Obtener los elementos de entrada de puntaje y de salida de juicio
+    const scoreAcompanamientoInput = document.getElementById('id_score_acompanamiento');
+    const juicioAcompanamientoOutput = document.getElementById('juicio_acompanamiento');
+
+    const autoevaluacionScoreInput = document.getElementById('id_autoevaluacion_score');
+    const juicioAutoevaluacionOutput = document.getElementById('juicio_autoevaluacion');
+
+    const evaluacionEstudianteScoreInput = document.getElementById('id_evaluacion_estudiante_score');
+    const juicioEvaluacionEstudianteOutput = document.getElementById('juicio_evaluacion_estudiante');
+
+    function updateDisplay(inputElement, outputElement, type) {
+        if (inputElement && outputElement) {
+            const score = inputElement.value;
+            outputElement.value = getJuicio(score, type);
+        }
+    }
+
+    // Adjuntar event listeners para cambios en los inputs
+    if (scoreAcompanamientoInput) {
+        scoreAcompanamientoInput.addEventListener('input', () => updateDisplay(scoreAcompanamientoInput, juicioAcompanamientoOutput, 'acompanamiento'));
+        updateDisplay(scoreAcompanamientoInput, juicioAcompanamientoOutput, 'acompanamiento'); // Actualización inicial
+    }
+    if (autoevaluacionScoreInput) {
+        autoevaluacionScoreInput.addEventListener('input', () => updateDisplay(autoevaluacionScoreInput, juicioAutoevaluacionOutput, 'autoevaluacion'));
+        updateDisplay(autoevaluacionScoreInput, juicioAutoevaluacionOutput, 'autoevaluacion'); // Actualización inicial
+    }
+    if (evaluacionEstudianteScoreInput) {
+        evaluacionEstudianteScoreInput.addEventListener('input', () => updateDisplay(evaluacionEstudianteScoreInput, juicioEvaluacionEstudianteOutput, 'estudiante'));
+        updateDisplay(evaluacionEstudianteScoreInput, juicioEvaluacionEstudianteOutput, 'estudiante'); // Actualización inicial
+    }
+});
+</script>
+{% endblock %}

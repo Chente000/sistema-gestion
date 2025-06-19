@@ -29,7 +29,8 @@ from django.contrib import messages
 from administrador.permissions import PERMISSIONS # Importa tus PERMISSIONS
 
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_PROYECTO_SERVICIO_SOCIAL))
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_PROYECTO_SERVICIO_SOCIAL),
+    login_url='/no_autorizado/') # Ajusta la URL de redirección si es necesario
 def servicio_list(request):
     servicios_qs = ServicioSocial.objects.all().order_by('-fecha_inicio')
 
@@ -115,7 +116,7 @@ def servicio_list(request):
     return render(request, 'servicio_list.html', context) # Ajusta la ruta del template
 
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.EXPORT_PROYECTO_SERVICIO_SOCIAL_PDF))
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.EXPORT_PROYECTO_SERVICIO_SOCIAL_PDF), login_url='/no-autorizado/')
 def export_servicios_pdf(request):
     # Reutilizar la lógica de filtrado de servicio_list
     servicios = ServicioSocial.objects.all().order_by('-fecha_inicio')
@@ -225,7 +226,7 @@ def export_servicios_pdf(request):
     return HttpResponse(buffer.getvalue(), content_type='application/pdf')
 
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.EXPORT_PROYECTO_SERVICIO_SOCIAL_EXCEL))
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.EXPORT_PROYECTO_SERVICIO_SOCIAL_EXCEL), login_url='/no-autorizado/')
 def export_servicios_excel(request):
     # Reutilizar la lógica de filtrado de servicio_list
     servicios = ServicioSocial.objects.all().order_by('-fecha_inicio')
@@ -330,7 +331,8 @@ def export_servicios_excel(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_PROYECTO_SERVICIO_SOCIAL))
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_PROYECTO_SERVICIO_SOCIAL), login_url='/no-autorizado/'
+)
 def servicio_detail(request, pk):
     servicio = get_object_or_404(ServicioSocial, pk=pk)
     # Lógica de granularidad: El usuario solo puede ver el detalle si tiene permiso sobre el objeto
@@ -342,7 +344,7 @@ def servicio_detail(request, pk):
     return render(request, 'servicio_detail.html', {'servicio': servicio}) # Ajusta la ruta del template
 
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.ADD_PROYECTO_SERVICIO_SOCIAL))
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.ADD_PROYECTO_SERVICIO_SOCIAL), login_url='/no-autorizado/')
 def servicio_create(request):
     if request.method == 'POST':
         form = ServicioSocialForm(request.POST)
@@ -395,7 +397,7 @@ def servicio_create(request):
     })
 
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.CHANGE_PROYECTO_SERVICIO_SOCIAL))
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.CHANGE_PROYECTO_SERVICIO_SOCIAL), login_url='/no-autorizado/')
 def servicio_update(request, pk):
     servicio = get_object_or_404(ServicioSocial, pk=pk)
     
@@ -432,7 +434,7 @@ def servicio_update(request, pk):
     })
 
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.DELETE_PROYECTO_SERVICIO_SOCIAL))
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.DELETE_PROYECTO_SERVICIO_SOCIAL), login_url='/no-autorizado/')
 def servicio_delete(request, pk):
     servicio = get_object_or_404(ServicioSocial, pk=pk)
     

@@ -695,3 +695,5 @@ def eliminar_cargo(request, pk):
         return redirect('administrador:lista_cargos')
     return render(request, 'confirmar_eliminar.html', {'obj': cargo, 'entity_name': 'Cargo'})
 
+def no_autorizado(request):
+    return render(request, 'no_autorizado.html')
