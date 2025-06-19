@@ -1,0 +1,21 @@
+{% extends "interfaz.html" %}
+{% block title %}Mi Perfil{% endblock %}
+{% block content %}
+<div class="card shadow p-4 mb-4">
+    <h2 class="card-title text-center mb-4">Mi Perfil de Usuario</h2>
+    <div class="card-body">
+        <p><strong>Nombre de Usuario:</strong> {{ perfil.user.username }}</p>
+        <p><strong>Nombre Completo:</strong> {{ perfil.user.first_name }} {{ perfil.user.last_name }}</p>
+        <p><strong>Email:</strong> {{ perfil.user.email }}</p>
+        <p><strong>Cédula/ID:</strong> {{ perfil.cedula|default:"No especificada" }}</p>
+        <p><strong>Teléfono:</strong> {{ perfil.telefono|default:"No especificado" }}</p>
+        <p><strong>Fecha de Nacimiento:</strong> {{ perfil.fecha_nacimiento|date:"d/m/Y"|default:"No especificada" }}</p>
+        <p><strong>Dirección:</strong> {{ perfil.direccion|default:"No especificada" }}</p>
+        <p><strong>Género:</strong> {{ perfil.get_genero_display|default:"No especificado" }}</p>
+        <p><strong>Tipo de Usuario:</strong> {{ perfil.get_tipo_usuario_display|default:"No especificado" }}</p>
+        <div class="d-flex justify-content-end mt-4">
+            <a href="{% url 'perfiles:editar_perfil' %}" class="btn btn-primary">Editar Perfil</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

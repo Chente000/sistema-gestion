@@ -11,7 +11,7 @@ from django.db import transaction, IntegrityError # Para transacciones atómicas
 from datetime import time # Importa time para los defaults de hora
 from .permissions import PERMISSIONS
 from django.core.exceptions import PermissionDenied
-
+from perfiles.models import PerfilUsuario
 import importlib  # <-- Agrega esta línea para importar importlib
 
 # Para el sistema de log
@@ -234,23 +234,67 @@ def aprobar_solicitud(request, solicitud_id):
     solicitud = get_object_or_404(SolicitudUsuario, pk=solicitud_id, estado='Pendiente')
     try:
         with transaction.atomic():
+            # 1. Crear el objeto User (tu modelo accounts.Usuario)
             usuario = User.objects.create(
-                username=solicitud.cedula,
-                password=solicitud.password,  # <-- Usa el hash tal cual, NO vuelvas a hashear
+                username=solicitud.cedula, # El nombre de usuario se establece como la cédula
+                password=solicitud.password, # Usa el hash tal cual, NO vuelvas a hashear
                 first_name=solicitud.first_name,
                 last_name=solicitud.last_name,
                 email=solicitud.email,
-                cedula=solicitud.cedula,
-                telefono_movil=solicitud.telefono_movil,
-                rol=solicitud.rol,
+                # NOTA: Los campos `cedula` y `telefono_movil` en tu modelo User
+                # si existen, deberían ser eliminados y manejados solo por PerfilUsuario
+                # para evitar redundancia y mantener la lógica de perfil centralizada.
+                # Si tu modelo accounts.Usuario NO tiene 'cedula' y 'telefono_movil',
+                # ¡elimina estas líneas de aquí!
+                # cedula=solicitud.cedula,
+                # telefono_movil=solicitud.telefono_movil,
+                
+                # Asignar un Cargo por defecto o según la lógica de tu Rol sugerido
+                # Aquí asumo que el rol 'profesor' se mapea a un Cargo específico.
+                # Tendrías que buscar el Cargo que corresponda al rol sugerido
+                # o asignar uno por defecto. Por ejemplo:
+                # cargo_asignado = Cargo.objects.get(nombre='Profesor') # O el que sea
+                # usuario.cargo = cargo_asignado
+                
                 is_active=True,
             )
+
+            # 2. Actualizar el PerfilUsuario asociado con los datos de la solicitud
+            # La señal post_save ya habrá creado el PerfilUsuario, lo obtenemos y actualizamos
+            # Si `perfil_usuario` no está accesible directamente, usa:
+            # perfil = PerfilUsuario.objects.get(user=usuario)
+            
+            # Asegurarse de que el perfil exista (la señal debería haberlo creado)
+            perfil, created = PerfilUsuario.objects.get_or_create(user=usuario)
+            
+            perfil.cedula = solicitud.cedula
+            perfil.telefono = solicitud.telefono_movil # Tu campo en PerfilUsuario es 'telefono'
+            perfil.direccion = solicitud.direccion if hasattr(solicitud, 'direccion') else perfil.direccion # Si SolicitudUsuario tiene dirección
+            
+            # Opcional: Asignar el tipo_usuario basado en el rol sugerido de la solicitud
+            # Asumo que 'SolicitudUsuario.rol' tiene valores que coinciden con 'PerfilUsuario.tipo_usuario'
+            # o que tienes una lógica de mapeo.
+            # Por ejemplo:
+            # rol_sugerido_mapeado = {
+            #    'profesor': 'docente',
+            #    'administrador': 'administrador',
+            #    'coordinador': 'coordinador',
+            #    'estudiante': 'estudiante',
+            # }.get(solicitud.rol, 'estudiante') # Valor por defecto si no hay mapeo
+            # perfil.tipo_usuario = rol_sugerido_mapeado
+
+            perfil.save() # Guardar los cambios en el PerfilUsuario
+
+            # 3. Actualizar el estado de la SolicitudUsuario
             solicitud.estado = 'Aprobada'
             solicitud.fecha_revision = timezone.now()
             solicitud.revisado_por = request.user
             solicitud.save()
-            messages.success(request, f"Solicitud aprobada y usuario '{usuario.username}' creado con rol '{usuario.get_rol_display()}'.")
-            log_change(request.user, usuario, 'user_created_from_request', f"Usuario {usuario.username} creado a partir de solicitud {solicitud.pk}")
+
+            messages.success(request, f"Solicitud aprobada y usuario '{usuario.username}' creado.")
+            # Asegúrate de que 'log_change' sea una función definida en tu proyecto
+            # log_change(request.user, usuario, 'user_created_from_request', f"Usuario {usuario.username} creado a partir de solicitud {solicitud.pk}")
+
     except Exception as e:
         messages.error(request, f"Error al aprobar la solicitud: {e}")
     return redirect('administrador:revisar_solicitudes')

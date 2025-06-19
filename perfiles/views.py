@@ -10,7 +10,7 @@ def ver_perfil(request):
     Muestra el perfil del usuario autenticado.
     """
     perfil = get_object_or_404(PerfilUsuario, user=request.user)
-    return render(request, 'perfiles/ver_perfil.html', {'perfil': perfil})
+    return render(request, 'ver_perfil.html', {'perfil': perfil})
 
 @login_required
 def editar_perfil(request):
@@ -27,4 +27,4 @@ def editar_perfil(request):
             return redirect('perfiles:ver_perfil') # Redirigir a la vista del perfil
     else:
         form = PerfilUsuarioForm(instance=perfil)
-    return render(request, 'perfiles/editar_perfil.html', {'form': form, 'perfil': perfil})
+    return render(request, 'editar_perfil.html', {'form': form, 'perfil': perfil})
