@@ -1,94 +1,199 @@
 {# administrador/templates/administrador/panel_administrador.html #}
 
-{% extends 'interfaz.html' %} {# ¡CAMBIADO DE 'base.html' A 'interfaz.html'! #}
+{% extends 'base.html' %}
 {% load static %}
 
-{# No necesitas bloques de style aquí. Todos los estilos los provee interfaz.html #}
-{# NO PONGAS NINGÚN CÓDIGO <style> AQUÍ #}
-
 {% block content %}
-{# Elimina el div #wrapper y #page-content-wrapper, ya están en interfaz.html #}
-{# El contenido específico del panel va directamente dentro del bloque content #}
-
-{# Aquí usamos las clases de tarjeta de interfaz.html para el panel principal #}
-<div class="card card-custom"> {# Usamos card-custom para que tenga el estilo de tarjeta #}
-    <div class="card-body"> {# Puedes poner el contenido directamente aquí o usar un div extra #}
-        <h2 class="card-title text-center mb-4" style="color: var(--primary-accent-color);">Bienvenido al Panel de Administración</h2>
-        
-        {# Este es el bloque original de tu panel_administrador.html #}
-        {# Asegúrate de que las urls aquí sean correctas, no las he modificado #}
-        {% block content_admin_panel %}
-            <!-- Aquí va el contenido específico de cada página que extiende panel_administrador.html -->
-            <!-- Por ejemplo, los paneles de resumen del dashboard, o las tablas de solicitudes -->
-            <!-- Si no tienes contenido directo aquí, puedes eliminar este bloque. -->
-
-            {# Ejemplo de cómo podrías tener los enlaces aquí, aunque ya están en el sidebar #}
-            {# Esto es solo para que veas dónde iría tu contenido #}
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                <div class="col">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-body">
-                            <h5 class="card-title text-primary"><i class="fas fa-users me-2"></i>Gestión de Usuarios</h5>
-                            <ul class="list-unstyled">
-                                <li><a href="{% url 'administrador:usuarios_aprobados' %}" class="text-decoration-none">Usuarios Aprobados</a></li>
-                                <li><a href="{% url 'administrador:revisar_solicitudes' %}" class="text-decoration-none">Solicitudes de Registro</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-body">
-                            <h5 class="card-title text-primary"><i class="fas fa-cogs me-2"></i>Configuración</h5>
-                            <ul class="list-unstyled">
-                                {% if perms.administrador.manage_configuracion_registro %}
-                                <li><a href="{% url 'administrador:configurar_registro' %}" class="text-decoration-none">Configuración de Registro</a></li>
-                                {% endif %}
-                                {% if perms.administrador.view_registro_cambios %}
-                                <li><a href="{% url 'administrador:registro_cambios' %}" class="text-decoration-none">Registro de Cambios</a></li>
-                                {% endif %}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-body">
-                            <h5 class="card-title text-primary"><i class="fas fa-building me-2"></i>Estructura Académica</h5>
-                            <ul class="list-unstyled">
-                                {% if perms.administrador.manage_facultad %}
-                                <li><a href="{% url 'administrador:lista_facultades' %}" class="text-decoration-none">Facultades</a></li>
-                                {% endif %}
-                                {% if perms.administrador.manage_departamento %}
-                                <li><a href="{% url 'administrador:lista_departamentos' %}" class="text-decoration-none">Departamentos</a></li>
-                                {% endif %}
-                                {% if perms.administrador.manage_carrera %}
-                                <li><a href="{% url 'administrador:lista_carrera' %}" class="text-decoration-none">Carreras</a></li>
-                                {% endif %}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-body">
-                            <h5 class="card-title text-primary"><i class="fas fa-box me-2"></i>Recursos</h5>
-                            <ul class="list-unstyled">
-                                {% if perms.administrador.manage_periodo %}
-                                <li><a href="{% url 'administrador:lista_periodos' %}" class="text-decoration-none">Períodos Académicos</a></li>
-                                {% endif %}
-                                {% if perms.administrador.manage_cargos %}
-                                <li><a href="{% url 'administrador:lista_cargos' %}" class="text-decoration-none">Cargos</a></li>
-                                {% endif %}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+<style>
+    body {
+        background: #f4f7fa;
+    }
+    #sidebar-wrapper {
+        min-height: 100vh;
+        background: #232e3c;
+        color: #fff;
+        width: 250px;
+        transition: all 0.3s;
+    }
+    #sidebar-wrapper .sidebar-heading {
+        padding: 1.5rem 1rem;
+        font-size: 1.3rem;
+        font-weight: bold;
+        background: #1a2230;
+        color: #4fd1c5;
+        letter-spacing: 1px;
+        text-align: center;
+    }
+    .list-group-item {
+        background: transparent;
+        color: #bfc9da;
+        border: none;
+        font-size: 1rem;
+        transition: background 0.2s, color 0.2s;
+    }
+    .list-group-item:hover, .list-group-item.active, .list-group-item:focus {
+        background: #2d3a4b;
+        color: #4fd1c5;
+    }
+    .list-group-item i {
+        color: #4fd1c5;
+        margin-right: 8px;
+    }
+    .dropdown-toggle::after {
+        color: #4fd1c5;
+    }
+    #page-content-wrapper {
+        flex: 1;
+        background: #f4f7fa;
+        min-height: 100vh;
+    }
+    .navbar {
+        background: #fff !important;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.06);
+        border-bottom: 1px solid #e3e6f0;
+    }
+    .navbar .nav-link, .navbar .navbar-brand {
+        color: #232e3c !important;
+        font-weight: 500;
+    }
+    .navbar .dropdown-menu {
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    .container-fluid {
+        margin-top: 2rem;
+    }
+    .card-admin {
+        background: #fff;
+        border-radius: 1rem;
+        box-shadow: 0 4px 24px rgba(44,62,80,0.08);
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+    }
+    .card-admin h2 {
+        color: #232e3c;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+    @media (max-width: 991.98px) {
+        #sidebar-wrapper {
+            width: 100%;
+            min-height: auto;
+            position: relative;
+        }
+        .container-fluid {
+            margin-top: 1rem;
+        }
+        .card-admin {
+            padding: 1rem;
+        }
+    }
+</style>
+<div class="d-flex" id="wrapper">
+    <!-- Sidebar -->
+    <div id="sidebar-wrapper">
+        <div class="sidebar-heading">Panel Administrador</div>
+        <div class="list-group list-group-flush">
+            <a href="{% url 'home:panel_principal' %}" class="list-group-item {% if request.resolver_match.url_name == 'panel_principal' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt"></i>Dashboard
+            </a>
+            {% if perms.administrador.manage_usuario %}
+            <a href="#submenu-usuarios" data-bs-toggle="collapse" aria-expanded="false" class="list-group-item dropdown-toggle">
+                <i class="fas fa-users"></i>Gestión de Usuarios
+            </a>
+            <div class="collapse" id="submenu-usuarios">
+                <a href="{% url 'administrador:usuarios_aprobados' %}" class="list-group-item ps-5">Usuarios Aprobados</a>
+                <a href="{% url 'administrador:revisar_solicitudes' %}" class="list-group-item ps-5">Solicitudes de Registro</a>
             </div>
-        {% endblock content_admin_panel %}
+            {% endif %}
+            {% if perms.administrador.manage_configuracion_registro or perms.administrador.view_registro_cambios %}
+            <a href="#submenu-config" data-bs-toggle="collapse" aria-expanded="false" class="list-group-item dropdown-toggle">
+                <i class="fas fa-cogs"></i>Configuración
+            </a>
+            <div class="collapse" id="submenu-config">
+                {% if perms.administrador.manage_configuracion_registro %}
+                <a href="{% url 'administrador:configurar_registro' %}" class="list-group-item ps-5">Configuración de Registro</a>
+                {% endif %}
+                {% if perms.administrador.view_registro_cambios %}
+                <a href="{% url 'administrador:registro_cambios' %}" class="list-group-item ps-5">Registro de Cambios</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if perms.administrador.manage_facultad or perms.administrador.manage_departamento or perms.administrador.manage_carrera %}
+            <a href="#submenu-estructura" data-bs-toggle="collapse" aria-expanded="false" class="list-group-item dropdown-toggle">
+                <i class="fas fa-building"></i>Estructura Académica
+            </a>
+            <div class="collapse" id="submenu-estructura">
+                {% if perms.administrador.manage_facultad %}
+                <a href="{% url 'administrador:lista_facultades' %}" class="list-group-item ps-5">Facultades</a>
+                {% endif %}
+                {% if perms.administrador.manage_departamento %}
+                <a href="{% url 'administrador:lista_departamentos' %}" class="list-group-item ps-5">Departamentos</a>
+                {% endif %}
+                {% if perms.administrador.manage_carrera %}
+                <a href="{% url 'administrador:lista_carrera' %}" class="list-group-item ps-5">Carreras</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if perms.administrador.manage_aula or perms.administrador.manage_tipo_aula or perms.administrador.manage_periodo or perms.administrador.manage_cargos %}
+            <a href="#submenu-recursos" data-bs-toggle="collapse" aria-expanded="false" class="list-group-item dropdown-toggle">
+                <i class="fas fa-box"></i>Recursos
+            </a>
+            <div class="collapse" id="submenu-recursos">
+                {% if perms.administrador.manage_periodo %}
+                <a href="{% url 'administrador:lista_periodos' %}" class="list-group-item ps-5">Períodos Académicos</a>
+                {% endif %}
+                {% if perms.administrador.manage_cargos %}
+                <a href="{% url 'administrador:lista_cargos' %}" class="list-group-item ps-5">Cargos</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- /#sidebar-wrapper -->
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+            <button class="btn btn-outline-primary" id="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">Inicio</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            {{ request.user.username }}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="{% url 'perfiles:ver_perfil' %}">Perfil</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{% url 'accounts:cerrar_sesion' %}">Cerrar Sesión</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="container-fluid">
+            <div class="card-admin">
+                <h2>Bienvenido al Panel de Administración</h2>
+                {% block content_admin_panel %}
+                <!-- Aquí va el contenido específico de cada página -->
+                {% endblock content_admin_panel %}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock content %}
 
-{# El bloque extra_js ya no es necesario aquí, la lógica de JS está en interfaz.html #}
-{# NO PONGAS NINGÚN CÓDIGO {% block extra_js %} AQUÍ #}
+{% block extra_js %}
+<script>
+    var el = document.getElementById("wrapper");
+    var toggleButton = document.getElementById("menu-toggle");
+    toggleButton.onclick = function () {
+        el.classList.toggle("toggled");
+    };
+</script>
+{% endblock extra_js %}
