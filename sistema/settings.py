@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     'servicio_social',
     'widget_tweaks',
     'practicas',
-    'perfiles',
     'perfiles.apps.PerfilesConfig',
 ]
 
