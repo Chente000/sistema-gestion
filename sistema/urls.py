@@ -17,11 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from home import views
+from django.views.generic.base import RedirectView # Importa RedirectView
+from django.urls import reverse_lazy # Importa reverse_lazy
+
 from administrador import views as administrador_views  # Ajusta la ruta de importación si tu vista está en otro lugar
+
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', RedirectView.as_view(url=reverse_lazy('accounts:inicio_sesion'), permanent=False), name='index'), # Changed permanent to False for better SEO during development/testing
     path('home/', include('home.urls')),
     path('accounts/', include('accounts.urls')),
     path('interfaz/', views.interfaz, name='interfaz'),
