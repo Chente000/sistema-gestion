@@ -1,42 +1,68 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import ServicioSocial, EstudianteServicioSocial, Carrera, semestre # Asegúrate de importar Carrera y semestre
+from .models import ServicioSocial, EstudianteServicioSocial # No necesitamos Carrera ni semestre directamente aquí, ya que EstudianteServicioSocial ya los importa.
+# Importa Periodo desde la app correcta, que mencionaste que es 'programacion'.
+from programacion.models import Periodo 
 
 # Formulario principal para el modelo ServicioSocial
 class ServicioSocialForm(forms.ModelForm):
-    # Campos del tutor
+    # Campos del tutor que se manejan condicionalmente
     tutor_unidad_administrativa = forms.CharField(
         label="Unidad Administrativa (si es Administrativo)",
-        required=False, # Hacerlo no requerido en el formulario si no se aplica
+        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     tutor_categoria_docente = forms.CharField(
         label="Categoría Docente (si es Docente)",
-        required=False, # Hacerlo no requerido en el formulario si no se aplica
+        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
     class Meta:
         model = ServicioSocial
-        # Incluye todos los campos de ServicioSocial.
-        # Django creará automáticamente los widgets para los nuevos campos.
-        fields = '__all__'
+        fields = [
+            'periodo_academico', 
+            'nombre_proyecto', 
+            'departamento', 
+            'observaciones',
+            'horas_cumplidas',
+
+            'tutor_nombres',
+            'tutor_apellidos',
+            'tutor_cedula',
+            'tutor_tipo',
+
+            'nombre_comunidad_institucion',
+            'direccion_comunidad',
+            'tutor_comunitario_nombre',
+            'tutor_comunitario_cedula',
+            'tutor_comunitario_telefono',
+            'cantidad_beneficiados',
+            'vinculacion_planes_programas',
+            'area_accion_proyecto',
+            'estado',
+
+            'act_foros',
+            'act_charlas',
+            'act_jornadas',
+            'act_talleres',
+            'act_campanas',
+            'act_reunion_misiones',
+            'act_ferias',
+            'act_alianzas_estrategicas',
+        ]
         widgets = {
-            # Widgets existentes
-            'fecha_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'fecha_fin': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'periodo_academico': forms.Select(attrs={'class': 'form-control'}),
             'estado': forms.Select(attrs={'class': 'form-control'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'departamento': forms.TextInput(attrs={'class': 'form-control'}),
             'horas_cumplidas': forms.NumberInput(attrs={'class': 'form-control'}),
 
-            # Nuevos campos de tutor
             'tutor_nombres': forms.TextInput(attrs={'class': 'form-control'}),
             'tutor_apellidos': forms.TextInput(attrs={'class': 'form-control'}),
             'tutor_cedula': forms.TextInput(attrs={'class': 'form-control'}),
-            'tutor_tipo': forms.Select(attrs={'class': 'form-control', 'onchange': 'toggleTutorFields()'}), # Añadimos un onchange para JS
+            'tutor_tipo': forms.Select(attrs={'class': 'form-control', 'onchange': 'toggleTutorFields()'}), 
 
-            # Nuevos campos de proyecto
             'nombre_proyecto': forms.TextInput(attrs={'class': 'form-control'}),
             'nombre_comunidad_institucion': forms.TextInput(attrs={'class': 'form-control'}),
             'direccion_comunidad': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -47,7 +73,6 @@ class ServicioSocialForm(forms.ModelForm):
             'vinculacion_planes_programas': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'area_accion_proyecto': forms.Select(attrs={'class': 'form-control'}),
 
-            # Nuevos campos de actividades (checkboxes)
             'act_foros': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'act_charlas': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'act_jornadas': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -57,7 +82,8 @@ class ServicioSocialForm(forms.ModelForm):
             'act_ferias': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'act_alianzas_estrategicas': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-        labels = { # Etiquetas personalizadas para algunos campos si lo deseas
+        labels = { 
+            'periodo_academico': 'Período Académico', 
             'tutor_nombres': 'Nombres del Tutor',
             'tutor_apellidos': 'Apellidos del Tutor',
             'tutor_cedula': 'Cédula del Tutor',
@@ -73,6 +99,32 @@ class ServicioSocialForm(forms.ModelForm):
             'area_accion_proyecto': 'Área de Acción',
             'observaciones': 'Observaciones Generales del Proyecto',
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tutor_tipo = cleaned_data.get('tutor_tipo')
+        tutor_unidad_administrativa = cleaned_data.get('tutor_unidad_administrativa')
+        tutor_categoria_docente = cleaned_data.get('tutor_categoria_docente')
+
+        # MODIFICADO: Comparar directamente con los valores de cadena de las tuplas
+        if tutor_tipo == 'administrativo' and not tutor_unidad_administrativa:
+            self.add_error('tutor_unidad_administrativa', 'Este campo es requerido para tutores administrativos.')
+        
+        if tutor_tipo == 'docente' and not tutor_categoria_docente:
+            self.add_error('tutor_categoria_docente', 'Este campo es requerido para tutores docentes.')
+        
+        # Opcional: Validar que si no es administrativo ni docente, estos campos estén vacíos
+        # MODIFICADO: Comparar directamente con los valores de cadena
+        if tutor_tipo not in ['administrativo', 'docente']:
+            if tutor_unidad_administrativa:
+                self.add_error('tutor_unidad_administrativa', 'Este campo solo aplica para tutores administrativos.')
+            if tutor_categoria_docente:
+                self.add_error('tutor_categoria_docente', 'Este campo solo aplica para tutores docentes.')
+
+        return cleaned_data
+
+
+
 
 # Formulario para un solo Estudiante de Servicio Social
 class EstudianteServicioSocialForm(forms.ModelForm):
@@ -102,15 +154,12 @@ class EstudianteServicioSocialForm(forms.ModelForm):
         }
 
 # Formset para manejar múltiples EstudianteServicioSocial
-# min_num=1: Asegura al menos un estudiante
-# extra=1: Añade un formulario vacío adicional por defecto
-# can_delete=True: Permite eliminar formularios existentes
 EstudianteServicioSocialFormSet = inlineformset_factory(
-    ServicioSocial,           # Modelo padre
-    EstudianteServicioSocial, # Modelo hijo
+    ServicioSocial,             # Modelo padre
+    EstudianteServicioSocial,   # Modelo hijo
     form=EstudianteServicioSocialForm, # Formulario del hijo
-    extra=1,                  # Cuántos formularios vacíos mostrar inicialmente
-    can_delete=True,          # Permitir eliminar instancias existentes
-    min_num=1,                # Mínimo de formularios que deben ser válidos (al menos 1 estudiante)
-    validate_min=True         # Validar el min_num
+    extra=1,                    # Cuántos formularios vacíos mostrar inicialmente
+    can_delete=True,            # Permitir eliminar instancias existentes
+    min_num=1,                  # Mínimo de formularios que deben ser válidos (al menos 1 estudiante)
+    validate_min=True           # Validar el min_num
 )

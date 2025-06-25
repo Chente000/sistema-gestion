@@ -5,94 +5,234 @@
 
 {% block content %}
 <style>
+    /* Estilos de interfaz.html aplicados a panel_administrador.html */
+    :root {
+        --sidebar-width: 260px; /* Ajustar si el sidebar original de panel_administrador es 250px, lo mantendré en 260px si no hay conflicto */
+        --topbar-height: 65px;
+        --primary-accent-color: #003366; /* Azul oscuro corporativo */
+        --secondary-accent-color: #FFD600; /* Amarillo/Dorado vibrante */
+        --sidebar-bg: var(--primary-accent-color);
+        --sidebar-link-color: rgba(255, 255, 255, 0.85); /* Blanco ligeramente transparente */
+        --sidebar-link-hover-bg: #002244; /* Azul aún más oscuro */
+        --sidebar-link-active-bg: #002B55; /* Un tono intermedio */
+        --sidebar-link-active-color: var(--secondary-accent-color);
+        --sidebar-brand-color: var(--secondary-accent-color);
+        --content-bg: #F8F9FA; /* Blanco grisáceo para el fondo del contenido */
+        --text-color-main: #343a40; /* Texto oscuro general */
+        --border-color-soft: rgba(255, 255, 255, 0.15); /* Borde sutil para sidebar */
+        --danger-color: #DC3545; /* Rojo de Bootstrap */
+        --info-color: #17A2B8; /* Azul claro de Bootstrap */
+        --warning-color: #FFC107; /* Amarillo de Bootstrap */
+        --success-color: #28A745; /* Verde de Bootstrap */
+    }
+
     body {
-        background: #f4f7fa;
-    }
-    #sidebar-wrapper {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--content-bg);
+        color: var(--text-color-main);
+        font-size: 0.925rem;
+        line-height: 1.6;
         min-height: 100vh;
-        background: #232e3c;
-        color: #fff;
-        width: 250px;
-        transition: all 0.3s;
+        display: flex; /* Cuerpo como contenedor flex para #wrapper */
+        flex-direction: column;
+        overflow-x: hidden; /* Evita scroll horizontal indeseado */
     }
+
+    /* Contenedor principal del layout */
+    #wrapper {
+        display: flex; /* Hace que sidebar-wrapper y page-content-wrapper se alineen */
+        width: 100%;
+        flex: 1; /* Permite que el wrapper se estire verticalmente */
+        overflow: hidden; /* Importante para que el sidebar oculto no cause scroll */
+    }
+
+    /* Sidebar Wrapper */
+    #sidebar-wrapper {
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-link-color);
+        width: 250px; /* Mantener el ancho original de panel_administrador.html */
+        transition: margin-left 0.3s ease; /* Transición suave para moverse */
+        min-height: 100vh; 
+        box-shadow: 3px 0 10px rgba(41, 32, 173, 0.15);
+        z-index: 1030; 
+        flex-shrink: 0; 
+    }
+
+    /* ESTILO CUANDO EL WRAPPER TIENE LA CLASE 'toggled' (CLAVE) */
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: -250px; /* Mueve la barra lateral completamente fuera de la vista */
+    }
+
+    /* sidebar-heading ahora usa estilos de sidebar-header de interfaz.html */
     #sidebar-wrapper .sidebar-heading {
-        padding: 1.5rem 1rem;
-        font-size: 1.3rem;
-        font-weight: bold;
-        background: #1a2230;
-        color: #4fd1c5;
-        letter-spacing: 1px;
+        padding: 1.1rem 1.5rem; /* Ajustado */
         text-align: center;
+        border-bottom: 1px solid var(--border-color-soft);
+        height: var(--topbar-height);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem; /* Ajustado */
+        font-weight: 600; /* Ajustado */
+        color: var(--sidebar-brand-color); /* Ajustado */
+        text-decoration: none;
+        white-space: nowrap; 
     }
+
+    /* Para ocultar el texto de la marca cuando el sidebar está colapsado */
+    #wrapper.toggled .sidebar-heading { opacity: 0; } 
+
+    /* Los íconos y texto de la lista de grupo necesitan un ajuste de estilo para parecerse a nav-link */
     .list-group-item {
         background: transparent;
-        color: #bfc9da;
+        color: var(--sidebar-link-color); /* Color de interfaz.html */
         border: none;
-        font-size: 1rem;
-        transition: background 0.2s, color 0.2s;
-    }
-    .list-group-item:hover, .list-group-item.active, .list-group-item:focus {
-        background: #2d3a4b;
-        color: #4fd1c5;
-    }
-    .list-group-item i {
-        color: #4fd1c5;
-        margin-right: 8px;
-    }
-    .dropdown-toggle::after {
-        color: #4fd1c5;
-    }
-    #page-content-wrapper {
-        flex: 1;
-        background: #f4f7fa;
-        min-height: 100vh;
-    }
-    .navbar {
-        background: #fff !important;
-        box-shadow: 0 2px 8px rgba(44,62,80,0.06);
-        border-bottom: 1px solid #e3e6f0;
-    }
-    .navbar .nav-link, .navbar .navbar-brand {
-        color: #232e3c !important;
+        font-size: 0.9rem; /* Tamaño de interfaz.html */
+        transition: background-color 0.2s, color 0.2s, border-left-color 0.2s; /* Transición de interfaz.html */
+        border-left: 4px solid transparent; /* Borde de interfaz.html */
+        display: flex; /* Para alinear ícono y texto */
+        align-items: center;
+        padding: 0.75rem 1.75rem; /* Padding de interfaz.html */
         font-weight: 500;
     }
+    .list-group-item:hover {
+        background-color: var(--sidebar-link-hover-bg);
+        color: var(--sidebar-link-active-color);
+        border-left-color: var(--secondary-accent-color);
+    }
+    .list-group-item.active {
+        background-color: var(--sidebar-link-active-bg);
+        color: var(--sidebar-link-active-color);
+        font-weight: 600;
+        border-left-color: var(--secondary-accent-color);
+    }
+    .list-group-item i.fas { /* Íconos dentro de list-group-item */
+        color: var(--sidebar-link-color); /* Usar el color del link, no el del ícono original de panel_administrador */
+        margin-right: 15px; /* Ajustado a interfaz.html */
+        font-size: 1.1rem; /* Ajustado a interfaz.html */
+        min-width: 24px;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    .list-group-item:hover i.fas { transform: scale(1.1); }
+
+
+    /* Page Content Wrapper */
+    #page-content-wrapper {
+        width: 100%; 
+        flex: 1; 
+        background-color: var(--content-bg);
+        min-height: 100vh; 
+        display: flex;
+        flex-direction: column;
+        position: relative; 
+        overflow-x: hidden; 
+    }
+
+    /* Navbar (la barra superior, con estilos de top-navbar de interfaz.html) */
+    .navbar { /* Esta clase es la que usa la nav en panel_administrador.html */
+        background-color: #fff !important; /* Mantenemos !important por si Bootstrap lo sobrescribe */
+        border-bottom: 1px solid #e0e0e0; /* De interfaz.html */
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* De interfaz.html */
+        height: var(--topbar-height); /* De interfaz.html */
+        padding: 0 1.75rem; /* De interfaz.html */
+        display: flex; /* Asegura display flex */
+        justify-content: space-between; /* Alineación de interfaz.html */
+        align-items: center; /* Alineación de interfaz.html */
+        width: 100%; 
+        z-index: 1020; 
+        flex-shrink: 0; 
+    }
+    .navbar .btn-outline-primary { /* Estilo del botón toggle */
+        background-color: transparent;
+        border: none;
+        color: var(--primary-accent-color);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        transition: color 0.2s;
+        z-index: 1040; 
+    }
+    .navbar .btn-outline-primary:hover {
+        color: var(--secondary-accent-color);
+    }
+
+    .navbar .navbar-nav .nav-item.active .nav-link,
+    .navbar .nav-link {
+        color: var(--text-color-main) !important; /* Texto oscuro general */
+        font-weight: 500;
+    }
+
     .navbar .dropdown-menu {
-        border-radius: 0.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        border-radius: 0.5rem; /* De interfaz.html */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* De interfaz.html */
+        border: none; /* De interfaz.html */
     }
+    .navbar .dropdown-item {
+        color: var(--text-color-main); /* De interfaz.html */
+        padding: 0.6rem 1.2rem; /* De interfaz.html */
+    }
+    .navbar .dropdown-item:hover {
+        background-color: #e9ecef; /* De interfaz.html */
+        color: var(--primary-accent-color); /* De interfaz.html */
+    }
+
     .container-fluid {
-        margin-top: 2rem;
+        margin-top: 2rem; /* Se mantiene para el padding inicial del contenido */
     }
-    .card-admin {
-        background: #fff;
-        border-radius: 1rem;
-        box-shadow: 0 4px 24px rgba(44,62,80,0.08);
+    .card-admin { /* Estilo de card-custom de interfaz.html para card-admin */
+        background-color: #fff;
+        border: none;
+        border-radius: 0.75rem;
+        box-shadow: 0 6px 20px rgba(0,51,102,0.1); /* Sombra de interfaz.html */
         padding: 2rem 2.5rem;
         margin-bottom: 2rem;
     }
     .card-admin h2 {
-        color: #232e3c;
+        color: var(--primary-accent-color); /* Color de interfaz.html */
         font-weight: 700;
         margin-bottom: 1.5rem;
     }
-    @media (max-width: 991.98px) {
+
+    /* Estilos responsivos */
+    @media (max-width: 991.98px) { 
         #sidebar-wrapper {
-            width: 100%;
-            min-height: auto;
-            position: relative;
+            width: 250px; /* Mantener el ancho original de panel_administrador.html */
+            margin-left: -250px; /* Oculto por defecto en móvil */
+            position: fixed; /* Necesario para que se deslice sobre el contenido */
+            top: 0; bottom: 0; left: 0;
+        }
+        #wrapper.toggled #sidebar-wrapper {
+            margin-left: 0; /* Muestra la barra lateral */
+        }
+        #page-content-wrapper {
+            width: 100%; 
+        }
+        .navbar { /* Asegurarse de que el navbar se vea bien en móvil */
+            padding-left: 1rem; /* Menos padding en móvil */
+            padding-right: 1rem;
         }
         .container-fluid {
-            margin-top: 1rem;
+            margin-top: 1rem; /* Menos margen superior en móvil */
+            padding-left: 1rem; /* Añadir padding a los lados del container en móvil */
+            padding-right: 1rem;
         }
         .card-admin {
-            padding: 1rem;
+            padding: 1rem; /* Menos padding en móvil */
+        }
+    }
+    
+    /* Ajuste para que el cuerpo no haga scroll cuando el sidebar se despliega en móvil */
+    @media (max-width: 991.98px) { 
+        #wrapper.toggled {
+            overflow: hidden; 
         }
     }
 </style>
 <div class="d-flex" id="wrapper">
     <!-- Sidebar -->
     <div id="sidebar-wrapper">
-        <div class="sidebar-heading">Panel Administrador</div>
+        <div class="sidebar-heading">Panel Administrador</div> {# Este será el nuevo branding del sidebar #}
         <div class="list-group list-group-flush">
             <a href="{% url 'home:panel_principal' %}" class="list-group-item {% if request.resolver_match.url_name == 'panel_principal' %}active{% endif %}">
                 <i class="fas fa-tachometer-alt"></i>Dashboard
@@ -195,5 +335,29 @@
     toggleButton.onclick = function () {
         el.classList.toggle("toggled");
     };
+
+    // Script para la rotación de íconos en los menús desplegables del sidebar (Gestión de Usuarios, Configuración, etc.)
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.list-group-item.dropdown-toggle').forEach(link => {
+            link.addEventListener('click', function() {
+                // Selecciona el ícono Chevron (fas fa-chevron-down) dentro del enlace
+                const icon = this.querySelector('.fas.fa-chevron-down'); 
+                if (icon) {
+                    icon.classList.toggle('rotate-180');
+                }
+            });
+        });
+
+        // Asegurarse de que el ícono rote correctamente al cargar la página si el menú ya está abierto
+        document.querySelectorAll('.list-group-item + .collapse.show').forEach(collapseEl => {
+            const link = document.querySelector(`[href="#${collapseEl.id}"]`);
+            if (link) {
+                const icon = link.querySelector('.fas.fa-chevron-down'); // Ajustar selector de ícono
+                if (icon) {
+                    icon.classList.add('rotate-180');
+                }
+            }
+        });
+    });
 </script>
 {% endblock extra_js %}

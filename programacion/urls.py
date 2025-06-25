@@ -7,8 +7,9 @@ app_name = 'programacion'
 
 urlpatterns = [
     # URLs para Evaluación Docente
-    path('evaluacion_docente/', views.evaluacion_docente, name='evaluacion_docente'),
-    path('evalucion-docente/nueva/', views.nueva_evaluacion_docente, name='nueva_evaluacion_docente'),
+    path('evaluacion_docente/', views.evaluacion_docente_list, name='evaluacion_docente_list'),
+    path('evaluacion_docente/<int:docente_id>/', views.evaluacion_docente_detalle, name='evaluacion_docente_detalle'), # NUEVA URL de detalle
+
     path('evaluaciones/editar/<int:pk>/', views.editar_evaluacion_docente, name='editar_evaluacion_docente'),
     path('evaluaciones/eliminar/<int:pk>/', views.eliminar_evaluacion_docente, name='eliminar_evaluacion_docente'),
     # URLs para Docentes
@@ -18,6 +19,10 @@ urlpatterns = [
     path('docentes/<int:pk>/editar/', views.editar_docente, name='editar_docente'),
     path('docentes/eliminar/<int:pk>/', views.eliminar_docente, name='eliminar_docente'), 
     path('docentes/<int:pk>/asignar-asignaturas/', views.asignar_asignaturas, name='asignar_asignaturas'),
+
+    path('api/docentes/<int:pk>/add-assignment/', views.api_add_assignment_to_docente, name='api_add_assignment_to_docente'),
+    path('api/assignments/<int:pk>/remove/', views.api_remove_assignment_from_docente, name='api_remove_assignment_from_docente'),
+
 
     # URLs API para carga dinámica
     path('api/semestres_por_carrera/', views.api_semestres_por_carrera, name='api_semestres_por_carrera'),
@@ -62,6 +67,8 @@ urlpatterns = [
     path('secciones/agregar/', views.seccion_create, name='seccion_create'),
     path('secciones/editar/<int:pk>/', views.seccion_edit, name='seccion_edit'),
     path('secciones/eliminar/<int:pk>/', views.seccion_delete, name='seccion_delete'),
+
+    path('evaluacion/exportar/excel/', views.export_evaluacion_excel, name='export_evaluacion_excel'),
     
     # URL AJAX de semestres
     path('ajax/semestres/', views.api_semestres_por_carrera, name='ajax_semestres'),

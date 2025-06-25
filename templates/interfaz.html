@@ -33,39 +33,38 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--content-bg);
-            padding-left: var(--sidebar-width); /* Espacio para el sidebar fijo */
-            padding-top: var(--topbar-height); /* Espacio para la topbar fija */
             color: var(--text-color-main);
             font-size: 0.925rem;
             line-height: 1.6;
             min-height: 100vh;
-            display: flex;
+            display: flex; /* Cuerpo como contenedor flex para #wrapper */
             flex-direction: column;
-            transition: padding-left 0.3s ease; /* Transición suave para el toggle */
-            box-sizing: border-box; /* Asegura que padding no sume al width/height */
+            overflow-x: hidden; /* Evita scroll horizontal indeseado */
         }
 
-        /* Contenedor principal para el layout */
+        /* Contenedor principal del layout (idéntico a panel_administrador.html) */
         #wrapper {
-            display: flex;
-            flex: 1;
+            display: flex; /* Hace que sidebar-wrapper y page-content-wrapper se alineen */
+            width: 100%;
+            flex: 1; /* Permite que el wrapper se estire verticalmente */
+            overflow: hidden; /* Importante para que el sidebar oculto no cause scroll */
         }
 
-        /* Sidebar */
-        .sidebar {
-            position: fixed;
-            top: 0; left: 0; bottom: 0;
-            width: var(--sidebar-width);
-            z-index: 1030;
+        /* Sidebar Wrapper (nueva definición - sin position: fixed) */
+        #sidebar-wrapper {
             background-color: var(--sidebar-bg);
             color: var(--sidebar-link-color);
-            padding: 0;
+            width: var(--sidebar-width); /* Ancho por defecto */
+            transition: margin-left 0.3s ease; /* Transición suave para moverse */
+            min-height: 100vh; /* Para que la barra lateral siempre ocupe toda la altura */
             box-shadow: 3px 0 10px rgba(0,0,0,0.15);
-            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 1030; 
+            flex-shrink: 0; /* Evita que el sidebar se encoja */
         }
-        .sidebar.collapsed {
-            width: 0;
-            transform: translateX(-100%);
+
+        /* ESTILO CUANDO EL WRAPPER TIENE LA CLASE 'toggled' (CLAVE) */
+        #wrapper.toggled #sidebar-wrapper {
+            margin-left: calc(-1 * var(--sidebar-width)); /* Mueve la barra lateral completamente fuera de la vista */
         }
 
         .sidebar-header {
@@ -86,8 +85,9 @@
             align-items: center;
             opacity: 1;
             transition: opacity 0.3s ease;
+            white-space: nowrap; 
         }
-        .sidebar.collapsed .sidebar-header .navbar-brand { opacity: 0; }
+        #wrapper.toggled .sidebar-header .navbar-brand { opacity: 0; } 
 
 
         .sidebar-header .navbar-brand .bi {
@@ -138,28 +138,41 @@
             transition: transform 0.2s;
         }
         .nav-link:hover .bi, .nav-link:hover .fas { transform: scale(1.1); }
-        .sidebar hr {
+        #sidebar-wrapper hr { 
             border-top: 1px solid var(--border-color-soft);
             margin: 1rem 1.5rem;
         }
 
-        /* Top Navbar */
+        /* Page Content Wrapper (idéntico a panel_administrador.html) */
+        #page-content-wrapper {
+            width: 100%; /* Ocupa todo el ancho restante */
+            flex: 1; /* Permite que crezca y se encoja dentro del contenedor flex #wrapper */
+            background-color: var(--content-bg);
+            min-height: 100vh; /* Para asegurar que el contenido principal ocupe toda la altura */
+            display: flex;
+            flex-direction: column; /* Para que la top-navbar y el contenido se apilen verticalmente */
+            position: relative; /* Necesario para que z-index y top en children funcionen si se usa */
+            overflow-x: hidden; /* Evita scroll horizontal en el contenido principal */
+        }
+        /* CLAVE: Asegura que page-content-wrapper ocupe el ancho adecuado cuando el sidebar está oculto */
+        #wrapper.toggled #page-content-wrapper {
+            width: 100%; /* Esto es redundante con flex:1 pero lo dejamos por claridad */
+        }
+
+
+        /* Top Navbar (ahora dentro de #page-content-wrapper, sin position: fixed) */
         .top-navbar {
-            position: fixed;
-            top: 0; right: 0; left: var(--sidebar-width);
-            height: var(--topbar-height);
             background-color: #fff;
             border-bottom: 1px solid #e0e0e0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            height: var(--topbar-height);
             padding: 0 1.75rem;
-            z-index: 1020;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: left 0.3s ease;
-        }
-        body.sidebar-collapsed .top-navbar {
-            left: 0;
+            width: 100%; /* Ocupa todo el ancho de su contenedor padre */
+            z-index: 1020; 
+            flex-shrink: 0; /* Evita que la top-navbar se encoja */
         }
 
         .top-navbar .toggle-btn {
@@ -170,6 +183,7 @@
             cursor: pointer;
             padding: 0.5rem;
             transition: color 0.2s;
+            z-index: 1040; /* ¡IMPORTANTE: Asegura que el botón esté por encima de todo! */
         }
         .top-navbar .toggle-btn:hover {
             color: var(--secondary-accent-color);
@@ -189,13 +203,12 @@
             font-weight: 600;
         }
 
-        /* Main Content */
-        .main-content {
-            flex-grow: 1;
-            margin-left: 0;
-            padding: 1.75rem; /* Padding general para el contenido dentro de main */
+        /* Main Content Inner (el contenido real que va debajo de la top-navbar) */
+        .main-content-inner { 
+            flex-grow: 1; /* Permite que ocupe el espacio restante dentro de #page-content-wrapper */
+            padding: 1.75rem; 
             box-sizing: border-box;
-            transition: padding-left 0.3s ease;
+            /* No se necesita padding-top extra aquí si top-navbar no es fixed */
         }
 
         /* Card Custom (para el contenido) */
@@ -254,66 +267,66 @@
             color: var(--primary-accent-color);
         }
 
-        /* Estilos responsivos */
-        @media (max-width: 991.98px) { /* Para pantallas más pequeñas que large (Bootstrap 'lg' breakpoint) */
-            body { padding-left: 0; } /* Elimina el padding izquierdo fijo del body en móvil */
-            .sidebar {
-                width: var(--sidebar-width);
-                transform: translateX(-100%); /* Oculto por defecto */
-                top: 0;
-                left: 0;
-                bottom: 0;
-                height: 100vh; /* Ocupa toda la altura visible */
+        /* Estilos responsivos (se mantienen y ajustan al nuevo layout) */
+        @media (max-width: 991.98px) { 
+            #sidebar-wrapper {
+                margin-left: calc(-1 * var(--sidebar-width)); /* Por defecto oculto en móvil */
+                position: fixed; /* Necesario para que se deslice sobre el contenido */
+                top: 0; bottom: 0; left: 0;
             }
-            .sidebar.show { /* Clase añadida por JS para mostrar */
-                transform: translateX(0);
+            #wrapper.toggled #sidebar-wrapper {
+                margin-left: 0; /* Muestra la barra lateral */
             }
-            .top-navbar {
-                left: 0; /* Siempre ocupa todo el ancho */
+            #page-content-wrapper {
+                width: 100%; /* Ocupa todo el ancho en móvil */
+                /* No margin-left aquí, el sidebar fixed se sobrepone */
             }
-            .main-content {
-                padding-left: 1rem; /* Padding más pequeño en móvil */
+            .main-content-inner {
+                padding-left: 1rem; 
                 padding-right: 1rem;
-                padding-top: 1rem; /* Un poco de padding arriba para el contenido en móvil */
+                padding-top: var(--topbar-height); 
             }
         }
         
-        /* Ajuste para que el cuerpo se mueva cuando el sidebar se despliega en móvil */
-        body.sidebar-open {
-            overflow: hidden; /* Evita el scroll del contenido mientras el sidebar está abierto */
+        /* Ajuste para que el cuerpo no haga scroll cuando el sidebar se despliega en móvil */
+        @media (max-width: 991.98px) { 
+            #wrapper.toggled {
+                overflow: hidden; /* Oculta el scroll del contenido cuando el menú lateral está abierto */
+            }
         }
-        /* Estilos para el ícono de colapso del menú de administración */
+
+        /* Estilos para el ícono de colapso del menú desplegable de Académica */
         .collapse-icon.rotate-180 {
             transform: rotate(180deg);
         }
 
-        /* NUEVOS ESTILOS PARA LOS BOTONES EN TABLAS */
+        /* Estilos para los botones en tablas */
         .table .action-buttons {
-            display: flex; /* Usa flexbox para alinear los botones horizontalmente */
-            gap: 0.25rem; /* Pequeño espacio entre los botones */
-            justify-content: center; /* Centra los botones si la celda es más ancha */
-            align-items: center; /* Alinea verticalmente los botones */
+            display: flex; 
+            gap: 0.25rem; 
+            justify-content: center; 
+            align-items: center; 
         }
 
         .table .action-buttons .btn {
-            font-size: 0.8rem; /* Tamaño de fuente más pequeño para los botones */
-            padding: 0.2rem 0.5rem; /* Ajustar padding para hacerlos más compactos */
-            white-space: nowrap; /* Evita que el texto del botón se rompa en varias líneas */
-            display: inline-flex; /* Asegura que el ícono y el texto estén en línea */
-            align-items: center; /* Alinea verticalmente el ícono y el texto dentro del botón */
+            font-size: 0.8rem; 
+            padding: 0.2rem 0.5rem; 
+            white-space: nowrap; 
+            display: inline-flex; 
+            align-items: center; 
         }
 
         .table .action-buttons .btn .fas {
-            margin-right: 0.3rem; /* Espacio entre el ícono y el texto del botón */
+            margin-right: 0.3rem; 
         }
 
         /* Estilos específicos para los 'badge' de rol/cargo */
         .badge {
-            font-size: 0.75em; /* Tamaño más pequeño para los badges */
-            padding: 0.3em 0.6em; /* Ajusta el padding */
-            border-radius: 0.3rem; /* Bordes ligeramente redondeados */
-            font-weight: 600; /* Un poco más de negrita */
-            vertical-align: middle; /* Alineación vertical */
+            font-size: 0.75em; 
+            padding: 0.3em 0.6em; 
+            border-radius: 0.3rem; 
+            font-weight: 600; 
+            vertical-align: middle; 
         }
 
         /* Colores para los badges */
@@ -321,303 +334,164 @@
         .badge-secondary { background-color: #6c757d; color: white; }
         .badge-success { background-color: var(--success-color); color: white; }
         .badge-info { background-color: var(--info-color); color: white; }
-        .badge-warning { background-color: var(--warning-color); color: #212529; } /* Texto oscuro para badge amarillo */
+        .badge-warning { background-color: var(--warning-color); color: #212529; } 
         .badge-danger { background-color: var(--danger-color); color: white; }
 
     </style>
 </head>
 <body>
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a class="navbar-brand">
-                <i class="bi bi-buildings-fill"></i>
-                <span>SIG-UNEFA</span>
-            </a>
-        </div>
-        <div class="sidebar-sticky">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'panel_principal' %}active{% endif %}" href="{% url 'home:panel_principal' %}">
-                        <i class="bi bi-grid-1x2-fill"></i>
-                        <span>Panel Principal</span>
-                    </a>
-                </li>
-                <hr>
-                <!-- Menú desplegable para Prog. y Evaluación Académica -->
-                <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#progAcademicaMenu" role="button" aria-expanded="{% if 'programacion' in request.resolver_match.app_name %}true{% else %}false{% endif %}" aria-controls="progAcademicaMenu">
-                        <span>
-                            <i class="bi bi-calendar2-check-fill"></i>
-                            Prog. y Evaluación Académica
-                        </span>
-                        <i class="bi bi-chevron-down small collapse-icon {% if 'programacion' in request.resolver_match.app_name %}rotate-180{% endif %}"></i>
-                    </a>
-                    <div class="collapse {% if 'programacion' in request.resolver_match.app_name %}show{% endif %}" id="progAcademicaMenu">
-                        <ul class="nav flex-column ms-3">
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.resolver_match.url_name == 'docentes' %}active{% endif %}" href="{% url 'programacion:docentes' %}">
-                                    <i class="bi bi-person-badge"></i> Docentes
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.resolver_match.url_name == 'asignaturas' %}active{% endif %}" href="{% url 'programacion:asignaturas' %}">
-                                    <i class="bi bi-journal-bookmark"></i> Asignaturas
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.resolver_match.url_name == 'seccion_list' %}active{% endif %}" href="{% url 'programacion:seccion_list' %}">
-                                    <i class="bi bi-grid-3x3-gap"></i> Secciones
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.resolver_match.url_name == 'aulario_dashboard' %}active{% endif %}" href="{% url 'programacion:aulario_dashboard' %}">
-                                    <i class="bi bi-building"></i> Aulario
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.resolver_match.url_name == 'evaluacion_docente' %}active{% endif %}" href="{% url 'programacion:evaluacion_docente' %}">
-                                    <i class="bi bi-clipboard-check"></i> Evaluación Docente
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
-                <!-- Otros módulos -->
-                <li class="nav-item">
-                    <a class="nav-link {% if 'servicio_social' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'servicio_social:servicio_list' %}">
-                        <i class="bi bi-people-fill"></i>
-                        <span>Servicio Comunitario</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'practicas' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'practicas:practica_list' %}">
-                        <i class="bi bi-briefcase-fill"></i>
-                        <span>Prácticas Pro.</span>
-                    </a>
-                </li>
-                 <li class="nav-item">
-                    <a class="nav-link {% if 'perfiles' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'perfiles:ver_perfil' %}">
-                        <i class="bi bi-person-bounding-box"></i>
-                        <span>Mi Perfil</span>
-                    </a>
-                </li>
-                <hr>
-                {# Menú de Administración - Ahora con sub-menús #}
-                {% if user.is_superuser or user.is_staff %}
-                <li class="nav-item">
-                    <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#adminMenu" role="button" aria-expanded="{% if 'administrador' in request.resolver_match.app_name %}true{% else %}false{% endif %}" aria-controls="adminMenu">
-                        <span>
-                            <i class="bi bi-gear-fill"></i>
-                            Administración
-                        </span>
-                        <i class="bi bi-chevron-down small collapse-icon {% if 'administrador' in request.resolver_match.app_name %}rotate-180{% endif %}"></i>
-                    </a>
-                    <div class="collapse {% if 'administrador' in request.resolver_match.app_name %}show{% endif %}" id="adminMenu">
-                        <ul class="nav flex-column ms-3">
-                            {# Gestión de Usuarios #}
-                            {% if perms.administrador.manage_usuario %}
-                            <li class="nav-item">
-                                <a class="nav-link d-flex justify-content-between align-items-center ps-4" data-bs-toggle="collapse" href="#subUserManagement" role="button" aria-expanded="{% if request.resolver_match.url_name in 'usuarios_aprobados,revisar_solicitudes' %}true{% else %}false{% endif %}" aria-controls="subUserManagement">
-                                    <span><i class="fas fa-users"></i> Gestión de Usuarios</span>
-                                    <i class="bi bi-chevron-down small collapse-icon {% if request.resolver_match.url_name in 'usuarios_aprobados,revisar_solicitudes' %}rotate-180{% endif %}"></i>
-                                </a>
-                                <div class="collapse {% if request.resolver_match.url_name in 'usuarios_aprobados,revisar_solicitudes' %}show{% endif %}" id="subUserManagement">
-                                    <ul class="nav flex-column ms-3">
-                                        <li class="nav-item">
-                                            <a class="nav-link {% if request.resolver_match.url_name == 'usuarios_aprobados' %}active{% endif %}" href="{% url 'administrador:usuarios_aprobados' %}">
-                                                Usuarios Aprobados
-                                            </a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link {% if request.resolver_match.url_name == 'revisar_solicitudes' %}active{% endif %}" href="{% url 'administrador:revisar_solicitudes' %}">
-                                                Solicitudes de Registro
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </li>
-                            {% endif %}
+    <div class="d-flex" id="wrapper"> {# Contenedor principal flexbox: #wrapper #}
 
-                            {# Configuración #}
-                            {% if perms.administrador.manage_configuracion_registro or perms.administrador.view_registro_cambios %}
-                            <li class="nav-item">
-                                <a class="nav-link d-flex justify-content-between align-items-center ps-4" data-bs-toggle="collapse" href="#subConfig" role="button" aria-expanded="{% if request.resolver_match.url_name in 'configurar_registro,registro_cambios' %}true{% else %}false{% endif %}" aria-controls="subConfig">
-                                    <span><i class="fas fa-cogs"></i> Configuración</span>
-                                    <i class="bi bi-chevron-down small collapse-icon {% if request.resolver_match.url_name in 'configurar_registro,registro_cambios' %}rotate-180{% endif %}"></i>
-                                </a>
-                                <div class="collapse {% if request.resolver_match.url_name in 'configurar_registro,registro_cambios' %}show{% endif %}" id="subConfig">
-                                    <ul class="nav flex-column ms-3">
-                                        {% if perms.administrador.manage_configuracion_registro %}
-                                        <li class="nav-item">
-                                            <a class="nav-link {% if request.resolver_match.url_name == 'configurar_registro' %}active{% endif %}" href="{% url 'administrador:configurar_registro' %}">
-                                                Configuración de Registro
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                        {% if perms.administrador.view_registro_cambios %}
-                                        <li class="nav-item">
-                                            <a class="nav-link {% if request.resolver_match.url_name == 'registro_cambios' %}active{% endif %}" href="{% url 'administrador:registro_cambios' %}">
-                                                Registro de Cambios
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                    </ul>
-                                </div>
-                            </li>
-                            {% endif %}
-
-                            {# Estructura Académica #}
-                            {% if perms.administrador.manage_facultad or perms.administrador.manage_departamento or perms.administrador.manage_carrera %}
-                            <li class="nav-item">
-                                <a class="nav-link d-flex justify-content-between align-items-center ps-4" data-bs-toggle="collapse" href="#subStructure" role="button" aria-expanded="{% if request.resolver_match.url_name in 'lista_facultades,lista_departamentos,lista_carrera' %}true{% else %}false{% endif %}" aria-controls="subStructure">
-                                    <span><i class="fas fa-building"></i> Estructura Académica</span>
-                                    <i class="bi bi-chevron-down small collapse-icon {% if request.resolver_match.url_name in 'lista_facultades,lista_departamentos,lista_carrera' %}rotate-180{% endif %}"></i>
-                                </a>
-                                <div class="collapse {% if request.resolver_match.url_name in 'lista_facultades,lista_departamentos,lista_carrera' %}show{% endif %}" id="subStructure">
-                                    <ul class="nav flex-column ms-3">
-                                        {% if perms.administrador.manage_facultad %}
-                                        <li class="nav-item">
-                                            <a class="nav-link {% if request.resolver_match.url_name == 'lista_facultades' %}active{% endif %}" href="{% url 'administrador:lista_facultades' %}">
-                                                Facultades
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                        {% if perms.administrador.manage_departamento %}
-                                        <li class="nav-item">
-                                            <a class="nav-link {% if request.resolver_match.url_name == 'lista_departamentos' %}active{% endif %}" href="{% url 'administrador:lista_departamentos' %}">
-                                                Departamentos
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                        {% if perms.administrador.manage_carrera %}
-                                        <li class="nav-item">
-                                            <a class="nav-link {% if request.resolver_match.url_name == 'lista_carrera' %}active{% endif %}" href="{% url 'administrador:lista_carrera' %}">
-                                                Carreras
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                    </ul>
-                                </div>
-                            </li>
-                            {% endif %}
-
-                            {# Recursos #}
-                            {% if perms.administrador.manage_aula or perms.administrador.manage_tipo_aula or perms.administrador.manage_periodo or perms.administrador.manage_cargos %}
-                            <li class="nav-item">
-                                <a class="nav-link d-flex justify-content-between align-items-center ps-4" data-bs-toggle="collapse" href="#subResources" role="button" aria-expanded="{% if request.resolver_match.url_name in 'lista_periodos,lista_cargos' %}true{% else %}false{% endif %}" aria-controls="subResources">
-                                    <span><i class="fas fa-box"></i> Recursos</span>
-                                    <i class="bi bi-chevron-down small collapse-icon {% if request.resolver_match.url_name in 'lista_periodos,lista_cargos' %}rotate-180{% endif %}"></i>
-                                </a>
-                                <div class="collapse {% if request.resolver_match.url_name in 'lista_periodos,lista_cargos' %}show{% endif %}" id="subResources">
-                                    <ul class="nav flex-column ms-3">
-                                        {% if perms.administrador.manage_periodo %}
-                                        <li class="nav-item">
-                                            <a class="nav-link {% if request.resolver_match.url_name == 'lista_periodos' %}active{% endif %}" href="{% url 'administrador:lista_periodos' %}">
-                                                Períodos Académicos
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                        {% if perms.administrador.manage_cargos %}
-                                        <li class="nav-item">
-                                            <a class="nav-link {% if request.resolver_match.url_name == 'lista_cargos' %}active{% endif %}" href="{% url 'administrador:lista_cargos' %}">
-                                                Cargos
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                    </ul>
-                                </div>
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </li>
-                {% endif %}
-            </ul>
-        </div>
-    </nav>
-
-    <header class="top-navbar" id="topNavbar">
-        <button class="toggle-btn" id="sidebarToggle">
-            <i class="bi bi-list"></i>
-        </button>
-        <div class="user-info">
-            <div class="user-greeting">
-                Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong>
-            </div>
-            <div class="dropdown">
-                <a class="btn btn-outline-secondary dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-person-circle"></i> {{ user.username }}
+        {# Sidebar Wrapper (el mismo ID y estructura que panel_administrador.html) #}
+        <div id="sidebar-wrapper"> 
+            <div class="sidebar-header">
+                <a class="navbar-brand" href="#">
+                    <i class="bi bi-buildings-fill"></i>
+                    <span>SIG-UNEFA</span>
                 </a>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="{% url 'perfiles:ver_perfil' %}">Perfil</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="{% url 'accounts:cerrar_sesion' %}">Cerrar Sesión</a></li>
+            </div>
+            <div class="sidebar-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'panel_principal' %}active{% endif %}" href="{% url 'home:panel_principal' %}">
+                            <i class="bi bi-grid-1x2-fill"></i>
+                            <span>Panel Principal</span>
+                        </a>
+                    </li>
+                    <hr>
+                    <!-- Menú desplegable para Prog. y Evaluación Académica -->
+                    <li class="nav-item">
+                        <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#progAcademicaMenu" role="button" aria-expanded="{% if 'programacion' in request.resolver_match.app_name %}true{% else %}false{% endif %}" aria-controls="progAcademicaMenu">
+                            <span>
+                                <i class="bi bi-calendar2-check-fill"></i>
+                                Prog. y Evaluación Académica
+                            </span>
+                            <i class="bi bi-chevron-down small collapse-icon {% if 'programacion' in request.resolver_match.app_name %}rotate-180{% endif %}"></i>
+                        </a>
+                        <div class="collapse {% if 'programacion' in request.resolver_match.app_name %}show{% endif %}" id="progAcademicaMenu">
+                            <ul class="nav flex-column ms-3">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'docentes' %}active{% endif %}" href="{% url 'programacion:docentes' %}">
+                                        <i class="bi bi-person-badge"></i> Docentes
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'asignaturas' %}active{% endif %}" href="{% url 'programacion:asignaturas' %}">
+                                        <i class="bi bi-journal-bookmark"></i> Asignaturas
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'seccion_list' %}active{% endif %}" href="{% url 'programacion:seccion_list' %}">
+                                        <i class="bi bi-grid-3x3-gap"></i> Secciones
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'aulario_dashboard' %}active{% endif %}" href="{% url 'programacion:aulario_dashboard' %}">
+                                        <i class="bi bi-building"></i> Aulario
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'evaluacion_docente' %}active{% endif %}" href="{% url 'programacion:evaluacion_docente_list' %}">
+                                        <i class="bi bi-clipboard-check"></i> Evaluación Docente
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <!-- Otros módulos -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'servicio_social' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'servicio_social:servicio_list' %}">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Servicio Comunitario</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'practicas' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'practicas:practica_list' %}">
+                            <i class="bi bi-briefcase-fill"></i>
+                            <span>Prácticas Pro.</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'perfiles' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'perfiles:ver_perfil' %}">
+                            <i class="bi bi-person-bounding-box"></i>
+                            <span>Mi Perfil</span>
+                        </a>
+                    </li>
+                    <hr>
+                    {# Botón de Administración simple y condicional #}
+                    {% if user.is_superuser or user.is_staff %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'administrador' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'administrador:panel_administrador' %}">
+                            <i class="bi bi-gear-fill"></i> 
+                            <span>Administración</span>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
-        </div>
-    </header>
+        </div> {# Fin de #sidebar-wrapper #}
 
-    <main class="main-content">
-        <div class="container-fluid">
-            {% if messages %}
-                <div class="messages-container mb-4">
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        {# Page Content Wrapper (el mismo ID y estructura que panel_administrador.html) #}
+        <div id="page-content-wrapper">
+            <nav class="top-navbar" id="topNavbar">
+                <button class="toggle-btn" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div class="user-info">
+                    <div class="user-greeting">
+                        Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong>
+                    </div>
+                    <div class="dropdown">
+                        <a class="btn btn-outline-secondary dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="{% url 'perfiles:ver_perfil' %}">Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'accounts:cerrar_sesion' %}">Cerrar Sesión</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+
+            <main class="main-content-inner"> {# El contenido real de la página #}
+                <div class="container-fluid">
+                    {% if messages %}
+                        <div class="messages-container mb-4">
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
                         </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+                    {% endif %}
 
-            <div class="row">
-                <div class="col-12">
-                    {% block content %}
-                    <!-- Aquí va el contenido específico de cada vista (tu tabla dentro de una tarjeta) -->
-                    <!-- Asegúrate de que las acciones de los botones en tus plantillas específicas usen las clases correctas: -->
-                    <!-- <div class="action-buttons">
-                            <a href="..." class="btn btn-warning btn-sm">
-                                <i class="fas fa-edit"></i> Editar
-                            </a>
-                            <a href="..." class="btn btn-danger btn-sm">
-                                <i class="fas fa-trash-alt"></i> Eliminar
-                            </a>
-                            <a href="..." class="btn btn-info btn-sm">
-                                <i class="fas fa-info-circle"></i> Ver Detalle
-                            </a>
-                        </div> -->
-                    {% endblock %}
+                    <div class="row">
+                        <div class="col-12">
+                            {% block content %}
+                            {% endblock %}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </main>
+            </main>
+        </div> {# Fin de #page-content-wrapper #}
+
+    </div> {# Fin de #wrapper #}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar');
-            const toggleButton = document.getElementById('sidebarToggle');
-            const body = document.body;
+            const wrapper = document.getElementById('wrapper');
+            const sidebarToggle = document.getElementById('sidebarToggle');
 
-            function toggleSidebar() {
-                sidebar.classList.toggle('collapsed');
-                body.classList.toggle('sidebar-collapsed');
-                const brand = sidebar.querySelector('.sidebar-header .navbar-brand');
-                if (brand) {
-                    if (sidebar.classList.contains('collapsed')) {
-                        brand.style.opacity = '0';
-                        brand.style.pointerEvents = 'none';
-                    } else {
-                        brand.style.opacity = '1';
-                        brand.style.pointerEvents = 'auto';
-                    }
-                }
+            if (sidebarToggle && wrapper) {
+                sidebarToggle.addEventListener('click', function() {
+                    wrapper.classList.toggle('toggled');
+                });
             }
 
-            if (toggleButton) {
-                toggleButton.addEventListener('click', toggleSidebar);
-            }
-
+            // Manejar la rotación de los íconos de los menús desplegables
             document.querySelectorAll('.nav-link[data-bs-toggle="collapse"]').forEach(link => {
                 link.addEventListener('click', function() {
                     const icon = this.querySelector('.collapse-icon');
@@ -627,44 +501,32 @@
                 });
             });
 
-            if (window.innerWidth < 992) {
-                sidebar.classList.add('collapsed');
-                body.classList.add('sidebar-collapsed');
-                if (toggleButton) {
-                    toggleButton.addEventListener('click', function() {
-                        sidebar.classList.toggle('show'); 
-                        body.classList.toggle('sidebar-open');
-                    });
-                }
-            } else {
-                sidebar.classList.remove('collapsed');
-                body.classList.remove('sidebar-collapsed');
-            }
-
-            document.addEventListener('click', function(event) {
-                if (window.innerWidth < 992 && sidebar.classList.contains('show')) {
-                    if (!sidebar.contains(event.target) && !toggleButton.contains(event.target)) {
-                        sidebar.classList.remove('show');
-                        body.classList.remove('sidebar-open');
+            // Asegurarse de que el ícono de dropdown rote correctamente al cargar la página si el menú ya está abierto
+            document.querySelectorAll('.collapse.show').forEach(collapseEl => {
+                const link = document.querySelector(`[href="#${collapseEl.id}"]`);
+                if (link) {
+                    const icon = link.querySelector('.collapse-icon');
+                    if (icon) {
+                        icon.classList.add('rotate-180');
                     }
                 }
             });
 
+            // COMPORTAMIENTO RESPONSIVO PARA EL TOGGLE EN MÓVIL
+            // Cuando la ventana se redimensiona, si es mayor a 991.98px, asegúrate de que el sidebar no esté toggled
             window.addEventListener('resize', function() {
-                if (window.innerWidth >= 992) {
-                    sidebar.classList.remove('show');
-                    body.classList.remove('sidebar-open');
-                    if (!body.classList.contains('sidebar-collapsed')) { 
-                        sidebar.classList.remove('collapsed');
-                    }
-                    body.style.overflow = ''; 
-                } else {
-                    if (!sidebar.classList.contains('show')) {
-                        sidebar.classList.add('collapsed');
-                        body.classList.add('sidebar-collapsed');
+                if (window.innerWidth > 991.98) {
+                    if (wrapper.classList.contains('toggled')) {
+                        wrapper.classList.remove('toggled');
                     }
                 }
             });
+             // Al cargar la página, si es desktop, asegúrate de que el sidebar no esté toggled
+            if (window.innerWidth > 991.98) {
+                if (wrapper.classList.contains('toggled')) {
+                    wrapper.classList.remove('toggled');
+                }
+            }
         });
     </script>
 </body>

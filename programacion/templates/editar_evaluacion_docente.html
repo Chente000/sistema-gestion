@@ -1,3 +1,4 @@
+{# programacion/templates/editar_evaluacion_docente.html #}
 {% extends "interfaz.html" %}
 {% load static %}
 {% load widget_tweaks %}
@@ -10,28 +11,51 @@
 
         <form method="post">
             {% csrf_token %}
+            {# CAMPOS OCULTOS PARA DOCENTE, ASIGNATURA Y PERÍODO #}
+            {# Esto asegura que los IDs se envíen de vuelta al servidor para la validación del formulario #}
+            <input type="hidden" name="docente" value="{{ evaluacion.docente.id }}">
+            <input type="hidden" name="asignatura" value="{{ evaluacion.asignatura.id }}">
+            <input type="hidden" name="periodo" value="{{ evaluacion.periodo.id }}">
+
             <div class="row g-3">
+                {# Campos de solo lectura para visualización (los valores se envían por los inputs hidden de arriba) #}
+                <div class="col-md-6">
+                    <label class="form-label">Docente</label>
+                    <input type="text" class="form-control" value="{{ evaluacion.docente.nombre }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Asignatura</label>
+                    <input type="text" class="form-control" value="{{ evaluacion.asignatura.nombre }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Período</label>
+                    <input type="text" class="form-control" value="{{ evaluacion.periodo.nombre }}" readonly>
+                </div>
+                
+                {# Campos editables del formulario #}
                 {% for field in form.visible_fields %}
-                    <div class="col-md-6">
-                        {# Manual rendering for 'fue_evaluada' and 'entrego_autoevaluacion' as Bootstrap switches #}
-                        {% if field.name == 'fue_evaluada' or field.name == 'entrego_autoevaluacion' %}
-                            <div class="form-check form-switch mt-4 pt-2">
-                                {{ field|attr:"class:form-check-input" }}
-                                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {# Excluir los campos docente, asignatura, periodo de renderizado normal ya que los tenemos en solo lectura y hidden #}
+                    {% if field.name not in "docente,asignatura,periodo" %}
+                        <div class="col-md-6">
+                            {# Manual rendering for 'fue_evaluada' and 'entrego_autoevaluacion' as Bootstrap switches #}
+                            {% if field.name == 'fue_evaluada' or field.name == 'entrego_autoevaluacion' %}
+                                <div class="form-check form-switch mt-4 pt-2">
+                                    {{ field|attr:"class:form-check-input" }}
+                                    <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+                                    {% if field.help_text %}<div class="form-text text-muted">{{ field.help_text }}</div>{% endif %}
+                                </div>
+                            {% else %}
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {% render_field field class="form-control" %}
                                 {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
                                 {% if field.help_text %}<div class="form-text text-muted">{{ field.help_text }}</div>{% endif %}
-                            </div>
-                        {% else %}
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            {% render_field field class="form-control" %}
-                            {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
-                            {% if field.help_text %}<div class="form-text text-muted">{{ field.help_text }}</div>{% endif %}
-                        {% endif %}
-                    </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                 {% endfor %}
 
                 {# Campos de "Juicio" que se calculan dinámicamente en el frontend #}
-                {# Usaremos los IDs para JavaScript dinámico, similar a nueva_evaluacion_docente #}
                 <div class="col-md-4">
                     <label for="juicio_acompanamiento" class="form-label">Juicio Acompañamiento</label>
                     <input type="text" id="juicio_acompanamiento" class="form-control" readonly value="N/A">
@@ -48,7 +72,7 @@
             
             <div class="d-flex justify-content-between mt-4">
                 <button type="submit" class="btn btn-success btn-lg">Guardar Cambios</button>
-                <a href="{% url 'programacion:evaluacion_docente' %}" class="btn btn-secondary btn-lg">Cancelar</a>
+                <a href="{% url 'programacion:evaluacion_docente_detalle' evaluacion.docente.id %}" class="btn btn-secondary btn-lg">Cancelar</a>
             </div>
         </form>
     </div>
@@ -73,6 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (score >= 36 && score <= 44) return "BUENO";
             if (score >= 45 && score <= 60) return "SOBRESALIENTE";
         } else if (type === 'estudiante') {
+            // Nota: Aquí se usa el rango 4-7.9 para "REGULAR" que no estaba explícito en el modelo, pero sí en el HTML
             if (score >= 1 && score <= 3.9) return "DEFICIENTE";
             if (score >= 4 && score <= 7.9) return "REGULAR"; 
             if (score >= 8 && score <= 10) return "EXCELENTE";

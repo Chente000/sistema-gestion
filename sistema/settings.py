@@ -94,8 +94,11 @@ WSGI_APPLICATION = 'sistema.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        # Replace this value with your local database's connection string.
-        default='postgresql://postgres:postgres@localhost:5432/sistema',
+        # Render usará la variable de entorno DATABASE_URL.
+        # Localmente, si DATABASE_URL no está definida, usará esta conexión local.
+        # ASEGÚRATE de que 'postgres:123456' coincida con tu usuario y contraseña de PostgreSQL local.
+        # El nombre de la base de datos local es 'sistema_local_db'.
+        default=os.environ.get('DATABASE_URL', 'postgresql://postgres:123456@localhost:5432/sistema_local_db'),
         conn_max_age=600
     )
 }
@@ -151,6 +154,9 @@ STATICFILES_STORAGE = {
     },
 }
 
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',  # Directorio para archivos estáticos adicionales
+]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

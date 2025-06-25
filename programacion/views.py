@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
 from django.db import IntegrityError, transaction
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from datetime import time, date
 from .models import ProgramacionAcademica, Docente, Carrera, Asignatura, Periodo, Aula, HorarioAula, Seccion, HorarioSeccion, HorarioSeccion, semestre, Departamento
-from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm, HorarioSeccionForm, HorarioAulaBloqueForm, HorarioAulaForm, ProgramacionAcademicaAssignmentForm, EvaluacionFormSet
+from .forms import ProgramacionAcademicaForm, DocenteForm, AsignaturaForm, AsignarAsignaturasForm, AulaForm, HorarioAulaForm, SeleccionarSeccionForm, SeccionForm, HorarioSeccionForm, HorarioAulaBloqueForm, HorarioAulaForm, ProgramacionAcademicaAssignmentForm, AsignaturaModalForm
 from django.forms import modelformset_factory
 from datetime import datetime
 from django.core.exceptions import ValidationError
@@ -17,154 +17,106 @@ from administrador.permissions import PERMISSIONS
 from .utils import tiene_permiso_departal_o_carrera_util
 from django.core.exceptions import PermissionDenied
 from django.forms import formset_factory
+# Importar openpyxl y sus componentes para Excel
+from openpyxl import Workbook
+from openpyxl.styles import Font, Border, Side, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
+from collections import defaultdict 
+
+# Importar ReportLab y sus componentes para PDF (se mantiene la estructura)
+from io import BytesIO
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch, cm
+from reportlab.lib import colors
+from django.utils import timezone 
 
 # Vista para la evaluación docente
 @login_required
 @user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_EVALUACION_DOCENTE), login_url='/no-autorizado/')
-def evaluacion_docente(request):
-    programaciones = ProgramacionAcademica.objects.all()
-    docentes = Docente.objects.all().order_by('nombre')
-    periodos = Periodo.objects.all().order_by('-nombre')
+def evaluacion_docente_list(request): # Renombrada de 'evaluacion_docente'
+    query = request.GET.get('q', '')
+    docentes_list = Docente.objects.all().order_by('nombre')
 
-    filter_docente_id = request.GET.get('docente')
-    filter_periodo_id = request.GET.get('periodo')
-
-    if filter_docente_id:
-        programaciones = programaciones.filter(docente__id=filter_docente_id)
-    if filter_periodo_id:
-        programaciones = programaciones.filter(periodo__id=filter_periodo_id)
-
+    if query:
+        docentes_list = docentes_list.filter(
+            Q(nombre__icontains=query) | 
+            Q(cedula__icontains=query)
+        )
+    
     context = {
-        'programaciones': programaciones,
-        'docentes': docentes,
-        'periodos': periodos,
-        'filter_docente_id': filter_docente_id,
-        'filter_periodo_id': filter_periodo_id,
-        'can_add_evaluacion': request.user.has_perm('programacion.add_programacionacademica'),
-        'can_change_evaluacion': request.user.has_perm('programacion.change_programacionacademica'),  # <--- Cambia aquí
-        'can_delete_evaluacion': request.user.has_perm('programacion.delete_programacionacademica'),
-        'can_manage_evaluacion': request.user.has_perm('programacion.manage_programacionacademica')
+        'docentes': docentes_list,
+        'query': query,
+        'can_view_detalle_evaluacion': request.user.has_permission(PERMISSIONS.VIEW_EVALUACION_DOCENTE),
     }
     
-    print("Permisos del usuario:", request.user.get_all_permissions())
-    print("Puede editar:", request.user.has_perm('programacion.change_programacionacademica'))
-    print("Puede eliminar:", request.user.has_perm('programacion.delete_programacionacademica'))
-    
-    return render(request, 'evaluacion_docente.html', context)
+    # La impresión de permisos se mantiene para depuración, si la necesitas.
+    # print("Permisos del usuario:", request.user.get_all_permissions())
+    return render(request, 'evaluacion_docente_list.html', context) # La plantilla aún se llama evaluacion_docente.html
 
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE), login_url='/no-autorizado/')
-def nueva_evaluacion_docente(request):
-    """
-    Permite crear nuevas evaluaciones docentes utilizando un formset
-    para agregar múltiples evaluaciones por asignatura a un docente y período específicos.
-    """
-    docentes = Docente.objects.all().order_by('nombre')
-    periodos = Periodo.objects.all().order_by('-nombre')
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_EVALUACION_DOCENTE), login_url='/no-autorizado/')
+def evaluacion_docente_detalle(request, docente_id): # Nueva vista de detalle
+    docente = get_object_or_404(Docente, id=docente_id)
+    
+    filter_periodo_id = request.GET.get('periodo')
+    periodos = Periodo.objects.all().order_by('-fecha_inicio')
 
-    if request.method == 'POST':
-        selected_docente_id = request.POST.get('docente')
-        selected_periodo_id = request.POST.get('periodo')
+    evaluaciones_query = ProgramacionAcademica.objects.filter(docente=docente).select_related(
+        'asignatura', 'periodo', 'asignatura__carrera', 'asignatura__semestre', 'docente_evaluador'
+    )
 
-        if not selected_docente_id or not selected_periodo_id:
-            messages.error(request, "Debe seleccionar un Docente y un Período para la evaluación.")
-            # Inicializa el formset con los datos POST para que los errores se muestren
-            formset = EvaluacionFormSet(request.POST, prefix='form') 
-            context = {
-                'docentes': docentes,
-                'periodos': periodos,
-                'selected_docente_id': selected_docente_id,
-                'selected_periodo_id': selected_periodo_id,
-                'formset': formset,
-            }
-            return render(request, 'nueva_evaluacion_docente.html', context)
-
-        selected_docente = get_object_or_404(Docente, pk=selected_docente_id)
-        selected_periodo = get_object_or_404(Periodo, pk=selected_periodo_id)
-
-        # Inicializa el formset con los datos POST
-        # El queryset es para cargar datos existentes, para crear nuevos es ProgramacionAcademica.objects.none()
-        formset = EvaluacionFormSet(request.POST, prefix='form', queryset=ProgramacionAcademica.objects.none())
-
-        if formset.is_valid():
-            try:
-                with transaction.atomic(): # Asegura que todas las operaciones se completen o ninguna
-                    instances_to_save = []
-                    for form in formset:
-                        # Si el formulario ha cambiado y no está marcado para eliminar
-                        if form.has_changed() and not form.cleaned_data.get('DELETE'):
-                            evaluacion = form.save(commit=False)
-                            evaluacion.docente = selected_docente
-                            evaluacion.periodo = selected_periodo
-                            
-                            instances_to_save.append(evaluacion)
-                        elif form.cleaned_data.get('DELETE') and form.instance.pk:
-                            # Eliminar instancias existentes marcadas para borrar
-                            form.instance.delete()
-                    
-                    # Guarda todas las nuevas/modificadas instancias
-                    for instance in instances_to_save:
-                        instance.save()
-
-                    messages.success(request, "Evaluaciones guardadas exitosamente.")
-                    return redirect('programacion:evaluacion_docente')
-
-            except Exception as e:
-                messages.error(request, f"Error al guardar evaluaciones: {e}")
-                # print(formset.errors) # Descomentar para depurar errores del formset
-                # print(e) # Descomentar para ver la excepción
-        else:
-            messages.error(request, "Hubo errores en el formulario. Por favor, revise los datos.")
-            # print(formset.errors) # Descomentar para depurar errores del formset
-
-    else: # GET request
-        # Para la creación, necesitamos un formset vacío para empezar.
-        # modelformset_factory toma un queryset para precargar datos; para vacío, usamos none().
-        formset = EvaluacionFormSet(queryset=ProgramacionAcademica.objects.none(), prefix='form')
+    if filter_periodo_id:
+        evaluaciones_query = evaluaciones_query.filter(periodo__id=filter_periodo_id)
+    
+    # Ordenar las evaluaciones para la tabla
+    evaluaciones = evaluaciones_query.order_by(
+        'periodo__fecha_inicio',
+        'asignatura__carrera__nombre',
+        'asignatura__semestre__nombre',
+        'asignatura__nombre'
+    )
 
     context = {
-        'docentes': docentes,
+        'docente': docente,
+        'evaluaciones': evaluaciones,
         'periodos': periodos,
-        'selected_docente_id': request.POST.get('docente', ''), # Mantener la selección si hubo error
-        'selected_periodo_id': request.POST.get('periodo', ''), # Mantener la selección si hubo error
-        'formset': formset,
-        'can_add_evaluacion': request.user.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE), # Permiso para añadir
+        'filter_periodo_id': filter_periodo_id,
+        'can_manage_evaluacion': request.user.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE),
+        # Puedes añadir otros permisos específicos si los necesitas para la visibilidad de columnas
+        'can_view_full_details': request.user.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE), # O un permiso más específico si solo algunos roles ven todo
     }
-    return render(request, 'nueva_evaluacion_docente.html', context)
+    return render(request, 'evaluacion_docente_detalle.html', context)
 
 @login_required
 @user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE), login_url='/no-autorizado/')
 def editar_evaluacion_docente(request, pk):
-    """
-    Permite editar una única instancia de ProgramacionAcademica.
-    Utiliza ProgramacionAcademicaForm que incluye todos los campos.
-    """
     evaluacion = get_object_or_404(ProgramacionAcademica, pk=pk)
     
     if request.method == 'POST':
-        # Usa ProgramacionAcademicaForm para la edición, ya que incluye todos los campos.
         form = ProgramacionAcademicaForm(request.POST, instance=evaluacion)
         if form.is_valid():
-            evaluacion = form.save(commit=False) # Guarda la instancia pero no la persistas aún
-            
-            evaluacion.save() # Ahora sí, persite los cambios incluyendo los juicios recalculados
+            form.save()
             messages.success(request, f"Evaluación de {evaluacion.docente.nombre} para {evaluacion.asignatura.nombre} actualizada exitosamente.")
-            return redirect('programacion:evaluacion_docente')
+            return redirect('programacion:evaluacion_docente_detalle', docente_id=evaluacion.docente.id)
         else:
             messages.error(request, "Hubo errores al actualizar la evaluación. Por favor, revise los datos.")
-            # print(form.errors) # Descomentar para depurar errores del formulario
+            # --- LÍNEA DE DEPURACIÓN AÑADIDA ---
+            print("Errores del formulario en editar_evaluacion_docente:")
+            print(form.errors)
+            # --- FIN LÍNEA DE DEPURACIÓN ---
+            
     else:
-        form = ProgramacionAcademicaForm(instance=evaluacion) # Carga la instancia existente
+        form = ProgramacionAcademicaForm(instance=evaluacion) 
 
     context = {
         'form': form,
-        'evaluacion': evaluacion, # Pasa la instancia para mostrar información en el template
-        'can_change_evaluacion': request.user.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE), # Permiso para editar
+        'evaluacion': evaluacion,
+        'can_change_evaluacion': request.user.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE),
     }
     return render(request, 'editar_evaluacion_docente.html', context)
 
 
-# --- Vista para Eliminar una Evaluación Docente Existente ---
 @login_required
 @user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_EVALUACION_DOCENTE), login_url='/no-autorizado/')
 def eliminar_evaluacion_docente(request, pk):
@@ -172,10 +124,10 @@ def eliminar_evaluacion_docente(request, pk):
     Elimina una instancia específica de ProgramacionAcademica.
     """
     evaluacion = get_object_or_404(ProgramacionAcademica, pk=pk)
+    docente_id = evaluacion.docente.id # Capturar el ID del docente antes de eliminar la evaluación
     
     if request.method == 'POST':
         try:
-            # Captura nombres para el mensaje antes de eliminar el objeto
             docente_nombre = evaluacion.docente.nombre if evaluacion.docente else "N/A"
             asignatura_nombre = evaluacion.asignatura.nombre if evaluacion.asignatura else "N/A"
             evaluacion.delete()
@@ -183,7 +135,10 @@ def eliminar_evaluacion_docente(request, pk):
         except Exception as e:
             messages.error(request, f"Error al eliminar la evaluación: {e}")
     
-    return redirect('programacion:evaluacion_docente')
+    # Redireccionar de vuelta a la página de detalle del docente
+    return redirect('programacion:evaluacion_docente_detalle', docente_id=docente_id)
+
+
 
 # Vista para listar los DOCENTES y aplicar filtros
 @login_required
@@ -192,7 +147,7 @@ def docentes(request):
     query = request.GET.get('q', '')
     carrera_id = request.GET.get('carrera')
     dedicacion_filter = request.GET.get('dedicacion') 
-    periodo_filter_id = request.GET.get('periodo') 
+    periodo_filter_id = request.GET.get('periodo') # Filtro para ProgramacionAcademica
 
     docentes_list = Docente.objects.all()
 
@@ -209,31 +164,34 @@ def docentes(request):
     
     if dedicacion_filter:
         docentes_list = docentes_list.filter(dedicacion__iexact=dedicacion_filter) 
-
+    
     carreras = Carrera.objects.all().order_by('nombre')
     dedicaciones_choices = sorted(list(Docente.objects.values_list('dedicacion', flat=True).distinct()))
 
     periodos = Periodo.objects.all().order_by('-fecha_inicio') 
     
-    current_period = None
-    if periodo_filter_id: 
-        try:
-            current_period = Periodo.objects.get(id=periodo_filter_id)
-        except Periodo.DoesNotExist:
-            current_period = periodos.first() 
-    else: 
-        current_period = periodos.first() 
+    # Obtener las asignaciones de ProgramacionAcademica para cada docente
+    docentes_with_assignments = []
+    # Usamos .distinct() al final si el filtro de carrera pudiera duplicar docentes
+    for docente in docentes_list.order_by('nombre'): 
+        assigned_subjects_query = ProgramacionAcademica.objects.filter(docente=docente)
+        
+        if periodo_filter_id: # Si se está filtrando por período, aplicar a las asignaciones
+            assigned_subjects_query = assigned_subjects_query.filter(periodo__id=periodo_filter_id)
 
-    for docente in docentes_list:
-        if current_period:
-            docente.assigned_programas_current_period = list(
-                docente.programacionacademica_set.filter(periodo=current_period).select_related('asignatura')
-            )
-        else:
-            docente.assigned_programas_current_period = []
+        assigned_subjects = assigned_subjects_query.select_related(
+            'asignatura', 'periodo', 'asignatura__carrera', 'asignatura__semestre'
+        ).order_by(
+            'periodo__fecha_inicio', 
+            'asignatura__carrera__nombre',
+            'asignatura__semestre__nombre',
+            'asignatura__nombre'
+        )
+        docente.assigned_subjects = assigned_subjects 
+        docentes_with_assignments.append(docente)
 
     return render(request, 'docentes.html', {
-        'docentes': docentes_list.distinct(), 
+        'docentes': docentes_with_assignments, 
         'carreras': carreras,
         'dedicaciones_choices': dedicaciones_choices,
         'filter_carrera_id': carrera_id,
@@ -241,19 +199,29 @@ def docentes(request):
         'filter_periodo_id': periodo_filter_id, 
         'query': query,
         'periodos': periodos, 
-        'current_period': current_period,
         'can_view_docente': request.user.has_permission(PERMISSIONS.VIEW_DOCENTE),
-        'can_add_docente': request.user.has_permission(PERMISSIONS.MANAGE_DOCENTE), # Permiso para añadir
-        'can_change_docente': request.user.has_permission(PERMISSIONS.MANAGE_DOCENTE), # Permiso para editar
-        'can_delete_docente': request.user.has_permission(PERMISSIONS.MANAGE_DOCENTE), # Permiso para eliminar
-        'can_assign_asignaturas': request.user.has_permission(PERMISSIONS.MANAGE_DOCENTE), # O un permiso más específico si existe, por ejemplo MANAGE_PROGRAMACION_ACADEMICA o MANAGE_DOCENT
+        'can_add_docente': request.user.has_permission(PERMISSIONS.MANAGE_DOCENTE), 
+        'can_change_docente': request.user.has_permission(PERMISSIONS.MANAGE_DOCENTE), 
+        'can_delete_docente': request.user.has_permission(PERMISSIONS.MANAGE_DOCENTE), 
+        'can_assign_asignaturas': request.user.has_permission(PERMISSIONS.MANAGE_DOCENTE), 
     })
 
 @login_required
 @user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_DOCENTE), login_url='/no-autorizado/')
 def detalle_docente(request, docente_id):
     docente = get_object_or_404(Docente, id=docente_id)
-    return render(request, 'detalle_docente.html', {'docente': docente})
+    assigned_subjects = ProgramacionAcademica.objects.filter(docente=docente).select_related(
+        'asignatura', 'periodo', 'asignatura__carrera', 'asignatura__semestre'
+    ).order_by(
+        'periodo__fecha_inicio',
+        'asignatura__carrera__nombre',
+        'asignatura__semestre__nombre',
+        'asignatura__nombre'
+    )
+    return render(request, 'detalle_docente.html', {
+        'docente': docente,
+        'assigned_subjects': assigned_subjects
+    })
 
 # Vista para agregar un nuevo docente
 @login_required
@@ -292,153 +260,194 @@ def eliminar_docente(request, pk):
         return redirect('programacion:docentes')
     return render(request, 'docente_confirm_delete.html', {'docente': docente})
 
+
 # --- VISTAS PARA ASIGNAR ASIGNATURAS A DOCENTES ---
 @login_required
-@user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_DOCENTE), login_url='/no-autorizado/')
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_DOCENTE), login_url='/no-autorizado/')
 def asignar_asignaturas(request, pk):
     docente = get_object_or_404(Docente, pk=pk)
     
-    periodo_id = request.GET.get('periodo') if request.method == 'GET' else request.POST.get('periodo')
-    carrera_id = request.GET.get('carrera') if request.method == 'GET' else request.POST.get('carrera')
-    semestre_id = request.GET.get('semestre') if request.method == 'GET' else request.POST.get('semestre')
-
-    _carrera_id_int = None
-    if carrera_id:
-        try: _carrera_id_int = int(carrera_id)
-        except (ValueError, TypeError): pass 
+    # Obtener el período seleccionado para el filtro principal
+    selected_period_id = request.GET.get('periodo')
+    if not selected_period_id and Periodo.objects.exists():
+        selected_period_id = Periodo.objects.first().id # Seleccionar el primer período si no hay uno
     
-    _semestre_id_int = None
-    if semestre_id:
-        try: _semestre_id_int = int(semestre_id)
-        except (ValueError, TypeError): pass
+    # Formulario principal (solo para seleccionar el período)
+    main_form = AsignarAsignaturasForm(request.GET or None, initial={'periodo': selected_period_id})
 
-    print(f"--- ASIGNAR_ASIGNATURAS VIEW DATA (FINAL PARSING) ---")
-    print(f"Request Method: {request.method}")
-    print(f"periodo_id (parsed): {periodo_id}")
-    print(f"carrera_id (parsed & int): {_carrera_id_int}")
-    print(f"semestre_id (parsed & int): {_semestre_id_int}")
-    if request.method == 'POST':
-        print(f"request.POST data: {request.POST}")
-    else:
-        print(f"request.GET data: {request.GET}")
-    print(f"--------------------------------------------------")
+    # Formulario para el modal (seleccion de Carrera/Semestre/Asignatura)
+    # Se pasa el objeto docente para que el queryset de Carrera se filtre correctamente
+    modal_form = AsignaturaModalForm(initial={
+        'carrera': request.GET.get('carrera'), # Pre-seleccionar si vienen de GET
+        'semestre': request.GET.get('semestre'),
+    }, docente=docente)
 
-    form_kwargs = {}
-    if _carrera_id_int is not None:
-        form_kwargs['carrera_id'] = _carrera_id_int
-    if _semestre_id_int is not None:
-        form_kwargs['semestre_id'] = _semestre_id_int
-    form_kwargs['docente'] = docente 
 
-    if request.method == 'POST':
-        form = AsignarAsignaturasForm(request.POST, **form_kwargs)
-
-        if form.is_valid():
-            asignaturas_seleccionadas = form.cleaned_data['asignaturas']
-            periodo_seleccionado = form.cleaned_data['periodo']
-
-            try:
-                with transaction.atomic():
-                    existing_assignments = ProgramacionAcademica.objects.filter(
-                        docente=docente,
-                        periodo=periodo_seleccionado
-                    )
-                    
-                    selected_asignatura_ids = {a.id for a in asignaturas_seleccionadas}
-                    
-                    for assignment in existing_assignments:
-                        if assignment.asignatura.id not in selected_asignatura_ids:
-                            assignment.delete()
-                    
-                    for asignatura in asignaturas_seleccionadas:
-                        ProgramacionAcademica.objects.get_or_create(
-                            docente=docente,
-                            asignatura=asignatura,
-                            periodo=periodo_seleccionado,
-                        )
-                
-                return redirect('programacion:docentes') 
-            except Exception as e:
-                print(f"Error al asignar asignaturas: {e}")
-
-    else: # GET Request
-        form_initial = {}
-        if periodo_id:
-            form_initial['periodo'] = periodo_id
-        if carrera_id:
-            form_initial['carrera'] = carrera_id
-        if semestre_id:
-            form_initial['semestre'] = semestre_id
-        
-        form = AsignarAsignaturasForm(initial=form_initial, **form_kwargs)
-
-    if periodo_id and _carrera_id_int is not None and _semestre_id_int is not None:
-        current_assignments = ProgramacionAcademica.objects.filter(
+    # Obtener las asignaturas ya asignadas al docente para el período seleccionado
+    assigned_subjects = []
+    if selected_period_id and selected_period_id:
+        assigned_subjects = ProgramacionAcademica.objects.filter(
             docente=docente,
-            periodo__id=periodo_id,
-            asignatura__carrera__id=_carrera_id_int, 
-            asignatura__semestre__id=_semestre_id_int 
-        ).values_list('asignatura__id', flat=True)
-        form.fields['asignaturas'].initial = list(current_assignments)
+            periodo__id=selected_period_id
+        ).select_related('asignatura', 'periodo', 'asignatura__carrera', 'asignatura__semestre').order_by(
+            'periodo__fecha_inicio',
+            'asignatura__carrera__nombre',
+            'asignatura__semestre__nombre',
+            'asignatura__nombre'
+        )
 
+    # Si la solicitud es POST, significa que el usuario ha cambiado el período del filtro principal
+    # o ha enviado el formulario del modal (manejado por vistas AJAX).
+    # Este if request.method == 'POST' del flujo anterior se elimina o se simplifica,
+    # ya que las asignaciones/desasignaciones individuales se harán por AJAX.
+    if request.method == 'POST':
+        # En este nuevo flujo, los POSTs a esta URL solo deberían ser para el filtro de período.
+        # Si tienes lógica de guardado masivo aquí, deberías revisarla.
+        # Para este ejemplo, asumimos que los guardados y eliminaciones se hacen vía AJAX.
+        pass
 
     return render(request, 'asignar_asignaturas.html', {
         'docente': docente, 
-        'form': form,
-        'selected_periodo_id': periodo_id, 
-        'selected_carrera_id': carrera_id, 
-        'selected_semestre_id': semestre_id, 
-        'periodos': Periodo.objects.all().order_by('-fecha_inicio'),
-        'carreras': Carrera.objects.all().order_by('nombre'),
-        'semestres': semestre.objects.filter(carrera__id=_carrera_id_int).distinct().order_by('nombre') if _carrera_id_int is not None else semestre.objects.none(),
+        'main_form': main_form, # El formulario principal para el filtro de período
+        'modal_form': modal_form, # El formulario para el modal de añadir asignatura
+        'assigned_subjects': assigned_subjects, # Las asignaturas ya asignadas para la tabla
+        'selected_period_id': selected_period_id, # Se usa en JS para recargar
+        'periodos': Periodo.objects.all().order_by('-fecha_inicio'), # Para el selector principal
     })
 
 # --- VISTAS API PARA CARGA DINÁMICA DE SEMESTRES Y ASIGNATURAS ---
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_DOCENTE), login_url='/no-autorizado/')
+@require_POST
+def api_add_assignment_to_docente(request, pk):
+    docente = get_object_or_404(Docente, pk=pk) # Obtener el objeto docente
+
+    # Pasar el objeto docente al formulario para que pueda filtrar las carreras correctamente
+    form = AsignaturaModalForm(request.POST, docente=docente) 
+
+    if form.is_valid():
+        asignatura = form.cleaned_data['asignatura']
+        # Asegurarse de obtener el período del POST, ya que el campo periodo está en el main_form
+        periodo_id_from_post = request.POST.get('periodo_id')
+        if not periodo_id_from_post:
+            return JsonResponse({'success': False, 'message': 'ID de período no proporcionado.'}, status=400)
+        
+        try:
+            periodo = Periodo.objects.get(id=periodo_id_from_post)
+        except Periodo.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Período seleccionado no existe.'}, status=400)
+
+        if not ProgramacionAcademica.objects.filter(
+            docente=docente,
+            asignatura=asignatura,
+            periodo=periodo,
+        ).exists():
+            ProgramacionAcademica.objects.create(
+                docente=docente,
+                asignatura=asignatura,
+                periodo=periodo,
+            )
+            return JsonResponse({'success': True, 'message': 'Asignatura asignada exitosamente.'})
+        else:
+            return JsonResponse({'success': False, 'message': 'Esta asignatura ya está asignada al docente para este período.'}, status=409) 
+    else:
+        # Aquí puedes añadir más depuración para ver los errores exactos
+        print("Errores de validación en AsignaturaModalForm (POST):")
+        for field, errors in form.errors.items():
+            print(f"  {field}: {errors}")
+        
+        errors = {field: error[0] for field, error in form.errors.items()}
+        return JsonResponse({'success': False, 'message': 'Errores de validación', 'errors': errors}, status=400)
+
+@login_required
+@user_passes_test(lambda u: u.has_permission(PERMISSIONS.MANAGE_DOCENTE), login_url='/no-autorizado/')
+@require_POST
+def api_remove_assignment_from_docente(request, pk):
+    # pk aquí es el ID del objeto ProgramacionAcademica a eliminar
+    assignment = get_object_or_404(ProgramacionAcademica, pk=pk)
+    
+    try:
+        assignment.delete()
+        return JsonResponse({'success': True, 'message': 'Asignación eliminada exitosamente.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error al eliminar la asignación: {e}'}, status=500)
 
 def api_semestres_por_carrera(request):
     carrera_id = request.GET.get('carrera_id')
     semestres_data = []
     if carrera_id:
-        # Asegurarse de que el queryset de semestre solo contenga los relacionados a la carrera
-        semestres_qs = semestre.objects.filter(carrera__id=carrera_id).order_by('nombre')
-        for sem in semestres_qs:
-            semestres_data.append({'id': sem.id, 'nombre': sem.nombre})
+        semestres_queryset = semestre.objects.filter(carrera__id=carrera_id).order_by('nombre')
+        for s in semestres_queryset:
+            semestres_data.append({'id': s.id, 'nombre': s.nombre})
     return JsonResponse(semestres_data, safe=False)
 
+
+
 def api_asignaturas_por_carrera_semestre(request):
-    periodo_id = request.GET.get('periodo_id') # Puede no ser necesario para el filtro de asignaturas en sí, pero útil para asignación
-    carrera_id = request.GET.get('carrera_id')
-    semestre_id = request.GET.get('semestre_id')
-    docente_id = request.GET.get('docente_id') # Usado solo para el caso de asignación de asignaturas a docente
+    carrera_id_str = request.GET.get('carrera_id')
+    semestre_id_str = request.GET.get('semestre_id')
+
+    print(f"\n--- DEBUG: api_asignaturas_por_carrera_semestre ---")
+    print(f"Recibido carrera_id (str): '{carrera_id_str}'")
+    print(f"Recibido semestre_id (str): '{semestre_id_str}'")
 
     asignaturas_data = []
+    
+    # Conversión explícita a int con manejo de errores
+    _carrera_id_int = None
+    _semestre_id_int = None
 
-    if carrera_id and semestre_id: # Filtra asignaturas solo por carrera y semestre
-        asignaturas = Asignatura.objects.filter(
-            carrera__id=carrera_id,
-            semestre__id=semestre_id
-        ).order_by('nombre')
-        
-        assigned_ids = set() # Inicializa vacío por defecto
+    if carrera_id_str:
+        try:
+            _carrera_id_int = int(carrera_id_str)
+        except (ValueError, TypeError) as e:
+            print(f"ERROR: carrera_id '{carrera_id_str}' no es un entero válido. Excepción: {e}")
+            # Considera devolver un error 400 si esto es crítico para el frontend
+            # return JsonResponse({'error': 'ID de carrera no válido'}, status=400)
+            return JsonResponse([], safe=False) # Devuelve vacío para no romper el JS
 
-        # Si hay docente_id y periodo_id, carga las asignaturas ya asignadas
-        if docente_id and periodo_id:
-            assigned_programaciones = ProgramacionAcademica.objects.filter(
-                docente__id=docente_id,
-                periodo__id=periodo_id
-            ).values_list('asignatura__id', flat=True)
-            assigned_ids = set(assigned_programaciones) 
+    if semestre_id_str:
+        try:
+            _semestre_id_int = int(semestre_id_str)
+        except (ValueError, TypeError) as e:
+            print(f"ERROR: semestre_id '{semestre_id_str}' no es un entero válido. Excepción: {e}")
+            # return JsonResponse({'error': 'ID de semestre no válido'}, status=400)
+            return JsonResponse([], safe=False) # Devuelve vacío para no romper el JS
 
-        for asignatura in asignaturas:
-            is_assigned = asignatura.id in assigned_ids
-            asignaturas_data.append({
-                'id': asignatura.id,
-                'nombre': asignatura.nombre,
-                'is_assigned': is_assigned 
-            })
-    return JsonResponse(asignaturas_data, safe=False)
 
-# Vistas de ProgramacionAcademica existentes (se mantienen sin cambios importantes aquí)
+    print(f"Carrera ID (int): {_carrera_id_int}")
+    print(f"Semestre ID (int): {_semestre_id_int}")
+
+    # Solo si ambos IDs son enteros válidos, intentar la consulta
+    if _carrera_id_int is not None and _semestre_id_int is not None:
+        try:
+            asignaturas_queryset = Asignatura.objects.filter(
+                carrera__id=_carrera_id_int,
+                semestre__id=_semestre_id_int
+            ).order_by('nombre')
+
+            print(f"Consulta a la base de datos: Asignatura.objects.filter(carrera__id={_carrera_id_int}, semestre__id={_semestre_id_int})")
+            print(f"Número de asignaturas encontradas: {asignaturas_queryset.count()}")
+
+            for a in asignaturas_queryset:
+                asignaturas_data.append({
+                    'id': a.id,
+                    'nombre': a.nombre,
+                    'codigo': a.codigo,
+                })
+        except Exception as e:
+            print(f"ERROR: Excepción en la consulta de Asignaturas: {e}")
+            # return JsonResponse({'error': f'Error en la base de datos: {e}'}, status=500)
+            return JsonResponse([], safe=False) # Devuelve vacío para no romper el JS
+    else:
+        print("ADVERTENCIA: Faltan carrera_id o semestre_id válidos para realizar la consulta.")
+        # Devuelve asignaturas_data[] que ya está vacío por defecto
+
+    print(f"Datos de asignaturas enviados en la respuesta: {asignaturas_data}")
+    print(f"---------------------------------------------\n")
+
+    return JsonResponse(asignaturas_data, safe=False)# Vistas de ProgramacionAcademica existentes (se mantienen sin cambios importantes aquí)
 # def evaluacion_docente(request): ...
 
 @login_required
@@ -1245,3 +1254,241 @@ def ajax_semestres(request):
     if carrera_id:
         semestres = list(semestre.objects.filter(carrera_id=carrera_id).values('id', 'nombre'))
     return JsonResponse({'semestres': semestres})
+
+def export_evaluacion_excel(request):
+    evaluaciones_query = ProgramacionAcademica.objects.all().select_related(
+        'docente', 'asignatura', 'periodo', 'docente_evaluador'
+    ).order_by(
+        '-periodo__fecha_inicio', 'docente__nombre', 'asignatura__nombre'
+    )
+
+    filter_docente_id = request.GET.get('docente')
+    filter_periodo_id = request.GET.get('periodo')
+
+    if filter_docente_id:
+        evaluaciones_query = evaluaciones_query.filter(docente__id=filter_docente_id)
+    if filter_periodo_id:
+        evaluaciones_query = evaluaciones_query.filter(periodo__id=filter_periodo_id)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte Evaluacion Academica"
+
+    # --- Configuración de Estilos ---
+    bold_font = Font(bold=True)
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid") # Azul oscuro para encabezados principales
+    sub_header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid") # Azul claro para sub-encabezados
+    thin_border = Border(left=Side(style='thin'), 
+                         right=Side(style='thin'), 
+                         top=Side(style='thin'), 
+                         bottom=Side(style='thin'))
+    center_aligned_text = Alignment(horizontal="center", vertical="center")
+    left_aligned_text = Alignment(horizontal="left", vertical="center")
+    top_aligned_text = Alignment(horizontal="left", vertical="top", wrapText=True) 
+
+    # --- DEFINICIÓN DE HEADERS (AÑADIENDO PUNTAJES Y JUICIOS) ---
+    headers = [
+        "Docente", "Cédula Docente", "Asignatura", "Carrera", "Semestre", "Período Académico", 
+        "Fecha de Inicio Período", "Fecha de Fin Período", "Fue Evaluada", "Fecha de Evaluación", 
+        "Docente Evaluador", 
+        "Puntaje Acompañamiento", "Juicio Acompañamiento",
+        "Puntaje Autoevaluación", "Juicio Autoevaluación",
+        "Puntaje Evaluación Estudiante", "Juicio Evaluación Estudiante",
+        "Juicio de Valor General" 
+    ]
+
+    current_row = 1 
+
+    # --- INFORMACIÓN DE LA UNIVERSIDAD ---
+    ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=len(headers)) 
+    ws[f'A{current_row}'] = "UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA DE LA FUERZA ARMADA NACIONAL BOLIVARIANA"
+    ws[f'A{current_row}'].font = Font(size=14, bold=True)
+    ws[f'A{current_row}'].alignment = center_aligned_text
+    current_row += 1
+
+    ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=len(headers)) 
+    ws[f'A{current_row}'] = "VICERRECTORADO DE ASUNTOS ACADÉMICOS - UNIDAD DE PROGRAMACIÓN ACADÉMICA" 
+    ws[f'A{current_row}'].font = Font(size=12, bold=True)
+    ws[f'A{current_row}'].alignment = center_aligned_text
+    current_row += 1
+
+    ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=len(headers)) 
+    ws[f'A{current_row}'] = "Núcleo: Falcón - Extensión: Punto Fijo"
+    ws[f'A{current_row}'].font = Font(size=10, bold=True)
+    ws[f'A{current_row}'].alignment = center_aligned_text
+    current_row += 1
+
+    current_row += 1 # Fila vacía para separación
+
+    # Título del Reporte
+    ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=len(headers)) 
+    ws[f'A{current_row}'] = "REPORTE DE EVALUACIONES ACADÉMICAS" 
+    ws[f'A{current_row}'].font = Font(size=16, bold=True, color="000000")
+    ws[f'A{current_row}'].alignment = center_aligned_text
+    ws.row_dimensions[current_row].height = 30 
+    current_row += 1
+
+    # Fecha del Reporte y Filtros Aplicados
+    current_row += 1 
+    ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=int(len(headers)/2)) 
+    ws[f'A{current_row}'] = f"Fecha de Generación: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+    ws[f'A{current_row}'].font = Font(bold=True)
+    current_row += 1
+
+    filtro_info_list = []
+    if filter_docente_id:
+        try:
+            docente_filtro = Docente.objects.get(id=filter_docente_id)
+            filtro_info_list.append(f"Docente: {docente_filtro.nombre}") 
+        except Docente.DoesNotExist:
+            pass
+    if filter_periodo_id:
+        try:
+            periodo_filtro = Periodo.objects.get(id=filter_periodo_id)
+            filtro_info_list.append(f"Período: {periodo_filtro.nombre}")
+        except Periodo.DoesNotExist:
+            pass
+
+    if filtro_info_list:
+        ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=int(len(headers)/2))
+        ws[f'A{current_row}'] = "Filtros Aplicados:"
+        ws[f'A{current_row}'].font = Font(bold=True)
+        current_row += 1
+        for f_text in filtro_info_list:
+            ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=int(len(headers)/2))
+            ws[f'A{current_row}'] = f_text
+            current_row += 1
+    
+    current_row += 2 
+
+    # --- Sección de Estadísticas ---
+    ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=3)
+    ws[f'A{current_row}'] = "Resumen Estadístico"
+    ws[f'A{current_row}'].font = Font(size=14, bold=True, color="000000")
+    ws[f'A{current_row}'].alignment = left_aligned_text
+    current_row += 1
+
+    total_evaluaciones = evaluaciones_query.count()
+    evaluaciones_realizadas = evaluaciones_query.filter(fue_evaluada=True).count()
+    evaluaciones_pendientes = evaluaciones_query.filter(fue_evaluada=False).count()
+
+    ws.append(["Total de Evaluaciones:", total_evaluaciones])
+    ws.append(["Evaluaciones Realizadas:", evaluaciones_realizadas])
+    ws.append(["Evaluaciones Pendientes:", evaluaciones_pendientes])
+    
+    # NUEVO: Estadísticas de puntajes y juicios (solo si hay datos)
+    if evaluaciones_realizadas > 0:
+        # Promedios de puntajes
+        total_score_acompanamiento = sum(e.score_acompanamiento or 0 for e in evaluaciones_query if e.fue_evaluada and e.score_acompanamiento is not None)
+        total_autoevaluacion_score = sum(e.autoevaluacion_score or 0 for e in evaluaciones_query if e.fue_evaluada and e.autoevaluacion_score is not None)
+        total_evaluacion_estudiante_score = sum(e.evaluacion_estudiante_score or 0 for e in evaluaciones_query if e.fue_evaluada and e.evaluacion_estudiante_score is not None)
+
+        count_acompanamiento = sum(1 for e in evaluaciones_query if e.fue_evaluada and e.score_acompanamiento is not None)
+        count_autoevaluacion = sum(1 for e in evaluaciones_query if e.fue_evaluada and e.autoevaluacion_score is not None)
+        count_evaluacion_estudiante = sum(1 for e in evaluaciones_query if e.fue_evaluada and e.evaluacion_estudiante_score is not None)
+
+        avg_acompanamiento = (total_score_acompanamiento / count_acompanamiento) if count_acompanamiento > 0 else "N/A"
+        avg_autoevaluacion = (total_autoevaluacion_score / count_autoevaluacion) if count_autoevaluacion > 0 else "N/A"
+        avg_evaluacion_estudiante = (total_evaluacion_estudiante_score / count_evaluacion_estudiante) if count_evaluacion_estudiante > 0 else "N/A"
+        
+        ws.append(["Promedio Puntaje Acompañamiento:", f"{avg_acompanamiento:.2f}" if avg_acompanamiento != "N/A" else "N/A"])
+        ws.append(["Promedio Puntaje Autoevaluación:", f"{avg_autoevaluacion:.2f}" if avg_autoevaluacion != "N/A" else "N/A"])
+        ws.append(["Promedio Puntaje Evaluación Estudiante:", f"{avg_evaluacion_estudiante:.2f}" if avg_evaluacion_estudiante != "N/A" else "N/A"])
+
+    current_row = ws.max_row + 1 
+    current_row += 2 
+
+    # --- Encabezados de la Tabla Principal de Datos ---
+    ws.append(headers) 
+
+    # Aplicar estilo a los encabezados
+    header_row_index = current_row 
+    for col_num in range(1, len(headers) + 1):
+        cell = ws.cell(row=header_row_index, column=col_num)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = center_aligned_text
+    current_row += 1 
+
+    # --- Datos de la Tabla Principal (AÑADIENDO PUNTAJES Y JUICIOS) ---
+    for evaluacion in evaluaciones_query:
+        row_data = [
+            evaluacion.docente.nombre if evaluacion.docente else 'N/A', 
+            evaluacion.docente.cedula if evaluacion.docente else 'N/A',
+            evaluacion.asignatura.nombre if evaluacion.asignatura else 'N/A',
+            evaluacion.asignatura.carrera.nombre if evaluacion.asignatura and evaluacion.asignatura.carrera else 'N/A',
+            evaluacion.asignatura.semestre.nombre if evaluacion.asignatura and evaluacion.asignatura.semestre else 'N/A',
+            evaluacion.periodo.nombre if evaluacion.periodo else 'N/A',
+            evaluacion.periodo.fecha_inicio.strftime('%d/%m/%Y') if evaluacion.periodo and evaluacion.periodo.fecha_inicio else 'N/A',
+            evaluacion.periodo.fecha_fin.strftime('%d/%m/%Y') if evaluacion.periodo and evaluacion.periodo.fecha_fin else 'N/A',
+            "Sí" if evaluacion.fue_evaluada else "No",
+            evaluacion.fecha_evaluacion.strftime('%d/%m/%Y') if evaluacion.fecha_evaluacion else 'N/A',
+            evaluacion.docente_evaluador.nombre if evaluacion.docente_evaluador else 'N/A', 
+            
+            # NUEVOS CAMPOS: Puntajes y Juicios
+            evaluacion.score_acompanamiento if evaluacion.score_acompanamiento is not None else 'N/A',
+            evaluacion.juicio_acompanamiento,
+            evaluacion.autoevaluacion_score if evaluacion.autoevaluacion_score is not None else 'N/A',
+            evaluacion.juicio_autoevaluacion,
+            evaluacion.evaluacion_estudiante_score if evaluacion.evaluacion_estudiante_score is not None else 'N/A',
+            evaluacion.juicio_evaluacion_estudiante,
+
+            evaluacion.juicio_valor if evaluacion.juicio_valor else 'N/A', 
+        ]
+        ws.append(row_data) 
+        
+        for col_num in range(1, len(row_data) + 1):
+            ws.cell(row=ws.max_row, column=col_num).border = thin_border
+            # Aplicar alineación top a campos de texto largo
+            if (col_num - 1) < len(headers) and \
+            headers[col_num - 1] in ["Juicio de Valor General", 
+                                    "Juicio Acompañamiento", 
+                                    "Juicio Autoevaluación", 
+                                    "Juicio Evaluación Estudiante"]: 
+                ws.cell(row=ws.max_row, column=col_num).alignment = top_aligned_text
+
+    # --- Autoajustar ancho de columnas ---
+    # La variable header_row_index ya está definida justo antes del bucle de datos principales.
+    # El bucle de autoajuste debe empezar a iterar sobre las celdas desde la primera fila de datos,
+    # que es `header_row_index + 1`.
+    for col_idx in range(1, ws.max_column + 1):
+        max_length = 0
+        column_letter = get_column_letter(col_idx) 
+        
+        # Iterar sobre las celdas de la columna, empezando desde la primera fila de datos
+        for row_idx in range(header_row_index + 1, ws.max_row + 1): 
+            cell = ws.cell(row=row_idx, column=col_idx)
+            try:
+                cell_value = str(cell.value)
+                if '\n' in cell_value:
+                    lines = cell_value.split('\n')
+                    for line in lines:
+                        if len(line) > max_length:
+                            max_length = len(line)
+                else:
+                    if len(cell_value) > max_length:
+                        max_length = len(cell_value)
+            except:
+                pass
+        
+        adjusted_width = (max_length + 2) 
+        if adjusted_width < 10: adjusted_width = 10 
+        
+        # Límite específico para las columnas de Juicio/Observaciones
+        if (col_idx - 1) < len(headers) and \
+        headers[col_idx - 1] in ["Juicio de Valor General", 
+                                "Juicio Acompañamiento", 
+                                "Juicio Autoevaluación", 
+                                "Juicio Evaluación Estudiante"]:
+            if adjusted_width > 60:
+                adjusted_width = 60 
+        
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="reporte_evaluacion_academica.xlsx"' 
+    wb.save(response) 
+    return response
+

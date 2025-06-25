@@ -1,0 +1,18 @@
+{# programacion/templates/assignment_modal_content.html #}
+{% load widget_tweaks %}
+
+<div class="mb-3">
+    <label for="{{ form.carrera.id_for_label }}" class="form-label">{{ form.carrera.label }}:</label>
+    {% render_field form.carrera class="form-select" %}
+    {% if form.carrera.errors %}<div class="text-danger">{{ form.carrera.errors }}</div>{% endif %}
+</div>
+<div class="mb-3">
+    <label for="{{ form.semestre.id_for_label }}" class="form-label">{{ form.semestre.label }}:</label>
+    {% render_field form.semestre class="form-select" %}
+    {% if form.semestre.errors %}<div class="text-danger">{{ form.semestre.errors }}</div>{% endif %}
+</div>
+<div class="mb-3">
+    <label for="{{ form.asignatura.id_for_label }}" class="form-label">{{ form.asignatura.label }}:</label>
+    {% render_field form.asignatura class="form-select" %}
+    {% if form.asignatura.errors %}<div class="text-danger">{{ form.asignatura.errors }}</div>{% endif %}
+</div>

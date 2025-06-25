@@ -1,51 +1,120 @@
+{# programacion/templates/asignar_asignaturas.html #}
 {% extends "interfaz.html" %}
 {% load static %}
+{% load widget_tweaks %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="card shadow p-4 mb-4">
-        <h2 class="card-title text-center mb-4">Asignar Asignaturas a: {{ docente.nombre }}</h2>
+        <h2 class="card-title text-center mb-4">Gestionar Asignaturas de: {{ docente.nombre }}</h2>
 
-        <form method="post" id="assignment-form">
-            {% csrf_token %}
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <label for="{{ form.periodo.id_for_label }}" class="form-label">{{ form.periodo.label }}</label>
-                    {{ form.periodo }}
-                    {% if form.periodo.errors %}<div class="text-danger">{{ form.periodo.errors }}</div>{% endif %}
+        {# Formulario para seleccionar el Período Principal #}
+        <form method="get" id="periodo-filter-form" class="mb-4">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    <label for="{{ main_form.periodo.id_for_label }}" class="form-label">{{ main_form.periodo.label }}</label>
+                    {% render_field main_form.periodo class="form-select" %}
+                    {% if main_form.periodo.errors %}<div class="text-danger">{{ main_form.periodo.errors }}</div>{% endif %}
                 </div>
-                <div class="col-md-4">
-                    <label for="{{ form.carrera.id_for_label }}" class="form-label">{{ form.carrera.label }}</label>
-                    {{ form.carrera }}
-                    {% if form.carrera.errors %}<div class="text-danger">{{ form.carrera.errors }}</div>{% endif %}
+                <div class="col-md-6 mt-3 mt-md-0">
+                    <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel me-2"></i> Filtrar por Período</button>
+                    <a href="{% url 'programacion:docentes' %}" class="btn btn-secondary"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Docentes</a>
                 </div>
-                <div class="col-md-4">
-                    <label for="{{ form.semestre.id_for_label }}" class="form-label">{{ form.semestre.label }}</label>
-                    {{ form.semestre }}
-                    {% if form.semestre.errors %}<div class="text-danger">{{ form.semestre.errors }}</div>{% endif %}
-                </div>
-            </div>
-
-            <div class="mb-4">
-                <label class="form-label">{{ form.asignaturas.label }}</label>
-                <div id="asignaturas-checkbox-list">
-                    {% for checkbox in form.asignaturas %}
-                        <div class="form-check">
-                            {{ checkbox.tag }}
-                            <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
-                        </div>
-                    {% empty %}
-                        <p class="text-muted">Selecciona una carrera y semestre para ver las asignaturas disponibles.</p>
-                    {% endfor %}
-                </div>
-                {% if form.asignaturas.errors %}<div class="text-danger">{{ form.asignaturas.errors }}</div>{% endif %}
-            </div>
-
-            <div class="d-flex justify-content-between mt-4">
-                <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-save me-2"></i> Guardar Asignaciones</button>
-                <a href="{% url 'programacion:docentes' %}" class="btn btn-secondary btn-lg"><i class="bi bi-x-circle me-2"></i> Cancelar</a>
             </div>
         </form>
+
+        <hr>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Asignaturas Asignadas para el período: {{ main_form.periodo.value|default:"No seleccionado" }}</h4>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addAssignmentModal">
+                <i class="bi bi-plus-circle me-2"></i> Asignar Nueva Asignatura
+            </button>
+        </div>
+
+        {# Tabla de Asignaturas Asignadas #}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Asignatura</th>
+                        <th>Código</th>
+                        <th>Carrera</th>
+                        <th>Semestre</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="assigned-subjects-table-body">
+                    {% for assignment in assigned_subjects %}
+                    <tr id="assignment-row-{{ assignment.id }}">
+                        <td>{{ assignment.asignatura.nombre }}</td>
+                        <td>{{ assignment.asignatura.codigo }}</td>
+                        <td>{{ assignment.asignatura.carrera.nombre }}</td>
+                        <td>{{ assignment.asignatura.semestre.nombre }}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-danger btn-sm remove-assignment-btn" 
+                                    data-assignment-id="{{ assignment.id }}"
+                                    data-docente-id="{{ docente.id }}"
+                                    data-periodo-id="{{ selected_period_id }}">
+                                <i class="bi bi-trash"></i> Quitar
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No hay asignaturas asignadas para este período.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Modal para Añadir Nueva Asignatura #}
+<div class="modal fade" id="addAssignmentModal" tabindex="-1" aria-labelledby="addAssignmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAssignmentModalLabel">Asignar Asignatura a {{ docente.nombre }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addAssignmentForm">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" name="docente_id" value="{{ docente.id }}">
+                    <input type="hidden" name="periodo_id" value="{{ selected_period_id }}">
+                    
+                    {# Aquí se cargarán dinámicamente los campos del AsignaturaModalForm #}
+                    {% include "assignment_modal_content.html" with form=modal_form %}
+
+                    <div id="modal-messages" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="addAssignmentSubmitBtn">Asignar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Modal de confirmación de eliminación #}
+<div class="modal fade" id="confirmRemoveAssignmentModal" tabindex="-1" aria-labelledby="confirmRemoveAssignmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmRemoveAssignmentModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que deseas quitar esta asignatura asignada?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmRemoveAssignmentBtn">Quitar</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -53,116 +122,183 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const periodoSelect = document.getElementById('id_periodo');
-        const carreraSelect = document.getElementById('id_carrera');
-        const semestreSelect = document.getElementById('id_semestre');
-        const asignaturasCheckboxList = document.getElementById('asignaturas-checkbox-list');
-        const docenteId = "{{ docente.id }}"; // Pasar el ID del docente desde Django
+        const docenteId = "{{ docente.id }}";
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const addAssignmentModal = new bootstrap.Modal(document.getElementById('addAssignmentModal'));
+        const confirmRemoveAssignmentModal = new bootstrap.Modal(document.getElementById('confirmRemoveAssignmentModal'));
+        let assignmentIdToRemove = null;
 
-        // Función para cargar los semestres basados en la carrera seleccionada
-        function loadSemestres() {
-            const carreraId = carreraSelect.value;
-            semestreSelect.innerHTML = '<option value="">Cargando...</option>'; // Mostrar cargando
-            asignaturasCheckboxList.innerHTML = '<p class="text-muted">Selecciona un semestre para ver las asignaturas.</p>';
+        const mainPeriodoSelect = document.getElementById('id_periodo');
+        const modalCarreraSelect = document.getElementById('modal_carrera_select');
+        const modalSemestreSelect = document.getElementById('modal_semestre_select');
+        const modalAsignaturaSelect = document.getElementById('modal_asignatura_select');
+        const modalMessagesDiv = document.getElementById('modal-messages');
+
+        // --- Event Listener para el filtro de Período en la página principal ---
+        mainPeriodoSelect.addEventListener('change', function() {
+            document.getElementById('periodo-filter-form').submit(); // Recarga la página con el nuevo período
+        });
+
+        // --- Funciones para cargar selects en el modal ---
+        function loadModalSemestres() {
+            const carreraId = modalCarreraSelect.value;
+            modalSemestreSelect.innerHTML = '<option value="">Cargando...</option>';
+            modalAsignaturaSelect.innerHTML = '<option value="">Selecciona Carrera y Semestre Primero</option>'; // Reset asignaturas
 
             if (carreraId) {
-                // Hacer una llamada AJAX a una nueva URL para obtener los semestres
-                // Esta URL la crearemos en urls.py
                 fetch(`/programacion/api/semestres_por_carrera/?carrera_id=${carreraId}`)
                     .then(response => response.json())
                     .then(data => {
-                        semestreSelect.innerHTML = '<option value="">Selecciona un Semestre</option>';
+                        modalSemestreSelect.innerHTML = '<option value="">Selecciona un Semestre</option>';
                         data.forEach(sem => {
                             const option = document.createElement('option');
                             option.value = sem.id;
                             option.textContent = sem.nombre;
-                            semestreSelect.appendChild(option);
+                            modalSemestreSelect.appendChild(option);
                         });
-                        // Si ya había un semestre seleccionado (ej. al recargar la página con filtros)
-                        // intentamos seleccionarlo de nuevo.
-                        if ("{{ selected_semestre_id }}" && data.some(sem => sem.id == "{{ selected_semestre_id }}")) {
-                            semestreSelect.value = "{{ selected_semestre_id }}";
-                        }
-                        // Después de cargar los semestres, si hay un semestre seleccionado, cargar asignaturas
-                        if (semestreSelect.value) {
-                            loadAsignaturas();
+                        // Si ya había un semestre seleccionado (ej. al reabrir el modal), intentamos seleccionarlo.
+                        // Solo si no hay un valor de `selected_semestre_id` ya en el input oculto
+                        const currentModalSemestre = "{{ modal_form.semestre.value }}"; // Si Django ya lo precargó en initial
+                        if (currentModalSemestre && data.some(sem => sem.id == currentModalSemestre)) {
+                            modalSemestreSelect.value = currentModalSemestre;
+                            loadModalAsignaturas(); // Cargar asignaturas si ya hay semestre
                         }
                     })
                     .catch(error => {
-                        console.error('Error al cargar semestres:', error);
-                        semestreSelect.innerHTML = '<option value="">Error al cargar Semestres</option>';
+                        console.error('Error al cargar semestres del modal:', error);
+                        modalSemestreSelect.innerHTML = '<option value="">Error al cargar Semestres</option>';
                     });
             } else {
-                semestreSelect.innerHTML = '<option value="">Selecciona una Carrera Primero</option>';
+                modalSemestreSelect.innerHTML = '<option value="">Selecciona una Carrera Primero</option>';
             }
         }
 
-        // Función para cargar las asignaturas basadas en la carrera y semestre seleccionados
-        function loadAsignaturas() {
-            const periodoId = periodoSelect.value;
-            const carreraId = carreraSelect.value;
-            const semestreId = semestreSelect.value;
-            asignaturasCheckboxList.innerHTML = '<p class="text-muted">Cargando asignaturas...</p>';
+        function loadModalAsignaturas() {
+            const carreraId = modalCarreraSelect.value;
+            const semestreId = modalSemestreSelect.value;
+            modalAsignaturaSelect.innerHTML = '<option value="">Cargando...</option>';
 
-            if (periodoId && carreraId && semestreId) {
-                // Hacer una llamada AJAX a una nueva URL para obtener las asignaturas
-                // Esta URL la crearemos en urls.py
-                fetch(`/programacion/api/asignaturas_por_carrera_semestre/?periodo_id=${periodoId}&carrera_id=${carreraId}&semestre_id=${semestreId}&docente_id=${docenteId}`)
+            if (carreraId && semestreId) {
+                fetch(`/programacion/api/asignaturas_por_carrera_semestre/?carrera_id=${carreraId}&semestre_id=${semestreId}`)
                     .then(response => response.json())
                     .then(data => {
-                        asignaturasCheckboxList.innerHTML = ''; // Limpiar la lista actual
+                        modalAsignaturaSelect.innerHTML = '<option value="">Selecciona una Asignatura</option>';
                         if (data.length > 0) {
                             data.forEach(asignatura => {
-                                const div = document.createElement('div');
-                                div.classList.add('form-check');
-                                const input = document.createElement('input');
-                                input.type = 'checkbox';
-                                input.classList.add('form-check-input');
-                                input.name = `asignaturas`; // Nombre del campo MultipleChoiceField
-                                input.value = asignatura.id;
-                                input.id = `id_asignaturas_${asignatura.id}`; // Generar un ID único
-                                // Marcar si ya está asignada
-                                if (asignatura.is_assigned) {
-                                    input.checked = true;
-                                }
-
-                                const label = document.createElement('label');
-                                label.classList.add('form-check-label');
-                                label.htmlFor = `id_asignaturas_${asignatura.id}`;
-                                label.textContent = asignatura.nombre;
-
-                                div.appendChild(input);
-                                div.appendChild(label);
-                                asignaturasCheckboxList.appendChild(div);
+                                const option = document.createElement('option');
+                                option.value = asignatura.id;
+                                option.textContent = `${asignatura.nombre} (${asignatura.codigo})`;
+                                modalAsignaturaSelect.appendChild(option);
                             });
+                            // Si ya había una asignatura seleccionada
+                            const currentModalAsignatura = "{{ modal_form.asignatura.value }}";
+                            if (currentModalAsignatura && data.some(a => a.id == currentModalAsignatura)) {
+                                modalAsignaturaSelect.value = currentModalAsignatura;
+                            }
                         } else {
-                            asignaturasCheckboxList.innerHTML = '<p class="text-muted">No hay asignaturas disponibles para esta carrera y semestre.</p>';
+                            modalAsignaturaSelect.innerHTML = '<option value="">No hay asignaturas disponibles</option>';
                         }
                     })
                     .catch(error => {
-                        console.error('Error al cargar asignaturas:', error);
-                        asignaturasCheckboxList.innerHTML = '<p class="text-muted">Error al cargar asignaturas.</p>';
+                        console.error('Error al cargar asignaturas del modal:', error);
+                        modalAsignaturaSelect.innerHTML = '<option value="">Error al cargar Asignaturas</option>';
                     });
             } else {
-                asignaturasCheckboxList.innerHTML = '<p class="text-muted">Selecciona un período, carrera y semestre.</p>';
+                modalAsignaturaSelect.innerHTML = '<option value="">Selecciona Carrera y Semestre Primero</option>';
             }
         }
 
-        // Event Listeners
-        periodoSelect.addEventListener('change', loadAsignaturas); // Cuando cambia el periodo, recargar asignaturas
-        carreraSelect.addEventListener('change', function() {
-            loadSemestres(); // Recargar semestres cuando cambia la carrera
-            asignaturasCheckboxList.innerHTML = '<p class="text-muted">Selecciona un semestre para ver las asignaturas.</p>'; // Limpiar asignaturas
+        // --- Event Listeners para el modal ---
+        modalCarreraSelect.addEventListener('change', function() {
+            loadModalSemestres();
         });
-        semestreSelect.addEventListener('change', loadAsignaturas); // Cuando cambia el semestre, recargar asignaturas
+        modalSemestreSelect.addEventListener('change', function() {
+            loadModalAsignaturas();
+        });
 
-        // Cargar semestres y asignaturas iniciales si hay valores preseleccionados
-        if (carreraSelect.value) {
-            loadSemestres();
-        } else {
-            semestreSelect.innerHTML = '<option value="">Selecciona una Carrera Primero</option>';
-            asignaturasCheckboxList.innerHTML = '<p class="text-muted">Selecciona una carrera y semestre.</p>';
+        // Cargar los selects del modal cuando se abre
+        document.getElementById('addAssignmentModal').addEventListener('show.bs.modal', function () {
+            modalMessagesDiv.innerHTML = ''; // Limpiar mensajes de error previos
+            // Si el modal_form ya tiene valores iniciales (ej. por un intento fallido de POST),
+            // loadModalSemestres los usará. De lo contrario, comenzará vacío.
+            loadModalSemestres(); 
+        });
+
+        // --- Manejo del envío del formulario del modal (Añadir Asignatura) ---
+        document.getElementById('addAssignmentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            modalMessagesDiv.innerHTML = ''; // Limpiar mensajes
+
+            const formData = new FormData(this);
+            const selectedPeriodId = mainPeriodoSelect.value;
+            formData.set('periodo_id', selectedPeriodId); // Asegurar que el período de la página principal se envía
+
+            fetch(`/programacion/api/docentes/${docenteId}/add-assignment/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addAssignmentModal.hide();
+                    location.reload(); // Recargar la página para ver la nueva asignación
+                } else {
+                    let errorMessage = data.message || 'Error desconocido al asignar la asignatura.';
+                    if (data.errors) {
+                        for (const field in data.errors) {
+                            errorMessage += `<br>${field}: ${data.errors[field]}`;
+                        }
+                    }
+                    modalMessagesDiv.innerHTML = `<div class="alert alert-danger">${errorMessage}</div>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error al añadir asignación:', error);
+                modalMessagesDiv.innerHTML = `<div class="alert alert-danger">Ocurrió un error al comunicarse con el servidor.</div>`;
+            });
+        });
+
+        // --- Manejo del botón de Quitar Asignatura (en la tabla principal) ---
+        document.querySelectorAll('.remove-assignment-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                assignmentIdToRemove = this.dataset.assignmentId;
+                confirmRemoveAssignmentModal.show();
+            });
+        });
+
+        document.getElementById('confirmRemoveAssignmentBtn').addEventListener('click', function() {
+            if (!assignmentIdToRemove) return;
+
+            fetch(`/programacion/api/assignments/${assignmentIdToRemove}/remove/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    confirmRemoveAssignmentModal.hide();
+                    location.reload(); // Recargar la página para ver el cambio
+                } else {
+                    alert('Error al quitar la asignación: ' + (data.message || 'Error desconocido.'));
+                }
+            })
+            .catch(error => {
+                console.error('Error al quitar asignación:', error);
+                alert('Ocurrió un error al comunicarse con el servidor.');
+            });
+        });
+
+        // Cargar semestres y asignaturas iniciales del modal si ya hay una carrera seleccionada por initial
+        if (modalCarreraSelect.value) {
+            loadModalSemestres();
         }
     });
 </script>
-{% endblock %}
+{% endblock content %}

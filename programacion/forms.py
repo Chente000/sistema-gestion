@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 class ProgramacionAcademicaForm(forms.ModelForm):
     class Meta:
         model = ProgramacionAcademica
-        fields = '__all__' 
+        fields = '__all__' # Incluye todos los campos para la edición completa de una ProgramacionAcademica
         widgets = {
             'docente': forms.Select(attrs={'class': 'form-control'}),
             'asignatura': forms.Select(attrs={'class': 'form-control'}),
@@ -39,57 +39,26 @@ class ProgramacionAcademicaForm(forms.ModelForm):
             'docente_evaluador': 'Docente Evaluador (Si aplica)',
             'juicio_valor': 'Observaciones / Juicio de Valor General',
         }
+    
+    # Métodos clean para validación de rangos
+    def clean_score_acompanamiento(self):
+        score = self.cleaned_data.get('score_acompanamiento')
+        if score is not None and (score < 0 or score > 100):
+            raise ValidationError("El puntaje de acompañamiento debe estar entre 0 y 100.")
+        return score
 
-class EvaluacionBaseForm(forms.ModelForm):
-    # Asegúrate de que Asignatura se cargue con form-control
-    asignatura = forms.ModelChoiceField(
-        queryset=Asignatura.objects.all().order_by('nombre'),
-        label="Asignatura",
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
+    def clean_autoevaluacion_score(self):
+        score = self.cleaned_data.get('autoevaluacion_score')
+        if score is not None and (score < 0 or score > 60):
+            raise ValidationError("El puntaje de autoevaluación debe estar entre 0 y 60.")
+        return score
 
-    class Meta:
-        model = ProgramacionAcademica
-        # Exclude 'docente' and 'periodo' as they are handled globally
-        # También excluimos los campos de 'juicio' que se calculan en JS, asumiendo que no se guardan en el modelo.
-        exclude = ['docente', 'periodo', 'juicio_acompanamiento', 'juicio_autoevaluacion', 'juicio_evaluacion_estudiante'] 
-        
-        widgets = {
-            'fecha_evaluacion': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'score_acompanamiento': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}),
-            'entrego_autoevaluacion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'autoevaluacion_score': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '60'}),
-            'evaluacion_estudiante_score': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '10'}),
-            'docente_evaluador': forms.Select(attrs={'class': 'form-control'}),
-            'juicio_valor': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'fue_evaluada': forms.CheckboxInput(attrs={'class': 'form-check-input'}), # Added this if it's part of the form
-        }
-        labels = {
-            'asignatura': 'Asignatura a Evaluar',
-            'fecha_evaluacion': 'Fecha de Evaluación',
-            'score_acompanamiento': 'Puntaje de Acompañamiento',
-            'entrego_autoevaluacion': '¿Entregó Autoevaluación?',
-            'autoevaluacion_score': 'Puntaje Autoevaluación',
-            'evaluacion_estudiante_score': 'Puntaje Evaluación Estudiante',
-            'docente_evaluador': 'Docente Evaluador',
-            'juicio_valor': 'Juicio de Valor General',
-            'observaciones': 'Observaciones',
-            'fue_evaluada': '¿Fue Evaluada?',
-        }
-        help_texts = {
-            'score_acompanamiento': 'Puntaje de 0 a 100.',
-            'autoevaluacion_score': 'Puntaje de 0 a 60.',
-            'evaluacion_estudiante_score': 'Puntaje de 1 a 10.',
-            'juicio_valor': 'Observaciones y juicio general del evaluador.',
-        }
+    def clean_evaluacion_estudiante_score(self):
+        score = self.cleaned_data.get('evaluacion_estudiante_score')
+        if score is not None and (score < 1 or score > 10):
+            raise ValidationError("El puntaje de evaluación del estudiante debe estar entre 1 y 10.")
+        return score
 
-EvaluacionFormSet = modelformset_factory(
-    ProgramacionAcademica,
-    form=EvaluacionBaseForm,
-    extra=1, # Puedes ajustar el número de formularios vacíos
-    can_delete=True
-)
 class DocenteForm(forms.ModelForm):
     carreras = forms.ModelMultipleChoiceField(
         queryset=Carrera.objects.all(),
@@ -120,6 +89,23 @@ class DocenteForm(forms.ModelForm):
             'tipo_contrato': forms.TextInput(attrs={'class': 'form-control'}),
             'horario_laboral': forms.TextInput(attrs={'class': 'form-control'}),
         }
+        labels = {
+            'nombre': 'Nombre Completo',
+            'cedula': 'Cédula de Identidad',
+            'telefono': 'Número de Teléfono',
+            'email': 'Correo Electrónico',
+            'dedicacion': 'Dedicación',
+            'carreras': 'Carreras Asignadas',
+            'titulo_profesional': 'Título profesional',
+            'postgrados': 'Postgrados (maestrías, doctorados)',
+            'areas_especializacion': 'Áreas de especialización',
+            'categoria_docente': 'Categoría docente',
+            'anios_experiencia': 'Años de experiencia',
+            'fecha_ingreso': 'Fecha de ingreso a la institución',
+            'tipo_contrato': 'Tipo de contrato',
+            'horario_laboral': 'Horario laboral',
+        }
+
 
 class AsignarAsignaturasForm(forms.Form):
     periodo = forms.ModelChoiceField(
@@ -127,90 +113,80 @@ class AsignarAsignaturasForm(forms.Form):
         label="Período Académico",
         widget=forms.Select(attrs={'class': 'form-control'})
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Eliminar los campos de carrera, semestre y asignaturas de este formulario
+        # ya que ahora serán manejados por el modal y el AsignaturaModalForm.
+        self.fields.pop('carrera', None)
+        self.fields.pop('semestre', None)
+        self.fields.pop('asignaturas', None)
+
+# NUEVO: Formulario para la selección de asignatura en el modal
+class AsignaturaModalForm(forms.Form):
     carrera = forms.ModelChoiceField(
         queryset=Carrera.objects.all().order_by('nombre'),
         label="Carrera",
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'modal_carrera_select'})
     )
     semestre = forms.ModelChoiceField(
-        queryset=semestre.objects.all(), 
+        queryset=semestre.objects.none(),
         label="Semestre",
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'modal_semestre_select'})
     )
-    asignaturas = forms.ModelMultipleChoiceField(
-        queryset=Asignatura.objects.all(), 
-        required=False,
-        label="Asignaturas Disponibles para Asignar",
-        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'})
+    asignatura = forms.ModelChoiceField(
+        queryset=Asignatura.objects.none(),
+        label="Asignatura",
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'modal_asignatura_select'})
     )
 
     def __init__(self, *args, **kwargs):
-        # Capturamos los IDs de los kwargs
-        _carrera_id_kwarg = kwargs.pop('carrera_id', None)
-        _semestre_id_kwarg = kwargs.pop('semestre_id', None)
-        docente = kwargs.pop('docente', None) 
+        docente = kwargs.pop('docente', None) # Se espera el objeto docente aquí para filtrar carreras
+        super().__init__(*args, **kwargs)
 
-        print(f"--- AsignarAsignaturasForm.__init__ ---")
-        print(f"Recibidos kwargs (antes de super): _carrera_id_kwarg={_carrera_id_kwarg}, _semestre_id_kwarg={_semestre_id_kwarg}, docente={docente}")
-        
-        super().__init__(*args, **kwargs) # Llama al constructor de la clase base, procesa self.data
-
-        print(f"self.data (después de super.__init__): {self.data}")
-        print(f"self.data.get('semestre'): {self.data.get('semestre')}")
-        print(f"self.data.getlist('asignaturas'): {self.data.getlist('asignaturas')}")
-        print(f"---------------------------------------")
-
-        # Determinar los IDs de filtro de forma robusta
-        # Primero, intenta obtenerlos de los kwargs (pasados por la vista)
-        # Si son None, intenta obtenerlos de self.data (request.POST/GET)
-        carrera_id_to_filter = _carrera_id_kwarg
-        if carrera_id_to_filter is None and self.data and 'carrera' in self.data:
-            carrera_id_to_filter = self.data.get('carrera')
-        
-        semestre_id_to_filter = _semestre_id_kwarg
-        if semestre_id_to_filter is None and self.data and 'semestre' in self.data:
-            semestre_id_to_filter = self.data.get('semestre')
-
-        # Convertir a enteros, manejando posibles errores de tipo
-        _carrera_id_filter = None
-        if carrera_id_to_filter:
-            try: _carrera_id_filter = int(carrera_id_to_filter)
-            except (ValueError, TypeError): pass
-        
-        _semestre_id_filter = None
-        if semestre_id_to_filter:
-            try: _semestre_id_filter = int(semestre_id_to_filter)
-            except (ValueError, TypeError): pass
-
-        # Debug print de los IDs de filtro que se usarán
-        print(f"--- AsignarAsignaturasForm.Filter IDs ---")
-        print(f"_carrera_id_filter: {_carrera_id_filter}")
-        print(f"_semestre_id_filter: {_semestre_id_filter}")
-        print(f"-----------------------------------------")
-
-
-        # Filtrar semestres por carrera
-        if _carrera_id_filter is not None:
-            self.fields['semestre'].queryset = semestre.objects.filter(carrera__id=_carrera_id_filter).order_by('nombre')
+        if docente:
+            self.fields['carrera'].queryset = docente.carreras.all().order_by('nombre')
+            if not docente.carreras.exists():
+                self.fields['carrera'].empty_label = "Este docente no tiene carreras asignadas"
         else:
-            self.fields['semestre'].queryset = semestre.objects.none()
-            self.fields['semestre'].empty_label = "Selecciona una Carrera Primero"
+            self.fields['carrera'].queryset = Carrera.objects.none()
+            self.fields['carrera'].empty_label = "No se pudo cargar las carreras del docente."
 
-        # Filtrar asignaturas por carrera y semestre
-        if _carrera_id_filter is not None and _semestre_id_filter is not None:
-            self.fields['asignaturas'].queryset = Asignatura.objects.filter(
-                carrera__id=_carrera_id_filter,
-                semestre__id=_semestre_id_filter
-            ).order_by('nombre')
-        elif _carrera_id_filter is not None: 
-            self.fields['asignaturas'].queryset = Asignatura.objects.filter(
-                carrera__id=_carrera_id_filter
-            ).order_by('nombre')
-            self.fields['asignaturas'].empty_label = "Selecciona un Semestre Primero"
-        else: 
-            self.fields['asignaturas'].queryset = Asignatura.objects.none()
-            self.fields['asignaturas'].empty_label = "Selecciona Carrera y Semestre Primero"
+        # Inicialmente, el queryset de semestre y asignatura está vacío.
+        # Se llenará dinámicamente con AJAX en el frontend.
+        self.fields['semestre'].empty_label = "Selecciona una Carrera Primero"
+        self.fields['asignatura'].empty_label = "Selecciona Carrera y Semestre Primero"
 
+        # Si se recibe data (POST o GET con filtros), aplicar los filtros
+        carrera_id_from_data = None
+        semestre_id_from_data = None
+
+        if self.data:
+            carrera_id_from_data = self.data.get('carrera')
+            semestre_id_from_data = self.data.get('semestre')
+        elif 'initial' in kwargs: # Para el caso de inicializar en GET request
+            carrera_id_from_data = kwargs['initial'].get('carrera')
+            semestre_id_from_data = kwargs['initial'].get('semestre')
+
+
+        _carrera_id_filter = None
+        if carrera_id_from_data:
+            try: _carrera_id_filter = int(carrera_id_from_data)
+            except (ValueError, TypeError): pass
+
+        _semestre_id_filter = None
+        if semestre_id_from_data:
+            try: _semestre_id_filter = int(semestre_id_from_data)
+            except (ValueError, TypeError): pass
+
+        if _carrera_id_filter:
+            self.fields['semestre'].queryset = semestre.objects.filter(carrera__id=_carrera_id_filter).order_by('nombre')
+            if _semestre_id_filter:
+                self.fields['asignatura'].queryset = Asignatura.objects.filter(
+                    carrera__id=_carrera_id_filter,
+                    semestre__id=_semestre_id_filter
+                ).order_by('nombre')
+        
 
 class ProgramacionAcademicaAssignmentForm(forms.ModelForm):
     class Meta:

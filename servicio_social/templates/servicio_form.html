@@ -15,6 +15,15 @@
             <fieldset class="mb-4 p-3 border rounded shadow-sm">
                 <legend class="float-none w-auto px-2 fs-5">Información del Proyecto</legend>
                 <div class="row g-3">
+                    {# Nuevo campo: Período Académico #}
+                    <div class="col-md-6">
+                        <label for="{{ form.periodo_academico.id_for_label }}" class="form-label">{{ form.periodo_academico.label }}</label>
+                        {{ form.periodo_academico }}
+                        {% if form.periodo_academico.errors %}<div class="text-danger">{{ form.periodo_academico.errors }}</div>{% endif %}
+                    </div>
+                    {# Espacio vacío para mantener el layout si solo hay 1 campo en la fila inicial #}
+                    <div class="col-md-6"></div> 
+
                     <div class="col-md-6">
                         <label for="{{ form.nombre_proyecto.id_for_label }}" class="form-label">Nombre del Proyecto</label>
                         {{ form.nombre_proyecto }}
@@ -61,6 +70,7 @@
                         {{ form.vinculacion_planes_programas }}
                         {% if form.vinculacion_planes_programas.errors %}<div class="text-danger">{{ form.vinculacion_planes_programas.errors }}</div>{% endif %}
                     </div>
+                    {# ELIMINADOS: fecha_inicio y fecha_fin #}
                     <div class="col-md-6">
                         <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">Fecha de Inicio</label>
                         {{ form.fecha_inicio }}
@@ -276,169 +286,172 @@
     document.addEventListener('DOMContentLoaded', function() {
         // --- Lógica para mostrar/ocultar campos de tutor ---
         function toggleTutorFields() {
-            const tutorTipo = document.getElementById('id_tutor_tipo').value;
+            const tutorTipoSelect = document.getElementById('id_tutor_tipo');
+            if (!tutorTipoSelect) return; // Asegúrate de que el elemento existe
+            const tutorTipo = tutorTipoSelect.value;
             const adminDiv = document.getElementById('tutor_unidad_administrativa_div');
             const docenteDiv = document.getElementById('tutor_categoria_docente_div');
+
+            // Asegúrate de que los divs y sus inputs existan
+            const adminInput = document.getElementById('id_tutor_unidad_administrativa');
+            const docenteInput = document.getElementById('id_tutor_categoria_docente');
 
             if (tutorTipo === 'administrativo') {
                 adminDiv.style.display = 'block';
                 docenteDiv.style.display = 'none';
-                // Opcional: Limpiar el campo oculto
-                document.getElementById('id_tutor_categoria_docente').value = '';
+                if (docenteInput) docenteInput.value = '';
             } else if (tutorTipo === 'docente') {
                 adminDiv.style.display = 'none';
                 docenteDiv.style.display = 'block';
-                // Opcional: Limpiar el campo oculto
-                document.getElementById('id_tutor_unidad_administrativa').value = '';
+                if (adminInput) adminInput.value = '';
             } else {
                 adminDiv.style.display = 'none';
                 docenteDiv.style.display = 'none';
-                document.getElementById('id_tutor_unidad_administrativa').value = '';
-                document.getElementById('id_tutor_categoria_docente').value = '';
+                if (adminInput) adminInput.value = '';
+                if (docenteInput) docenteInput.value = '';
             }
         }
 
         // Ejecutar al cargar la página para el estado inicial
         toggleTutorFields();
         // Añadir listener para cambios
-        document.getElementById('id_tutor_tipo').addEventListener('change', toggleTutorFields);
+        const tutorTipoSelect = document.getElementById('id_tutor_tipo');
+        if (tutorTipoSelect) {
+            tutorTipoSelect.addEventListener('change', toggleTutorFields);
+        }
 
 
         // --- Lógica para añadir y eliminar formularios de estudiantes dinámicamente ---
         const addEstudianteBtn = document.getElementById('add-estudiante-btn');
         const formsetContainer = document.getElementById('estudiante-formset-container');
-        const totalForms = document.getElementById('id_estudiantes_participantes-TOTAL_FORMS'); // Este es el ID del campo de gestión
+        const totalForms = document.getElementById('id_estudiantes_participantes-TOTAL_FORMS');
 
         // Clonar la plantilla de un formulario vacío
         // Usamos el último formulario (que es el "extra" por defecto si no hay errores)
         // o un formulario vacío si todos son iniciales.
-        const emptyForm = formsetContainer.querySelector('.estudiante-form:last-of-type').cloneNode(true);
-        // Limpiar los valores del formulario clonado para que esté realmente vacío
-        emptyForm.querySelectorAll('input, select, textarea').forEach(input => {
-            if (input.type === 'checkbox' || input.type === 'radio') {
-                input.checked = false;
-            } else {
-                input.value = '';
-            }
-        });
-        // Asegurarse de que el campo DELETE no esté marcado
-        const deleteCheckbox = emptyForm.querySelector('[name$="-DELETE"]');
-        if (deleteCheckbox) {
-            deleteCheckbox.checked = false;
-        }
-        // Quitar el campo ID oculto si existe para nuevas instancias (prevención de errores)
-        const pkInput = emptyForm.querySelector('input[name$="-id"]');
-        if (pkInput) {
-            pkInput.remove();
-        }
-        // Eliminar el botón de eliminar si el formulario es una plantilla para añadir nuevos
-        const deleteButton = emptyForm.querySelector('.form-check.mb-3');
-        if (deleteButton) {
-            deleteButton.remove();
-        }
-
-
-        addEstudianteBtn.addEventListener('click', function() {
-            const currentForms = document.querySelectorAll('.estudiante-form').length;
-            const newForm = emptyForm.cloneNode(true); // Clonar la plantilla limpia
-
-            // Actualizar IDs y nombres de los campos en el nuevo formulario
-            const formRegex = RegExp('-(\\d+)-'); // Regex para encontrar el índice del formulario
-            newForm.innerHTML = newForm.innerHTML.replace(formRegex, '-' + currentForms + '-');
-            newForm.id = 'estudiante-form-' + currentForms;
-
-            // Actualizar los IDs 'for' de las etiquetas y el 'id' de los inputs
-            newForm.querySelectorAll('[id^="id_estudiantes_participantes-"], [for^="id_estudiantes_participantes-"]').forEach(element => {
-                element.id = element.id.replace(formRegex, '-' + currentForms + '-');
-                const forAttr = element.getAttribute('for');
-                if (forAttr) {
-                    element.setAttribute('for', forAttr.replace(formRegex, '-' + currentForms + '-'));
+        // Aseguramos que emptyForm se inicialice correctamente para evitar errores.
+        let emptyFormTemplate = null;
+        if (formsetContainer) {
+            const lastForm = formsetContainer.querySelector('.estudiante-form:last-of-type');
+            if (lastForm) {
+                emptyFormTemplate = lastForm.cloneNode(true); // Clonar la plantilla limpia
+                // Limpiar los valores del formulario clonado para que esté realmente vacío
+                emptyFormTemplate.querySelectorAll('input, select, textarea').forEach(input => {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                });
+                // Asegurarse de que el campo DELETE no esté marcado
+                const deleteCheckbox = emptyFormTemplate.querySelector('[name$="-DELETE"]');
+                if (deleteCheckbox) {
+                    deleteCheckbox.checked = false;
                 }
-            });
-            // Asegurarse que los 'name' de los campos sean correctos (si no se actualizan con innerHTML.replace)
-            newForm.querySelectorAll('[name^="estudiantes_participantes-"]').forEach(input => {
-                input.name = input.name.replace(formRegex, '-' + currentForms + '-');
-            });
+                // Quitar el campo ID oculto si existe para nuevas instancias (prevención de errores)
+                const pkInput = emptyFormTemplate.querySelector('input[name$="-id"]');
+                if (pkInput) {
+                    pkInput.remove();
+                }
+                // Eliminar el botón de eliminar si el formulario es una plantilla para añadir nuevos
+                const deleteButtonWrapper = emptyFormTemplate.querySelector('.form-check.mb-3'); // O el div que envuelve el checkbox DELETE
+                if (deleteButtonWrapper && deleteButtonWrapper.contains(deleteCheckbox)) { // Asegúrate de que es el checkbox de eliminar
+                    deleteButtonWrapper.remove();
+                }
+            }
+        }
 
 
-            // Actualizar el número de estudiante visible
-            newForm.querySelector('.estudiante-index').textContent = currentForms + 1;
+        if (addEstudianteBtn && formsetContainer && totalForms && emptyFormTemplate) {
+            addEstudianteBtn.addEventListener('click', function() {
+                const currentForms = document.querySelectorAll('.estudiante-form').length;
+                const newForm = emptyFormTemplate.cloneNode(true); 
 
-            // Añadir un botón de eliminar para las nuevas filas añadidas
-            // Solo si no estamos en la plantilla inicial vacía
-            if (currentForms >= {{ formset.min_num }}) { // Solo permitir eliminar si no estamos en el mínimo requerido
-                const deleteHtml = `
+                // Actualizar IDs y nombres de los campos en el nuevo formulario
+                const formRegex = RegExp('-\\d+-', 'g'); // Usar 'g' para reemplazar todas las ocurrencias
+                newForm.innerHTML = newForm.innerHTML.replace(formRegex, '-' + currentForms + '-');
+                newForm.id = 'estudiante-form-' + currentForms;
+
+                // Actualizar los índices 'for' de las etiquetas
+                newForm.querySelectorAll('label[for]').forEach(label => {
+                    const forAttr = label.getAttribute('for');
+                    label.setAttribute('for', forAttr.replace(formRegex, '-' + currentForms + '-'));
+                });
+
+                // Actualizar los IDs de los inputs y los 'name'
+                newForm.querySelectorAll('[id^="id_estudiantes_participantes-"], [name^="estudiantes_participantes-"]').forEach(element => {
+                    element.id = element.id.replace(formRegex, '-' + currentForms + '-');
+                    element.name = element.name.replace(formRegex, '-' + currentForms + '-');
+                });
+                
+                // Actualizar el número de estudiante visible
+                newForm.querySelector('.estudiante-index').textContent = currentForms + 1;
+
+                // Añadir un botón de eliminar para las nuevas filas añadidas
+                // Se añadirá el botón de eliminar a todas las nuevas filas
+                const deleteBtnHtml = `
                     <button type="button" class="btn btn-danger btn-sm mt-2 remove-estudiante-btn" data-form-index="${currentForms}">
                         <i class="bi bi-dash-circle"></i> Eliminar Estudiante
                     </button>
                 `;
-                newForm.insertAdjacentHTML('beforeend', deleteHtml);
-            }
-            
-            formsetContainer.appendChild(newForm);
+                newForm.insertAdjacentHTML('beforeend', deleteBtnHtml);
+                
+                formsetContainer.appendChild(newForm);
 
-            // Incrementar TOTAL_FORMS
-            totalForms.value = parseInt(totalForms.value) + 1;
+                // Incrementar TOTAL_FORMS
+                totalForms.value = parseInt(totalForms.value) + 1;
 
-            // Volver a vincular los eventos de eliminar (para los nuevos botones)
-            attachRemoveEvents();
-        });
+                // Volver a vincular los eventos de eliminar (para los nuevos botones)
+                attachRemoveEvents();
+            });
+        }
 
         function attachRemoveEvents() {
             document.querySelectorAll('.remove-estudiante-btn').forEach(button => {
-                button.onclick = function() {
-                    const formIndex = this.dataset.formIndex;
-                    const formToDelete = document.getElementById('estudiante-form-' + formIndex);
-                    if (formToDelete) {
-                        // Marcar el campo DELETE oculto para que Django lo procese
-                        const deleteCheckbox = formToDelete.querySelector(`[name="estudiantes_participantes-${formIndex}-DELETE"]`);
-                        if (deleteCheckbox) {
-                            deleteCheckbox.checked = true;
+                // Prevenir que el evento se adjunte múltiples veces
+                if (!button.dataset.listenerAttached) {
+                    button.onclick = function() {
+                        const formIndex = this.dataset.formIndex;
+                        const formToDelete = document.getElementById('estudiante-form-' + formIndex);
+                        if (formToDelete) {
+                            // Marcar el campo DELETE oculto para que Django lo procese
+                            const deleteCheckbox = formToDelete.querySelector(`[name="estudiantes_participantes-${formIndex}-DELETE"]`);
+                            if (deleteCheckbox) {
+                                deleteCheckbox.checked = true;
+                            }
+                            // Ocultar el formulario en lugar de removerlo completamente
+                            formToDelete.style.display = 'none';
+                            // Re-indexar los formularios visibles
+                            updateFormIndexes();
                         }
-                        // Ocultar el formulario en lugar de removerlo completamente
-                        formToDelete.style.display = 'none';
-                        // Re-indexar los formularios visibles si es necesario para el contador
-                        updateFormIndexes();
-                    }
-                };
+                    };
+                    button.dataset.listenerAttached = 'true'; // Marcar que el listener ya está adjunto
+                }
             });
         }
 
         // Función para actualizar los índices visibles después de una eliminación
         function updateFormIndexes() {
             let visibleForms = 0;
-            document.querySelectorAll('.estudiante-form').forEach((formElem, index) => {
+            document.querySelectorAll('.estudiante-form').forEach((formElem) => {
                 if (formElem.style.display !== 'none') {
                     visibleForms++;
                     formElem.querySelector('.estudiante-index').textContent = visibleForms;
-                    // También podemos actualizar el data-form-index para los botones de eliminar si se usan
-                    const removeBtn = formElem.querySelector('.remove-estudiante-btn');
-                    if (removeBtn) {
-                        removeBtn.dataset.formIndex = index; // Importante para que el JS sepa qué form eliminar
-                    }
                 }
             });
         }
 
         // Adjuntar eventos de eliminar a los formularios existentes al cargar la página
-        // Solo a los formularios que no son el formulario vacío "extra"
+        // y para los formularios ya existentes que tienen el checkbox DELETE
         document.querySelectorAll('.estudiante-form').forEach((formElem, index) => {
-            // Asumiendo que el último es el extra si no hay errores
-            // Puedes añadir un botón de eliminar a todos los "initial" forms si no tienen el DELETE checkbox ya
-            // O si tienen el DELETE checkbox, lo dejas como está y solo añades un botón si quieres un trigger visual.
-            if (index < {{ formset.initial_forms }}) { // Asumiendo que solo los formularios iniciales pueden ser eliminados visualmente
-                // Si ya tiene el checkbox DELETE, no necesitas añadir otro botón de eliminar
-                // Django ya manejará la eliminación si el checkbox se marca.
-                // Si quieres un botón para *marcar* ese checkbox:
-                const deleteCheckbox = formElem.querySelector(`[name="estudiantes_participantes-${index}-DELETE"]`);
-                if (deleteCheckbox) {
-                    const deleteBtnHtml = `
-                        <button type="button" class="btn btn-danger btn-sm mt-2 remove-estudiante-btn" data-form-index="${index}">
-                            <i class="bi bi-dash-circle"></i> Eliminar Estudiante
-                        </button>
-                    `;
-                    formElem.insertAdjacentHTML('beforeend', deleteBtnHtml);
-                }
+            const deleteCheckbox = formElem.querySelector(`[name="estudiantes_participantes-${index}-DELETE"]`);
+            if (deleteCheckbox && formElem.querySelector('.remove-estudiante-btn') === null) { // Solo si no tiene ya el botón
+                const deleteBtnHtml = `
+                    <button type="button" class="btn btn-danger btn-sm mt-2 remove-estudiante-btn" data-form-index="${index}">
+                        <i class="bi bi-dash-circle"></i> Eliminar Estudiante
+                    </button>
+                `;
+                formElem.insertAdjacentHTML('beforeend', deleteBtnHtml);
             }
         });
         attachRemoveEvents(); // Asegurarse de que los eventos se adjunten al inicio para los formularios existentes.

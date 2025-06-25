@@ -1,8 +1,9 @@
 from django.db import models
 from django.conf import settings
 # Importar tus modelos Carrera y Semestre si ya existen
-# Asegúrate de que los nombres de los modelos coincidan con los tuyos (ej. 'Semestre' vs 'semestre')
-from programacion.models import Carrera, semestre # Asumo que tu modelo se llama 'semestre' con 's' minúscula.
+from programacion.models import Carrera, semestre 
+# ¡IMPORTA EL MODELO PERIODO DESDE LA APLICACIÓN ADMINISTRADOR!
+from programacion.models import Periodo
 from administrador.permissions import PERMISSIONS
 
 class ServicioSocial(models.Model):
@@ -84,29 +85,32 @@ class ServicioSocial(models.Model):
     act_ferias = models.BooleanField(default=False, verbose_name="Ferias Realizadas")
     act_alianzas_estrategicas = models.BooleanField(default=False, verbose_name="Alianzas Estratégicas Realizadas")
 
-    # --- CAMPOS EXISTENTES (Modificados o conservados) ---
-    # tutor y cedula_tutor se reemplazan por los campos detallados del tutor.
-    # departamento se mantiene si es a nivel de proyecto (no de tutor)
+    # --- CAMPO ForeignKey A PERIODO ---
+    periodo_academico = models.ForeignKey(
+        Periodo, 
+        on_delete=models.PROTECT, # No permite borrar un Periodo si tiene Servicios Sociales asociados
+        verbose_name="Período Académico"
+    )
+
+    # --- CAMPOS ELIMINADOS (Ahora se obtienen del periodo_academico) ---
+    # fecha_inicio = models.DateField(verbose_name="Fecha de Inicio") # ¡ELIMINADO!
+    # fecha_fin = models.DateField(verbose_name="Fecha de Fin")     # ¡ELIMINADO!
+
+    # --- CAMPO EXISTENTE ---
     departamento = models.CharField(max_length=100, verbose_name="Departamento")
-
-    # Eliminamos 'nombres_estudiantes_manual' ya que ahora tendremos el modelo EstudianteServicioSocial.
-    # Eliminamos el campo 'estudiante' o 'estudiantes' si existía como ManyToManyField.
-
-    fecha_inicio = models.DateField(verbose_name="Fecha de Inicio")
-    fecha_fin = models.DateField(verbose_name="Fecha de Fin")
     horas_cumplidas = models.PositiveIntegerField(verbose_name="Horas Cumplidas")
     estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, verbose_name="Estado del Proyecto")
     observaciones = models.TextField(blank=True, null=True, verbose_name="Observaciones Generales del Proyecto")
 
     def __str__(self):
-        return f"Proyecto: {self.nombre_proyecto} - Tutor: {self.tutor_nombres} {self.tutor_apellidos}"
+        # Ahora el str puede incluir el período académico
+        return f"Proyecto: {self.nombre_proyecto} - Período: {self.periodo_academico.nombre}"
 
     class Meta:
         verbose_name = "Servicio Social"
         verbose_name_plural = "Servicios Sociales"
-        app_label = 'servicio_social'  # en minúsculas y guion bajo
+        app_label = 'servicio_social'
         permissions = [
-            # Utilizamos los nombres de los permisos definidos en PERMISSIONS
             (PERMISSIONS.VIEW_PROYECTO_SERVICIO_SOCIAL.split('.')[-1], "Puede ver proyectos de Servicio Social"),
             (PERMISSIONS.ADD_PROYECTO_SERVICIO_SOCIAL.split('.')[-1], "Puede añadir proyectos de Servicio Social"),
             (PERMISSIONS.CHANGE_PROYECTO_SERVICIO_SOCIAL.split('.')[-1], "Puede modificar proyectos de Servicio Social"),
@@ -126,12 +130,11 @@ class EstudianteServicioSocial(models.Model):
     servicio_social = models.ForeignKey(
         ServicioSocial,
         on_delete=models.CASCADE,
-        related_name='estudiantes_participantes', # Nombre que usarás para acceder a los estudiantes desde el proyecto
+        related_name='estudiantes_participantes',
         verbose_name="Servicio Social"
     )
 
     # --- INFORMACIÓN DEL ESTUDIANTE ---
-    # El 'numero' se puede manejar en el template con el índice del formset.
     nombres = models.CharField(max_length=100, verbose_name="Nombres del Estudiante")
     apellidos = models.CharField(max_length=100, verbose_name="Apellidos del Estudiante")
     cedula_identidad = models.CharField(max_length=15, verbose_name="Cédula de Identidad")
@@ -139,7 +142,7 @@ class EstudianteServicioSocial(models.Model):
     # Asumo que Carrera y Semestre son modelos existentes
     carrera = models.ForeignKey(
         Carrera, 
-        on_delete=models.SET_NULL, # Si se elimina la carrera, que el campo quede nulo, no se borre el estudiante
+        on_delete=models.SET_NULL, 
         null=True, 
         blank=True, 
         verbose_name="Carrera"
@@ -165,4 +168,4 @@ class EstudianteServicioSocial(models.Model):
     class Meta:
         verbose_name = "Estudiante de Servicio Social"
         verbose_name_plural = "Estudiantes de Servicio Social"
-        unique_together = ('servicio_social', 'cedula_identidad') # Un estudiante no puede estar dos veces en el mismo proyecto
+        unique_together = ('servicio_social', 'cedula_identidad')

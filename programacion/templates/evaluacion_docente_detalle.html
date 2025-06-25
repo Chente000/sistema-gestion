@@ -1,0 +1,189 @@
+{# programacion/templates/evaluacion_docente_detalle.html #}
+{% extends "interfaz.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow p-4 mb-4 mx-auto" style="max-width: 98vw;">
+        <h2 class="card-title text-center mb-4">Evaluaciones de: {{ docente.nombre }}</h2>
+        <p class="text-center text-muted">Cédula: {{ docente.cedula }} | Dedicación: {{ docente.dedicacion }}</p>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <a href="{% url 'programacion:evaluacion_docente_list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Lista de Docentes</a>
+            {# El botón "Nueva Evaluación" ha sido removido como se acordó #}
+        </div>
+
+        {# Filtro por Período Académico #}
+        <form method="GET" action="{% url 'programacion:evaluacion_docente_detalle' docente.id %}" class="mb-4">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    <label for="id_periodo_filter" class="form-label">Filtrar por Período Académico:</label>
+                    <select class="form-select" id="id_periodo_filter" name="periodo">
+                        <option value="">Todos los Períodos</option>
+                        {% for periodo_obj in periodos %}
+                            <option value="{{ periodo_obj.pk }}" {% if filter_periodo_id|slugify == periodo_obj.pk|slugify %}selected{% endif %}>{{ periodo_obj.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mt-3 mt-md-0">
+                    <button type="submit" class="btn btn-primary me-2"><i class="bi bi-filter"></i> Aplicar Filtro</button>
+                    <a href="{% url 'programacion:evaluacion_docente_detalle' docente.id %}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Limpiar Filtro</a>
+                </div>
+            </div>
+        </form>
+
+        {# Mensajes flash de Django #}
+        {% if messages %}
+            <div class="my-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover align-middle text-center">
+                <thead class="table-dark">
+                    <tr>
+                        {# Columnas de la Tabla 1 (para todos) #}
+                        <th>Asignatura</th>
+                        <th>Código</th>
+                        <th>Carrera</th>
+                        <th>Semestre</th>
+                        <th>Período</th>
+                        <th>Fue evaluado?</th>
+                        <th>Fecha Evaluación</th>
+                        
+                        {# Columnas de la Tabla 2 (solo si can_view_full_details) #}
+                        {% if can_view_full_details %}
+                        <th>Puntaje Acompañamiento</th>
+                        <th>Juicio Acompañamiento</th>
+                        <th>Autoevaluación Entregada</th>
+                        <th>Puntaje Autoevaluación</th>
+                        <th>Juicio Autoevaluación</th>
+                        <th>Puntaje Evaluación Estudiante</th>
+                        <th>Juicio Evaluación Estudiante</th>
+                        <th>Docente Evaluador</th>
+                        <th>Juicio de Valor General</th>
+                        {% endif %}
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prog in evaluaciones %}
+                    <tr>
+                        <td>{{ prog.asignatura.nombre }}</td>
+                        <td>{{ prog.asignatura.codigo }}</td>
+                        <td>{{ prog.asignatura.carrera.nombre }}</td>
+                        <td>{{ prog.asignatura.semestre.nombre }}</td>
+                        <td>{{ prog.periodo.nombre }}</td>
+                        <td>
+                            {% if prog.fue_evaluada %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Sí</span>
+                            {% else %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle-fill"></i> No</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ prog.fecha_evaluacion|default:"N/A"|date:"d/m/Y" }}</td>
+                        
+                        {# Datos de la Tabla 2 (solo si can_view_full_details) #}
+                        {% if can_view_full_details %}
+                        <td>{{ prog.score_acompanamiento|default:"N/A" }}</td>
+                        <td>
+                            <span class="badge bg-{% if prog.juicio_acompanamiento == 'EXCELENTE' %}success{% elif prog.juicio_acompanamiento == 'SOBRESALIENTE' %}info{% elif prog.juicio_acompanamiento == 'BUENO' %}primary{% elif prog.juicio_acompanamiento == 'DEFICIENTE' %}danger{% else %}secondary{% endif %}">
+                                {{ prog.juicio_acompanamiento }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if prog.entrego_autoevaluacion %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Sí</span>
+                            {% else %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle-fill"></i> No</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ prog.autoevaluacion_score|default:"N/A" }}</td>
+                        <td>
+                            <span class="badge bg-{% if prog.juicio_autoevaluacion == 'SOBRESALIENTE' %}info{% elif prog.juicio_autoevaluacion == 'BUENO' %}primary{% elif prog.juicio_autoevaluacion == 'REGULAR' %}warning{% elif prog.juicio_autoevaluacion == 'DEFICIENTE' %}danger{% else %}secondary{% endif %}">
+                                {{ prog.juicio_autoevaluacion }}
+                            </span>
+                        </td>
+                        <td>{{ prog.evaluacion_estudiante_score|default:"N/A" }}</td>
+                        <td>
+                            <span class="badge bg-{% if prog.juicio_evaluacion_estudiante == 'EXCELENTE' %}success{% elif prog.juicio_evaluacion_estudiante == 'REGULAR' %}warning{% elif prog.juicio_evaluacion_estudiante == 'DEFICIENTE' %}danger{% else %}secondary{% endif %}">
+                                {{ prog.juicio_evaluacion_estudiante }}
+                            </span>
+                        </td>
+                        <td>{{ prog.docente_evaluador.nombre|default:"N/A" }}</td>
+                        <td>{{ prog.juicio_valor|default:"N/A"|truncatechars:50 }}</td>
+                        {% endif %}
+
+                        <td class="text-center">
+                            {% if can_manage_evaluacion %} {# Solo mostrar si tiene permiso para gestionar #}
+                            <a href="{% url 'programacion:editar_evaluacion_docente' prog.id %}" class="btn btn-warning btn-sm mb-1" title="Editar Evaluación">
+                                <i class="bi bi-pencil-square"></i> Editar
+                            </a>
+                            <button type="button" class="btn btn-danger btn-sm" title="Eliminar Evaluación"
+                                    data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" 
+                                    data-evaluacion-id="{{ prog.id }}" 
+                                    data-evaluacion-info="Docente: {{ prog.docente.nombre }}, Asignatura: {{ prog.asignatura.nombre }}, Período: {{ prog.periodo.nombre }}">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                            {% else %}
+                                <span class="text-muted">No permitido</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if can_view_full_details %}16{% else %}9{% endif %}" class="text-center">No hay asignaciones de asignaturas para este docente o período.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Modal de confirmación de eliminación (se mantiene igual) #}
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que quieres eliminar la siguiente evaluación?
+                <p class="mt-2" id="evaluacion-to-delete-info"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+        confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const evaluacionId = button.getAttribute('data-evaluacion-id');
+            const evaluacionInfo = button.getAttribute('data-evaluacion-info');
+            const deleteForm = confirmDeleteModal.querySelector('#deleteForm');
+            deleteForm.action = `{% url 'programacion:eliminar_evaluacion_docente' 0 %}`.replace('0', evaluacionId);
+            const evaluacionInfoParagraph = confirmDeleteModal.querySelector('#evaluacion-to-delete-info');
+            evaluacionInfoParagraph.textContent = evaluacionInfo;
+        });
+    });
+</script>
+{% endblock %}

@@ -1,3 +1,4 @@
+{# programacion/templates/detalle_docente.html #}
 {% extends "interfaz.html" %}
 {% load static %}
 
@@ -36,6 +37,25 @@
                 <li>Sin carrera asignada</li>
             {% endfor %}
         </ul>
+
+        {# NUEVA SECCIÓN: Asignaturas Asignadas #}
+        <h5>Asignaturas Asignadas</h5>
+        {% if assigned_subjects %}
+            <ul class="list-group mb-3">
+                {% for assignment in assigned_subjects %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ assignment.asignatura.nombre }} ({{ assignment.asignatura.codigo }})</strong><br>
+                            <small class="text-muted">Período: {{ assignment.periodo.nombre }}</small><br>
+                            <small class="text-info">Carrera: {{ assignment.asignatura.carrera.nombre }} | Semestre: {{ assignment.asignatura.semestre.nombre }}</small>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">No hay asignaturas asignadas a este docente.</p>
+        {% endif %}
+
         <div class="mt-4">
             <a href="{% url 'programacion:docentes' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
         </div>

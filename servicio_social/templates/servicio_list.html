@@ -7,7 +7,11 @@
         <h2 class="card-title text-center mb-4">Lista de Servicios Sociales</h2>
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <a href="{% url 'servicio_social:servicio_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i> Nuevo Servicio Social</a>
+            {% if can_add_servicio %}
+                <a href="{% url 'servicio_social:servicio_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i> Nuevo Servicio Social</a>
+            {% else %}
+                <div></div> {# Placeholder para mantener el espacio si no hay botón #}
+            {% endif %}
             
             {# Botón para expandir/colapsar el filtro #}
             <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
@@ -53,7 +57,7 @@
                             <select class="form-select" id="id_periodo" name="periodo">
                                 <option value="">Todos los Períodos</option>
                                 {% for periodo in periodos %}
-                                    <option value="{{ periodo.pk }}" {% if filter_periodo_id|slugify == periodo.pk|slugify %}selected{% endif %}>{{ periodo.nombre }} ({{ periodo.fecha_inicio|date:"Y" }} - {{ periodo.fecha_fin|date:"Y" }})</option>
+                                    <option value="{{ periodo.pk }}" {% if filter_periodo_id|stringformat:"s" == periodo.pk|stringformat:"s" %}selected{% endif %}>{{ periodo.nombre }} ({{ periodo.fecha_inicio|date:"Y" }} - {{ periodo.fecha_fin|date:"Y" }})</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -72,6 +76,7 @@
                     <tr>
                         <th>Nombre del Proyecto</th>
                         <th>Tutor Encargado</th>
+                        <th>Período Académico</th> {# Nuevo encabezado #}
                         <th># Estudiantes</th>
                         <th>Estado</th>
                         <th class="text-center">Acciones</th>
@@ -82,20 +87,27 @@
                     <tr>
                         <td>{{ servicio.nombre_proyecto }}</td>
                         <td>{{ servicio.tutor_nombres }} {{ servicio.tutor_apellidos }}</td>
+                        <td>{{ servicio.periodo_academico.nombre }}</td> {# Mostrar nombre del período #}
                         <td>{{ servicio.estudiantes_participantes.count }}</td>
                         <td><span class="badge bg-{% if servicio.estado == 'finalizado' %}success{% elif servicio.estado == 'en_proceso' %}info{% else %}warning{% endif %}">{{ servicio.get_estado_display }}</span></td>
                         <td class="text-center">
-                            <a href="{% url 'servicio_social:servicio_detail' servicio.pk %}" class="btn btn-info btn-sm" title="Ver Detalles"><i class="bi bi-eye"></i></a>
-                            <a href="{% url 'servicio_social:servicio_update' servicio.pk %}" class="btn btn-warning btn-sm ms-1" title="Editar Proyecto"><i class="bi bi-pencil"></i></a>
-                            <form action="{% url 'servicio_social:servicio_delete' servicio.pk %}" method="post" class="d-inline ms-1" onsubmit="return confirm('¿Está seguro de que desea eliminar el proyecto \'{{ servicio.nombre_proyecto }}\'?');">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Proyecto"><i class="bi bi-trash"></i></button>
-                            </form>
+                            {% if can_view_detail_servicio %}
+                                <a href="{% url 'servicio_social:servicio_detail' servicio.pk %}" class="btn btn-info btn-sm" title="Ver Detalles"><i class="bi bi-eye"></i></a>
+                            {% endif %}
+                            {% if can_change_servicio %}
+                                <a href="{% url 'servicio_social:servicio_update' servicio.pk %}" class="btn btn-warning btn-sm ms-1" title="Editar Proyecto"><i class="bi bi-pencil"></i></a>
+                            {% endif %}
+                            {% if can_delete_servicio %}
+                                <form action="{% url 'servicio_social:servicio_delete' servicio.pk %}" method="post" class="d-inline ms-1" onsubmit="return confirm('¿Está seguro de que desea eliminar el proyecto \'{{ servicio.nombre_proyecto }}\'?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Proyecto"><i class="bi bi-trash"></i></button>
+                                </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center">No hay servicios sociales registrados que coincidan con los filtros.</td>
+                        <td colspan="6" class="text-center">No hay servicios sociales registrados que coincidan con los filtros.</td> {# Colspan ajustado #}
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -104,6 +116,12 @@
 
         {# Botones de Descarga #}
         <div class="d-flex justify-content-end mt-3">
+            {% if can_export_pdf %}
+                <a href="{% url 'servicio_social:export_pdf' %}" id="downloadPdfBtn" class="btn btn-outline-danger me-2"><i class="bi bi-file-earmark-pdf"></i> Descargar PDF</a>
+            {% endif %}
+            {% if can_export_excel %}
+                <a href="{% url 'servicio_social:export_excel' %}" id="downloadExcelBtn" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Descargar Excel</a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -129,8 +147,13 @@
             const queryString = params.toString();
 
             // Actualizar los href de los botones de descarga
-            downloadPdfBtn.href = "{% url 'servicio_social:export_pdf' %}" + (queryString ? '?' + queryString : '');
-            downloadExcelBtn.href = "{% url 'servicio_social:export_excel' %}" + (queryString ? '?' + queryString : '');
+            // Asegúrate de que las URLs de exportación son correctas si necesitan cambios en urls.py
+            if (downloadPdfBtn) { // Verificar si el botón existe antes de actualizar
+                downloadPdfBtn.href = "{% url 'servicio_social:export_pdf' %}" + (queryString ? '?' + queryString : '');
+            }
+            if (downloadExcelBtn) { // Verificar si el botón existe antes de actualizar
+                downloadExcelBtn.href = "{% url 'servicio_social:export_excel' %}" + (queryString ? '?' + queryString : '');
+            }
         }
 
         // Actualizar los links al cargar la página (para el estado inicial del filtro)

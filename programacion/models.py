@@ -51,17 +51,12 @@ class Carrera(models.Model):
             return f"{self.nombre} ({self.departamento.nombre})"
         return self.nombre
 class Docente(models.Model):
-    # 'nombre' se mantiene para el nombre completo, ya que lo usas en otros lugares.
-    # Si quieres nombres y apellidos separados, sería una refactorización mayor.
     nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre Completo")
-    
-    # CAMBIO CLAVE AQUÍ: Permitir nulos y vacíos temporalmente para la migración
     cedula = models.CharField(max_length=15, unique=True, verbose_name="Cédula de Identidad", blank=True, null=True)
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Número de Teléfono")
     email = models.EmailField(unique=True, blank=True, null=True, verbose_name="Correo Electrónico")
     departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='docentes_asignados', blank=True, null=True)
     dedicacion = models.CharField(max_length=50, verbose_name="Dedicación")
-    # ...existing fields...
     titulo_profesional = models.CharField(max_length=100, blank=True, null=True, verbose_name="Título profesional")
     postgrados = models.TextField(blank=True, null=True, verbose_name="Postgrados (maestrías, doctorados)")
     areas_especializacion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Áreas de especialización")
@@ -70,12 +65,16 @@ class Docente(models.Model):
     fecha_ingreso = models.DateField(blank=True, null=True, verbose_name="Fecha de ingreso a la institución")
     tipo_contrato = models.CharField(max_length=50, blank=True, null=True, verbose_name="Tipo de contrato")
     horario_laboral = models.CharField(max_length=100, blank=True, null=True, verbose_name="Horario laboral")
-    # Muchas-a-muchas con Carrera: un docente puede dar clases en varias carreras
     carreras = models.ManyToManyField(Carrera, related_name='docentes', blank=True, verbose_name="Carreras Asignadas")
-
-
-    def __str__(self):
-        return self.nombre
+    
+    # ¡NUEVO CAMPO! Relacionar Docente con un Periodo (Opcional)
+    periodo_activo = models.ForeignKey(
+        'Periodo', 
+        on_delete=models.SET_NULL, # Si el periodo se elimina, este campo puede ser nulo
+        null=True, blank=True, 
+        related_name='docentes_activos', 
+        verbose_name="Período Activo"
+    )
 
     class Meta:
         verbose_name = "Docente"
@@ -83,6 +82,7 @@ class Docente(models.Model):
 
     def __str__(self):
         return self.nombre
+
     
 class semestre(models.Model):
     nombre = models.CharField(max_length=20)
@@ -94,7 +94,7 @@ class semestre(models.Model):
 class Asignatura(models.Model):
     nombre = models.CharField(max_length=100)
     codigo = models.CharField(max_length=20, blank=True)
-    semestre = models.ForeignKey(semestre, on_delete=models.CASCADE, related_name='asignaturas')  # Cambiado a ForeignKey
+    semestre = models.ForeignKey(semestre, on_delete=models.CASCADE, related_name='asignaturas', null=True, blank=True)  # Cambiado a ForeignKey
     horas_teoricas = models.PositiveIntegerField(default=0)
     horas_practicas = models.PositiveIntegerField(default=0)
     horas_laboratorio = models.PositiveIntegerField(default=0)
@@ -263,24 +263,36 @@ class HorarioAula(models.Model):
     carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
     docente = models.ForeignKey(Docente, on_delete=models.SET_NULL, null=True, blank=True)
     horario_seccion = models.ForeignKey('HorarioSeccion', on_delete=models.CASCADE, related_name='bloques', null=True, blank=True)
+    
+    # ¡NUEVO CAMPO! Relacionar HorarioAula con un Periodo
+    periodo = models.ForeignKey(
+        'Periodo', 
+        on_delete=models.PROTECT, # No permite borrar un Periodo si tiene HorarioAula asociados
+        verbose_name="Período Académico",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
-        unique_together = ('aula', 'dia', 'hora_inicio', 'hora_fin', 'seccion')
+        # Aseguramos que la combinación de aula, día, hora, sección y PERIODO sea única
+        unique_together = ('aula', 'dia', 'hora_inicio', 'hora_fin', 'seccion', 'periodo') 
 
     def __str__(self):
-        return f"{self.aula} - {self.dia} {self.hora_inicio}-{self.hora_fin} ({self.seccion})"
+        return f"{self.aula} - {self.dia} {self.hora_inicio}-{self.hora_fin} ({self.seccion}) - {self.periodo.nombre}"
 
     def clean(self):
+        # Valida que no haya solapamiento para la misma aula, día, sección Y PERIODO
         solapados = HorarioAula.objects.filter(
             aula=self.aula,
             dia=self.dia,
-            seccion=self.seccion
+            seccion=self.seccion,
+            periodo=self.periodo # ¡Agregamos el filtrado por periodo!
         ).exclude(id=self.id).filter(
             hora_inicio__lt=self.hora_fin,
             hora_fin__gt=self.hora_inicio
         )
         if solapados.exists():
-            raise ValidationError("Ya existe una asignación para este aula, día, sección y horario.")
+            raise ValidationError("Ya existe una asignación para este aula, día, sección y horario en el mismo período académico.")
 
     def save(self, *args, **kwargs):
         self.clean()

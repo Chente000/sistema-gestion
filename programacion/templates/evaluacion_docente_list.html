@@ -1,0 +1,91 @@
+{# programacion/templates/evaluacion_docente.html #}
+{% extends "interfaz.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow p-4 mb-4 mx-auto" style="max-width: 98vw;">
+        <h2 class="card-title text-center mb-4">Evaluación Docente</h2>
+        <h4 class="card-subtitle text-center text-muted mb-4">Seleccione un Docente para Ver/Gestionar sus Evaluaciones</h4>
+
+        {# Formulario de búsqueda rápida por nombre/cédula #}
+        <form method="GET" action="{% url 'programacion:evaluacion_docente_list' %}" class="mb-4">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="Buscar Docente (Nombre o Cédula)" value="{{ query|default:'' }}">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-search me-2"></i> Buscar</button>
+                {% if query %}
+                <a href="{% url 'programacion:evaluacion_docente_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x-circle me-2"></i> Limpiar Búsqueda</a>
+                {% endif %}
+            </div>
+        </form>
+
+        {# Mensajes flash de Django #}
+        {% if messages %}
+            <div class="my-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Docente</th>
+                        <th>Cédula</th>
+                        <th>Dedicación</th>
+                        <th>Carreras Asignadas</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for docente in docentes %}
+                    <tr>
+                        <td>{{ docente.nombre }}</td>
+                        <td>{{ docente.cedula }}</td>
+                        <td>{{ docente.dedicacion }}</td>
+                        <td>
+                            {% for carrera in docente.carreras.all %}
+                                <span class="badge bg-secondary me-1">{{ carrera.nombre }}</span>
+                            {% empty %}
+                                <span class="text-muted">Ninguna</span>
+                            {% endfor %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'programacion:evaluacion_docente_detalle' docente.id %}" class="btn btn-info btn-sm" title="Ver/Gestionar Evaluaciones">
+                                <i class="bi bi-list-columns-reverse me-1"></i> Ver Evaluaciones
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No hay docentes registrados o no se encontraron resultados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+    {# Para mantener los filtros, necesitarías pasar los parámetros GET actuales. Esto se puede hacer con JS o construyendo la URL dinámicamente. #}
+    {# Ejemplo con JS para preservar filtros: #}
+    <button id="export-excel-btn" class="btn btn-success">Exportar Reporte Excel</button>
+    <script>
+        document.getElementById('export-excel-btn').addEventListener('click', function() {
+            const currentUrl = new URL(window.location.href);
+            const exportUrl = new URL("{% url 'programacion:export_evaluacion_excel' %}", window.location.origin);
+            // Copia todos los parámetros GET de la URL actual
+            currentUrl.searchParams.forEach((value, key) => {
+                exportUrl.searchParams.append(key, value);
+            });
+            window.location.href = exportUrl.toString();
+        });
+    </script>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
