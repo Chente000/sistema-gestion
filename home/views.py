@@ -15,3 +15,6 @@ def interfaz(request):
 @login_required
 def panel_principal(request):
     return render(request, 'panel_principal.html')
+
+def casa(request):
+    return render(request, 'casa.html')
