@@ -28,3 +28,9 @@ def editar_perfil(request):
     else:
         form = PerfilUsuarioForm(instance=perfil)
     return render(request, 'editar_perfil.html', {'form': form, 'perfil': perfil})
+
+@login_required
+def ver_perfil(request):
+    perfil, creado = PerfilUsuario.objects.get_or_create(user=request.user)
+    # ... el resto de tu lógica ...
+    return render(request, 'perfiles/mi_perfil.html', {'perfil': perfil})
