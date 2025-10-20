@@ -26,6 +26,9 @@ from administrador.utils import log_change
 
 User = get_user_model() # Obtiene tu modelo de usuario personalizado (accounts.Usuario)
 
+def panel_administrador_principal(request):
+    return render(request, "panel_administrador_principal.html")
+
 # --- Funciones de Verificación de Permisos ---
 def es_admin_o_superuser(user):
     # Verifica si el usuario tiene el rol 'admin', 'super_admin' o es superusuario de Django

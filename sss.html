@@ -1,15 +1,19 @@
+{# administrador/templates/administrador/panel_administrador.html #}
+
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SIG-UNEFA{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <title>{% block title %}Panel Administrador{% endblock %}</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" xintegrity="sha512-1ycn6IcaQQ40JuKakVxfBuBL0cdbZlRblnJ94zYgTTQpJzprtJFIfrPR1Ff/C3yH9qC0kE892t4w0Jk7iN/Jg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
+
+<style>
         :root {
             --sidebar-width: 260px;
             --topbar-height: 65px;
@@ -336,133 +340,169 @@
         .badge-info { background-color: var(--info-color); color: white; }
         .badge-warning { background-color: var(--warning-color); color: #212529; } 
         .badge-danger { background-color: var(--danger-color); color: white; }
-
-    </style>
+</style>
 </head>
 <body>
-    <div class="d-flex" id="wrapper"> {# Contenedor principal flexbox: #wrapper #}
-
-        {# Sidebar Wrapper (el mismo ID y estructura que panel_administrador.html) #}
-        <div id="sidebar-wrapper"> 
+    <div class="d-flex" id="wrapper">
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
             <div class="sidebar-header">
-                <a class="navbar-brand" href="#">
+                <a class="navbar-brand" href="{% url 'administrador:panel_administrador_principal' %}">
                     <i class="bi bi-buildings-fill"></i>
-                    <span>SIG-UNEFA</span>
+                    <span>Panel Administrador</span>
                 </a>
             </div>
-            <div class="sidebar-sticky">
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'panel_principal' %}active{% endif %}" href="{% url 'home:panel_principal' %}">
-                            <i class="bi bi-grid-1x2-fill"></i>
-                            <span>Panel Principal</span>
-                        </a>
-                    </li>
-                    <hr>
-                    <!-- Menú desplegable para Prog. y Evaluación Académica -->
-                    <li class="nav-item">
-                        <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#progAcademicaMenu" role="button" aria-expanded="{% if 'programacion' in request.resolver_match.app_name %}true{% else %}false{% endif %}" aria-controls="progAcademicaMenu">
-                            <span>
-                                <i class="bi bi-calendar2-check-fill"></i>
-                                Prog. y Evaluación Académica
-                            </span>
-                            <i class="bi bi-chevron-down small collapse-icon {% if 'programacion' in request.resolver_match.app_name %}rotate-180{% endif %}"></i>
-                        </a>
-                        <div class="collapse {% if 'programacion' in request.resolver_match.app_name %}show{% endif %}" id="progAcademicaMenu">
-                            <ul class="nav flex-column ms-3">
-                                <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'docentes' %}active{% endif %}" href="{% url 'programacion:docentes' %}">
-                                        <i class="bi bi-person-badge"></i> Docentes
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'asignaturas' %}active{% endif %}" href="{% url 'programacion:asignaturas' %}">
-                                        <i class="bi bi-journal-bookmark"></i> Asignaturas
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'seccion_list' %}active{% endif %}" href="{% url 'programacion:seccion_list' %}">
-                                        <i class="bi bi-grid-3x3-gap"></i> Secciones
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'aulario_dashboard' %}active{% endif %}" href="{% url 'programacion:aulario_dashboard' %}">
-                                        <i class="bi bi-building"></i> Aulario
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'evaluacion_docente' %}active{% endif %}" href="{% url 'programacion:evaluacion_docente_list' %}">
-                                        <i class="bi bi-clipboard-check"></i> Evaluación Docente
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
-                    <!-- Otros módulos -->
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'servicio_social' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'servicio_social:servicio_list' %}">
-                            <i class="bi bi-people-fill"></i>
-                            <span>Servicio Comunitario</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'practicas' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'practicas:practica_list' %}">
-                            <i class="bi bi-briefcase-fill"></i>
-                            <span>Prácticas Pro.</span>
-                        </a>
-                    </li>
-                    {# Botón de Administración simple y condicional #}
-                    {% if user.is_superuser or user.is_staff %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'administrador' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'administrador:panel_administrador_principal' %}">
-                            <i class="bi bi-gear-fill"></i> 
-                            <span>Administración</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
+
+        {% if perms.administrador.manage_usuario %}
+        <a href="#submenu-usuarios" class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" aria-expanded="false" aria-controls="submenu-usuarios">
+            <span><i class="bi bi-people-fill"></i> Gestión de Usuarios</span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </a>
+        <div class="collapse" id="submenu-usuarios">
+            <ul class="nav flex-column ms-3">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'administrador:usuarios_aprobados' %}">
+                        <i class="bi bi-person-check-fill"></i> Usuarios Aprobados
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'administrador:revisar_solicitudes' %}">
+                        <i class="bi bi-person-plus-fill"></i> Solicitudes de Registro
+                    </a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if perms.administrador.manage_configuracion_registro or perms.administrador.view_registro_cambios %}
+        <a href="#submenu-config" class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" aria-expanded="false" aria-controls="submenu-config">
+            <span><i class="bi bi-gear-fill"></i> Configuración</span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </a>
+        <div class="collapse" id="submenu-config">
+            <ul class="nav flex-column ms-3">
+                {% if perms.administrador.manage_configuracion_registro %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'administrador:configurar_registro' %}">
+                        <i class="bi bi-sliders"></i> Configuración de Registro
+                    </a>
+                </li>
+                {% endif %}
+                {% if perms.administrador.view_registro_cambios %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'administrador:registro_cambios' %}">
+                        <i class="bi bi-journal-text"></i> Registro de Cambios
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if perms.administrador.manage_facultad or perms.administrador.manage_departamento or perms.administrador.manage_carrera %}
+        <a href="#submenu-estructura" class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" aria-expanded="false" aria-controls="submenu-estructura">
+            <span><i class="bi bi-building"></i> Estructura Académica</span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </a>
+        <div class="collapse" id="submenu-estructura">
+            <ul class="nav flex-column ms-3">
+                {% if perms.administrador.manage_facultad %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'administrador:lista_facultades' %}">
+                        <i class="bi bi-bank2"></i> Facultades
+                    </a>
+                </li>
+                {% endif %}
+                {% if perms.administrador.manage_departamento %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'administrador:lista_departamentos' %}">
+                        <i class="bi bi-diagram-3-fill"></i> Departamentos
+                    </a>
+                </li>
+                {% endif %}
+                {% if perms.administrador.manage_carrera %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'administrador:lista_carrera' %}">
+                        <i class="bi bi-book-half"></i> Carreras
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if perms.administrador.manage_aula or perms.administrador.manage_tipo_aula or perms.administrador.manage_periodo or perms.administrador.manage_cargos %}
+        <a href="#submenu-recursos" class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" aria-expanded="false" aria-controls="submenu-recursos">
+            <span><i class="bi bi-box-seam"></i> Recursos</span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </a>
+        <div class="collapse" id="submenu-recursos">
+            <ul class="nav flex-column ms-3">
+                {% if perms.administrador.manage_periodo %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'administrador:lista_periodos' %}">
+                        <i class="bi bi-calendar-event-fill"></i> Períodos Académicos
+                    </a>
+                </li>
+                {% endif %}
+                {% if perms.administrador.manage_cargos %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'administrador:lista_cargos' %}">
+                        <i class="bi bi-person-badge"></i> Cargos
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <a href="{% url 'home:panel_principal' %}" class="nav-link {% if request.resolver_match.url_name == 'panel_principal' %}active{% endif %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+    </div>
+    <!-- /#sidebar-wrapper -->
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+        <nav class="top-navbar" id="topNavbar">
+            <button class="toggle-btn" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="user-info">
+                <div class="user-greeting">
+                    Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong>
+                </div>
+                <div class="dropdown">
+                    <a class="btn btn-outline-secondary dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i> {{ user.username }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:cerrar_sesion' %}">Cerrar Sesión</a></li>
+                    </ul>
+                </div>
             </div>
-        </div> {# Fin de #sidebar-wrapper #}
+        </nav>
 
-        {# Page Content Wrapper (el mismo ID y estructura que panel_administrador.html) #}
-        <div id="page-content-wrapper">
-            <nav class="top-navbar" id="topNavbar">
-                <button class="toggle-btn" id="sidebarToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="user-info">
-                    <div class="user-greeting">
-                        Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong>
-                    </div>
-                    <div class="dropdown">
-                        <a class="btn btn-outline-secondary dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i> {{ user.username }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'accounts:cerrar_sesion' %}">Cerrar Sesión</a></li>
-                        </ul>
+        <main class="main-content-inner">
+            {# El contenido real de la página #}
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        {% block content_admin_panel %}{% endblock content_admin_panel %}
                     </div>
                 </div>
-            </nav>
+            </div>
+        </main>
+    </div> {# Fin de #page-content-wrapper #}
+</div> {# Fin de #wrapper #}
 
-            <main class="main-content-inner"> {# El contenido real de la página #}
-                <div class="container-fluid">
 
-                    <div class="row">
-                        <div class="col-12">
-                            {% block content %}
-                            {% endblock %}
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div> {# Fin de #page-content-wrapper #}
-    </div> {# Fin de #wrapper #}
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
             const wrapper = document.getElementById('wrapper');
             const sidebarToggle = document.getElementById('sidebarToggle');
 
@@ -509,6 +549,7 @@
                 }
             }
         });
-    </script>
+</script>
+{% endblock extra_js %}
 </body>
 </html>

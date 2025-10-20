@@ -6,17 +6,6 @@
 <div class="container mt-4">
     <h1 class="mb-4 text-primary">Gestión de Facultades</h1>
 
-    {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-                <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
     <div class="d-flex justify-content-end mb-3">
             <a href="{% url 'administrador:crear_facultad' %}" class="btn btn-primary">
                 Crear Nueva Facultad

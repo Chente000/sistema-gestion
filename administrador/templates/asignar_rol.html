@@ -9,13 +9,6 @@
             <h2 class="h5 mb-0">Asignar Rol, Cargo y Asignaciones a {{ user_to_edit.get_full_name }} ({{ user_to_edit.username }})</h2>
         </div>
         <div class="card-body">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
             <form method="post" id="asignarRolForm" class="space-y-4">
                 {% csrf_token %}
                 

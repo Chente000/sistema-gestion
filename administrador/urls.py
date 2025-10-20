@@ -6,6 +6,7 @@ from . import views
 app_name = 'administrador'
 
 urlpatterns = [
+    path('panel_administrador_principal', views.panel_administrador_principal, name='panel_administrador_principal'),
     path('panel_administrador/', views.panel_administrador_view, name='panel_administrador'),
     path('crear_usuario/', views.crear_usuario_view, name='crear_usuario'), # Redirige a solicitudes
     path('usuarios_aprobados/', views.usuarios_aprobados, name='usuarios_aprobados'),

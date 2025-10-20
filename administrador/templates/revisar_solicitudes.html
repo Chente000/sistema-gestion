@@ -7,13 +7,6 @@
         <h2 class="mb-0">Solicitudes Pendientes de Registro</h2>
     </div>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
 
     {% if pendientes %}
         <div class="table-responsive bg-white rounded shadow-sm">

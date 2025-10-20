@@ -1,363 +1,561 @@
 {# administrador/templates/administrador/panel_administrador.html #}
 
-{% extends 'base.html' %}
 {% load static %}
 
-{% block content %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Panel Administrador{% endblock %}</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" xintegrity="sha512-1ycn6IcaQQ40JuKakVxfBuBL0cdbZlRblnJ94zYgTTQpJzprtJFIfrPR1Ff/C3yH9qC0kE892t4w0Jk7iN/Jg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
-    /* Estilos de interfaz.html aplicados a panel_administrador.html */
-    :root {
-        --sidebar-width: 260px; /* Ajustar si el sidebar original de panel_administrador es 250px, lo mantendré en 260px si no hay conflicto */
-        --topbar-height: 65px;
-        --primary-accent-color: #003366; /* Azul oscuro corporativo */
-        --secondary-accent-color: #FFD600; /* Amarillo/Dorado vibrante */
-        --sidebar-bg: var(--primary-accent-color);
-        --sidebar-link-color: rgba(255, 255, 255, 0.85); /* Blanco ligeramente transparente */
-        --sidebar-link-hover-bg: #002244; /* Azul aún más oscuro */
-        --sidebar-link-active-bg: #002B55; /* Un tono intermedio */
-        --sidebar-link-active-color: var(--secondary-accent-color);
-        --sidebar-brand-color: var(--secondary-accent-color);
-        --content-bg: #F8F9FA; /* Blanco grisáceo para el fondo del contenido */
-        --text-color-main: #343a40; /* Texto oscuro general */
-        --border-color-soft: rgba(255, 255, 255, 0.15); /* Borde sutil para sidebar */
-        --danger-color: #DC3545; /* Rojo de Bootstrap */
-        --info-color: #17A2B8; /* Azul claro de Bootstrap */
-        --warning-color: #FFC107; /* Amarillo de Bootstrap */
-        --success-color: #28A745; /* Verde de Bootstrap */
-    }
+        :root {
+            --sidebar-width: 260px;
+            --topbar-height: 65px;
+            --primary-accent-color: #003366; /* Azul oscuro corporativo */
+            --secondary-accent-color: #FFD600; /* Amarillo/Dorado vibrante */
+            --sidebar-bg: var(--primary-accent-color);
+            --sidebar-link-color: rgba(255, 255, 255, 0.85); /* Blanco ligeramente transparente */
+            --sidebar-link-hover-bg: #002244; /* Azul aún más oscuro */
+            --sidebar-link-active-bg: #002B55; /* Un tono intermedio */
+            --sidebar-link-active-color: var(--secondary-accent-color);
+            --sidebar-brand-color: var(--secondary-accent-color);
+            --content-bg: #F8F9FA; /* Blanco grisáceo para el fondo del contenido */
+            --text-color-main: #343a40; /* Texto oscuro general */
+            --border-color-soft: rgba(255, 255, 255, 0.15); /* Borde sutil para sidebar */
+            --danger-color: #DC3545; /* Rojo de Bootstrap */
+            --info-color: #17A2B8; /* Azul claro de Bootstrap */
+            --warning-color: #FFC107; /* Amarillo de Bootstrap */
+            --success-color: #28A745; /* Verde de Bootstrap */
+        }
 
-    body {
-        font-family: 'Inter', sans-serif;
-        background-color: var(--content-bg);
-        color: var(--text-color-main);
-        font-size: 0.925rem;
-        line-height: 1.6;
-        min-height: 100vh;
-        display: flex; /* Cuerpo como contenedor flex para #wrapper */
-        flex-direction: column;
-        overflow-x: hidden; /* Evita scroll horizontal indeseado */
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--content-bg);
+            color: var(--text-color-main);
+            font-size: 0.925rem;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex; /* Cuerpo como contenedor flex para #wrapper */
+            flex-direction: column;
+            overflow-x: hidden; /* Evita scroll horizontal indeseado */
+        }
 
-    /* Contenedor principal del layout */
-    #wrapper {
-        display: flex; /* Hace que sidebar-wrapper y page-content-wrapper se alineen */
-        width: 100%;
-        flex: 1; /* Permite que el wrapper se estire verticalmente */
-        overflow: hidden; /* Importante para que el sidebar oculto no cause scroll */
-    }
+        /* Contenedor principal del layout (idéntico a panel_administrador.html) */
+        #wrapper {
+            display: flex; /* Hace que sidebar-wrapper y page-content-wrapper se alineen */
+            width: 100%;
+            flex: 1; /* Permite que el wrapper se estire verticalmente */
+            overflow: hidden; /* Importante para que el sidebar oculto no cause scroll */
+        }
 
-    /* Sidebar Wrapper */
-    #sidebar-wrapper {
-        background-color: var(--sidebar-bg);
-        color: var(--sidebar-link-color);
-        width: 250px; /* Mantener el ancho original de panel_administrador.html */
-        transition: margin-left 0.3s ease; /* Transición suave para moverse */
-        min-height: 100vh; 
-        box-shadow: 3px 0 10px rgba(41, 32, 173, 0.15);
-        z-index: 1030; 
-        flex-shrink: 0; 
-    }
-
-    /* ESTILO CUANDO EL WRAPPER TIENE LA CLASE 'toggled' (CLAVE) */
-    #wrapper.toggled #sidebar-wrapper {
-        margin-left: -250px; /* Mueve la barra lateral completamente fuera de la vista */
-    }
-
-    /* sidebar-heading ahora usa estilos de sidebar-header de interfaz.html */
-    #sidebar-wrapper .sidebar-heading {
-        padding: 1.1rem 1.5rem; /* Ajustado */
-        text-align: center;
-        border-bottom: 1px solid var(--border-color-soft);
-        height: var(--topbar-height);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.4rem; /* Ajustado */
-        font-weight: 600; /* Ajustado */
-        color: var(--sidebar-brand-color); /* Ajustado */
-        text-decoration: none;
-        white-space: nowrap; 
-    }
-
-    /* Para ocultar el texto de la marca cuando el sidebar está colapsado */
-    #wrapper.toggled .sidebar-heading { opacity: 0; } 
-
-    /* Los íconos y texto de la lista de grupo necesitan un ajuste de estilo para parecerse a nav-link */
-    .list-group-item {
-        background: transparent;
-        color: var(--sidebar-link-color); /* Color de interfaz.html */
-        border: none;
-        font-size: 0.9rem; /* Tamaño de interfaz.html */
-        transition: background-color 0.2s, color 0.2s, border-left-color 0.2s; /* Transición de interfaz.html */
-        border-left: 4px solid transparent; /* Borde de interfaz.html */
-        display: flex; /* Para alinear ícono y texto */
-        align-items: center;
-        padding: 0.75rem 1.75rem; /* Padding de interfaz.html */
-        font-weight: 500;
-    }
-    .list-group-item:hover {
-        background-color: var(--sidebar-link-hover-bg);
-        color: var(--sidebar-link-active-color);
-        border-left-color: var(--secondary-accent-color);
-    }
-    .list-group-item.active {
-        background-color: var(--sidebar-link-active-bg);
-        color: var(--sidebar-link-active-color);
-        font-weight: 600;
-        border-left-color: var(--secondary-accent-color);
-    }
-    .list-group-item i.fas { /* Íconos dentro de list-group-item */
-        color: var(--sidebar-link-color); /* Usar el color del link, no el del ícono original de panel_administrador */
-        margin-right: 15px; /* Ajustado a interfaz.html */
-        font-size: 1.1rem; /* Ajustado a interfaz.html */
-        min-width: 24px;
-        text-align: center;
-        transition: transform 0.2s;
-    }
-    .list-group-item:hover i.fas { transform: scale(1.1); }
-
-
-    /* Page Content Wrapper */
-    #page-content-wrapper {
-        width: 100%; 
-        flex: 1; 
-        background-color: var(--content-bg);
-        min-height: 100vh; 
-        display: flex;
-        flex-direction: column;
-        position: relative; 
-        overflow-x: hidden; 
-    }
-
-    /* Navbar (la barra superior, con estilos de top-navbar de interfaz.html) */
-    .navbar { /* Esta clase es la que usa la nav en panel_administrador.html */
-        background-color: #fff !important; /* Mantenemos !important por si Bootstrap lo sobrescribe */
-        border-bottom: 1px solid #e0e0e0; /* De interfaz.html */
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* De interfaz.html */
-        height: var(--topbar-height); /* De interfaz.html */
-        padding: 0 1.75rem; /* De interfaz.html */
-        display: flex; /* Asegura display flex */
-        justify-content: space-between; /* Alineación de interfaz.html */
-        align-items: center; /* Alineación de interfaz.html */
-        width: 100%; 
-        z-index: 1020; 
-        flex-shrink: 0; 
-    }
-    .navbar .btn-outline-primary { /* Estilo del botón toggle */
-        background-color: transparent;
-        border: none;
-        color: var(--primary-accent-color);
-        font-size: 1.5rem;
-        cursor: pointer;
-        padding: 0.5rem;
-        transition: color 0.2s;
-        z-index: 1040; 
-    }
-    .navbar .btn-outline-primary:hover {
-        color: var(--secondary-accent-color);
-    }
-
-    .navbar .navbar-nav .nav-item.active .nav-link,
-    .navbar .nav-link {
-        color: var(--text-color-main) !important; /* Texto oscuro general */
-        font-weight: 500;
-    }
-
-    .navbar .dropdown-menu {
-        border-radius: 0.5rem; /* De interfaz.html */
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* De interfaz.html */
-        border: none; /* De interfaz.html */
-    }
-    .navbar .dropdown-item {
-        color: var(--text-color-main); /* De interfaz.html */
-        padding: 0.6rem 1.2rem; /* De interfaz.html */
-    }
-    .navbar .dropdown-item:hover {
-        background-color: #e9ecef; /* De interfaz.html */
-        color: var(--primary-accent-color); /* De interfaz.html */
-    }
-
-    .container-fluid {
-        margin-top: 2rem; /* Se mantiene para el padding inicial del contenido */
-    }
-    .card-admin { /* Estilo de card-custom de interfaz.html para card-admin */
-        background-color: #fff;
-        border: none;
-        border-radius: 0.75rem;
-        box-shadow: 0 6px 20px rgba(0,51,102,0.1); /* Sombra de interfaz.html */
-        padding: 2rem 2.5rem;
-        margin-bottom: 2rem;
-    }
-    .card-admin h2 {
-        color: var(--primary-accent-color); /* Color de interfaz.html */
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-    }
-
-    /* Estilos responsivos */
-    @media (max-width: 991.98px) { 
+        /* Sidebar Wrapper (nueva definición - sin position: fixed) */
         #sidebar-wrapper {
-            width: 250px; /* Mantener el ancho original de panel_administrador.html */
-            margin-left: -250px; /* Oculto por defecto en móvil */
-            position: fixed; /* Necesario para que se deslice sobre el contenido */
-            top: 0; bottom: 0; left: 0;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-link-color);
+            width: var(--sidebar-width); /* Ancho por defecto */
+            transition: margin-left 0.3s ease; /* Transición suave para moverse */
+            min-height: 100vh; /* Para que la barra lateral siempre ocupe toda la altura */
+            box-shadow: 3px 0 10px rgba(0,0,0,0.15);
+            z-index: 1030; 
+            flex-shrink: 0; /* Evita que el sidebar se encoja */
         }
+
+        /* ESTILO CUANDO EL WRAPPER TIENE LA CLASE 'toggled' (CLAVE) */
         #wrapper.toggled #sidebar-wrapper {
-            margin-left: 0; /* Muestra la barra lateral */
+            margin-left: calc(-1 * var(--sidebar-width)); /* Mueve la barra lateral completamente fuera de la vista */
         }
+
+        .sidebar-header {
+            padding: 1.1rem 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color-soft);
+            height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sidebar-header .navbar-brand {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--sidebar-brand-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            white-space: nowrap; 
+        }
+        #wrapper.toggled .sidebar-header .navbar-brand { opacity: 0; } 
+
+
+        .sidebar-header .navbar-brand .bi {
+            margin-right: 10px;
+            font-size: 1.7rem;
+            vertical-align: middle;
+        }
+        .sidebar-header .navbar-brand span {
+            vertical-align: middle;
+        }
+        .sidebar-sticky {
+            padding-top: 1rem;
+            height: calc(100vh - var(--topbar-height));
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--sidebar-link-hover-bg) var(--sidebar-bg);
+        }
+        .sidebar-sticky::-webkit-scrollbar { width: 6px; }
+        .sidebar-sticky::-webkit-scrollbar-track { background: var(--sidebar-bg); }
+        .sidebar-sticky::-webkit-scrollbar-thumb { background-color: var(--sidebar-link-hover-bg); border-radius: 3px; }
+
+        .nav-link {
+            color: var(--sidebar-link-color);
+            padding: 0.75rem 1.75rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s, color 0.2s, border-left-color 0.2s;
+            border-left: 4px solid transparent;
+            font-size: 0.9rem;
+        }
+        .nav-link:hover {
+            background-color: var(--sidebar-link-hover-bg);
+            color: var(--sidebar-link-active-color);
+            border-left-color: var(--secondary-accent-color);
+        }
+        .nav-link.active {
+            color: var(--sidebar-link-active-color);
+            background-color: var(--sidebar-link-active-bg);
+            font-weight: 600;
+            border-left-color: var(--secondary-accent-color);
+        }
+        .nav-link .bi, .nav-link .fas {
+            margin-right: 15px;
+            font-size: 1.1rem;
+            min-width: 24px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .nav-link:hover .bi, .nav-link:hover .fas { transform: scale(1.1); }
+        #sidebar-wrapper hr { 
+            border-top: 1px solid var(--border-color-soft);
+            margin: 1rem 1.5rem;
+        }
+
+        /* Page Content Wrapper (idéntico a panel_administrador.html) */
         #page-content-wrapper {
-            width: 100%; 
+            width: 100%; /* Ocupa todo el ancho restante */
+            flex: 1; /* Permite que crezca y se encoja dentro del contenedor flex #wrapper */
+            background-color: var(--content-bg);
+            min-height: 100vh; /* Para asegurar que el contenido principal ocupe toda la altura */
+            display: flex;
+            flex-direction: column; /* Para que la top-navbar y el contenido se apilen verticalmente */
+            position: relative; /* Necesario para que z-index y top en children funcionen si se usa */
+            overflow-x: hidden; /* Evita scroll horizontal en el contenido principal */
         }
-        .navbar { /* Asegurarse de que el navbar se vea bien en móvil */
-            padding-left: 1rem; /* Menos padding en móvil */
-            padding-right: 1rem;
+        /* CLAVE: Asegura que page-content-wrapper ocupe el ancho adecuado cuando el sidebar está oculto */
+        #wrapper.toggled #page-content-wrapper {
+            width: 100%; /* Esto es redundante con flex:1 pero lo dejamos por claridad */
         }
-        .container-fluid {
-            margin-top: 1rem; /* Menos margen superior en móvil */
-            padding-left: 1rem; /* Añadir padding a los lados del container en móvil */
-            padding-right: 1rem;
+
+
+        /* Top Navbar (ahora dentro de #page-content-wrapper, sin position: fixed) */
+        .top-navbar {
+            background-color: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            height: var(--topbar-height);
+            padding: 0 1.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%; /* Ocupa todo el ancho de su contenedor padre */
+            z-index: 1020; 
+            flex-shrink: 0; /* Evita que la top-navbar se encoja */
         }
-        .card-admin {
-            padding: 1rem; /* Menos padding en móvil */
+
+        .top-navbar .toggle-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--primary-accent-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: color 0.2s;
+            z-index: 1040; /* ¡IMPORTANTE: Asegura que el botón esté por encima de todo! */
         }
-    }
-    
-    /* Ajuste para que el cuerpo no haga scroll cuando el sidebar se despliega en móvil */
-    @media (max-width: 991.98px) { 
-        #wrapper.toggled {
-            overflow: hidden; 
+        .top-navbar .toggle-btn:hover {
+            color: var(--secondary-accent-color);
         }
-    }
+
+        .top-navbar .user-info {
+            display: flex;
+            align-items: center;
+        }
+        .top-navbar .user-greeting {
+            color: var(--text-color-main);
+            margin-right: 1.25rem;
+            font-size: 0.9rem;
+        }
+        .top-navbar .user-greeting strong {
+            color: var(--primary-accent-color);
+            font-weight: 600;
+        }
+
+        /* Main Content Inner (el contenido real que va debajo de la top-navbar) */
+        .main-content-inner { 
+            flex-grow: 1; /* Permite que ocupe el espacio restante dentro de #page-content-wrapper */
+            padding: 1.75rem; 
+            box-sizing: border-box;
+            /* No se necesita padding-top extra aquí si top-navbar no es fixed */
+        }
+
+        /* Card Custom (para el contenido) */
+        .card-custom {
+            background-color: #fff;
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 6px 20px rgba(0,51,102,0.1);
+            margin-bottom: 1.75rem;
+        }
+        .card-custom .card-header {
+            color: var(--primary-accent-color);
+            background-color: #F8F9FA;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 700;
+            font-size: 1.15rem;
+            padding: 1rem 1.75rem;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+        .card-custom .card-body { padding: 1.75rem; }
+        .card-custom .card-footer {
+            border-top: 1px solid #dee2e6;
+            padding: 1rem 1.75rem;
+            background-color: #F8F9FA;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+        }
+
+        /* Botones personalizados (para consistencia con Bootstrap) */
+        .btn-primary { background-color: var(--primary-accent-color); border-color: var(--primary-accent-color); }
+        .btn-primary:hover { background-color: #002244; border-color: #002244; }
+        .btn-success { background-color: var(--success-color); border-color: var(--success-color); }
+        .btn-success:hover { background-color: #218838; border-color: #1e7e38; }
+        .btn-info { background-color: var(--info-color); border-color: var(--info-color); }
+        .btn-info:hover { background-color: #138496; border-color: #117a8b; }
+        .btn-warning { background-color: var(--warning-color); border-color: var(--warning-color); }
+        .btn-warning:hover { background-color: #e0a800; border-color: #d39e00; }
+        .btn-danger { background-color: var(--danger-color); border-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #c82333; border-color: #bd2130; }
+        .btn-secondary { background-color: #6c757d; border-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; border-color: #545b62; }
+        
+        /* Dropdown para el usuario */
+        .navbar-nav .dropdown-menu {
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .navbar-nav .dropdown-item {
+            color: var(--text-color-main);
+            padding: 0.6rem 1.2rem;
+        }
+        .navbar-nav .dropdown-item:hover {
+            background-color: #e9ecef;
+            color: var(--primary-accent-color);
+        }
+
+        /* Estilos responsivos (se mantienen y ajustan al nuevo layout) */
+        @media (max-width: 991.98px) { 
+            #sidebar-wrapper {
+                margin-left: calc(-1 * var(--sidebar-width)); /* Por defecto oculto en móvil */
+                position: fixed; /* Necesario para que se deslice sobre el contenido */
+                top: 0; bottom: 0; left: 0;
+            }
+            #wrapper.toggled #sidebar-wrapper {
+                margin-left: 0; /* Muestra la barra lateral */
+            }
+            #page-content-wrapper {
+                width: 100%; /* Ocupa todo el ancho en móvil */
+                /* No margin-left aquí, el sidebar fixed se sobrepone */
+            }
+            .main-content-inner {
+                padding-left: 1rem; 
+                padding-right: 1rem;
+                padding-top: var(--topbar-height); 
+            }
+        }
+        
+        /* Ajuste para que el cuerpo no haga scroll cuando el sidebar se despliega en móvil */
+        @media (max-width: 991.98px) { 
+            #wrapper.toggled {
+                overflow: hidden; /* Oculta el scroll del contenido cuando el menú lateral está abierto */
+            }
+        }
+
+        /* Estilos para el ícono de colapso del menú desplegable de Académica */
+        .collapse-icon.rotate-180 {
+            transform: rotate(180deg);
+        }
+
+        /* Estilos para los botones en tablas */
+        .table .action-buttons {
+            display: flex; 
+            gap: 0.25rem; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        .table .action-buttons .btn {
+            font-size: 0.8rem; 
+            padding: 0.2rem 0.5rem; 
+            white-space: nowrap; 
+            display: inline-flex; 
+            align-items: center; 
+        }
+
+        .table .action-buttons .btn .fas {
+            margin-right: 0.3rem; 
+        }
+
+        /* Estilos específicos para los 'badge' de rol/cargo */
+        .badge {
+            font-size: 0.75em; 
+            padding: 0.3em 0.6em; 
+            border-radius: 0.3rem; 
+            font-weight: 600; 
+            vertical-align: middle; 
+        }
+
+        /* Colores para los badges */
+        .badge-primary { background-color: var(--primary-accent-color); color: white; }
+        .badge-secondary { background-color: #6c757d; color: white; }
+        .badge-success { background-color: var(--success-color); color: white; }
+        .badge-info { background-color: var(--info-color); color: white; }
+        .badge-warning { background-color: var(--warning-color); color: #212529; } 
+        .badge-danger { background-color: var(--danger-color); color: white; }
 </style>
-<div class="d-flex" id="wrapper">
-    <!-- Sidebar -->
-    <div id="sidebar-wrapper">
-        <div class="sidebar-heading">Panel Administrador</div> {# Este será el nuevo branding del sidebar #}
-        <div class="list-group list-group-flush">
-            <a href="{% url 'home:panel_principal' %}" class="list-group-item {% if request.resolver_match.url_name == 'panel_principal' %}active{% endif %}">
-                <i class="fas fa-tachometer-alt"></i>Dashboard
-            </a>
-            {% if perms.administrador.manage_usuario %}
-            <a href="#submenu-usuarios" data-bs-toggle="collapse" aria-expanded="false" class="list-group-item dropdown-toggle">
-                <i class="fas fa-users"></i>Gestión de Usuarios
-            </a>
-            <div class="collapse" id="submenu-usuarios">
-                <a href="{% url 'administrador:usuarios_aprobados' %}" class="list-group-item ps-5">Usuarios Aprobados</a>
-                <a href="{% url 'administrador:revisar_solicitudes' %}" class="list-group-item ps-5">Solicitudes de Registro</a>
+</head>
+<body>
+    <div class="d-flex" id="wrapper">
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <div class="sidebar-header">
+                <a class="navbar-brand" href="{% url 'administrador:panel_administrador_principal' %}">
+                    <i class="bi bi-buildings-fill"></i>
+                    <span>Panel Administrador</span>
+                </a>
             </div>
-            {% endif %}
-            {% if perms.administrador.manage_configuracion_registro or perms.administrador.view_registro_cambios %}
-            <a href="#submenu-config" data-bs-toggle="collapse" aria-expanded="false" class="list-group-item dropdown-toggle">
-                <i class="fas fa-cogs"></i>Configuración
-            </a>
-            <div class="collapse" id="submenu-config">
+
+        {% if perms.administrador.manage_usuario %}
+        <a href="#submenu-usuarios"
+        class="nav-link d-flex justify-content-between align-items-center"
+        data-bs-toggle="collapse"
+        aria-expanded="{% if request.resolver_match.url_name == 'usuarios_aprobados' or request.resolver_match.url_name == 'revisar_solicitudes' %}true{% else %}false{% endif %}"
+        aria-controls="submenu-usuarios">
+            <span><i class="bi bi-people-fill"></i> Gestión de Usuarios</span>
+            <i class="bi bi-chevron-down collapse-icon {% if request.resolver_match.url_name == 'usuarios_aprobados' or request.resolver_match.url_name == 'revisar_solicitudes' %}rotate-180{% endif %}"></i>
+        </a>
+        <div class="collapse {% if request.resolver_match.url_name == 'usuarios_aprobados' or request.resolver_match.url_name == 'revisar_solicitudes' %}show{% endif %}" id="submenu-usuarios">
+            <ul class="nav flex-column ms-3">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'usuarios_aprobados' %}active{% endif %}"
+                    href="{% url 'administrador:usuarios_aprobados' %}">
+                        <i class="bi bi-person-check-fill"></i> Usuarios Aprobados
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'revisar_solicitudes' %}active{% endif %}"
+                    href="{% url 'administrador:revisar_solicitudes' %}">
+                        <i class="bi bi-person-plus-fill"></i> Solicitudes de Registro
+                    </a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if perms.administrador.manage_configuracion_registro or perms.administrador.view_registro_cambios %}
+        <a href="#submenu-config"
+        class="nav-link d-flex justify-content-between align-items-center"
+        data-bs-toggle="collapse"
+        aria-expanded="{% if request.resolver_match.url_name == 'configurar_registro' or request.resolver_match.url_name == 'registro_cambios' %}true{% else %}false{% endif %}"
+        aria-controls="submenu-config">
+            <span><i class="bi bi-gear-fill"></i> Configuración</span>
+            <i class="bi bi-chevron-down collapse-icon {% if request.resolver_match.url_name == 'configurar_registro' or request.resolver_match.url_name == 'registro_cambios' %}rotate-180{% endif %}"></i>
+        </a>
+        <div class="collapse {% if request.resolver_match.url_name == 'configurar_registro' or request.resolver_match.url_name == 'registro_cambios' %}show{% endif %}" id="submenu-config">
+            <ul class="nav flex-column ms-3">
                 {% if perms.administrador.manage_configuracion_registro %}
-                <a href="{% url 'administrador:configurar_registro' %}" class="list-group-item ps-5">Configuración de Registro</a>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'configurar_registro' %}active{% endif %}"
+                    href="{% url 'administrador:configurar_registro' %}">
+                        <i class="bi bi-sliders"></i> Configuración de Registro
+                    </a>
+                </li>
                 {% endif %}
                 {% if perms.administrador.view_registro_cambios %}
-                <a href="{% url 'administrador:registro_cambios' %}" class="list-group-item ps-5">Registro de Cambios</a>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'registro_cambios' %}active{% endif %}"
+                    href="{% url 'administrador:registro_cambios' %}">
+                        <i class="bi bi-journal-text"></i> Registro de Cambios
+                    </a>
+                </li>
                 {% endif %}
-            </div>
-            {% endif %}
-            {% if perms.administrador.manage_facultad or perms.administrador.manage_departamento or perms.administrador.manage_carrera %}
-            <a href="#submenu-estructura" data-bs-toggle="collapse" aria-expanded="false" class="list-group-item dropdown-toggle">
-                <i class="fas fa-building"></i>Estructura Académica
-            </a>
-            <div class="collapse" id="submenu-estructura">
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if perms.administrador.manage_facultad or perms.administrador.manage_departamento or perms.administrador.manage_carrera %}
+        <a href="#submenu-estructura"
+        class="nav-link d-flex justify-content-between align-items-center"
+        data-bs-toggle="collapse"
+        aria-expanded="{% if request.resolver_match.url_name == 'lista_facultades' or request.resolver_match.url_name == 'lista_departamentos' or request.resolver_match.url_name == 'lista_carrera' %}true{% else %}false{% endif %}"
+        aria-controls="submenu-estructura">
+            <span><i class="bi bi-building"></i> Estructura Académica</span>
+            <i class="bi bi-chevron-down collapse-icon {% if request.resolver_match.url_name == 'lista_facultades' or request.resolver_match.url_name == 'lista_departamentos' or request.resolver_match.url_name == 'lista_carrera' %}rotate-180{% endif %}"></i>
+        </a>
+        <div class="collapse {% if request.resolver_match.url_name == 'lista_facultades' or request.resolver_match.url_name == 'lista_departamentos' or request.resolver_match.url_name == 'lista_carrera' %}show{% endif %}" id="submenu-estructura">
+            <ul class="nav flex-column ms-3">
                 {% if perms.administrador.manage_facultad %}
-                <a href="{% url 'administrador:lista_facultades' %}" class="list-group-item ps-5">Facultades</a>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'lista_facultades' %}active{% endif %}"
+                    href="{% url 'administrador:lista_facultades' %}">
+                        <i class="bi bi-bank2"></i> Facultades
+                    </a>
+                </li>
                 {% endif %}
                 {% if perms.administrador.manage_departamento %}
-                <a href="{% url 'administrador:lista_departamentos' %}" class="list-group-item ps-5">Departamentos</a>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'lista_departamentos' %}active{% endif %}"
+                    href="{% url 'administrador:lista_departamentos' %}">
+                        <i class="bi bi-diagram-3-fill"></i> Departamentos
+                    </a>
+                </li>
                 {% endif %}
                 {% if perms.administrador.manage_carrera %}
-                <a href="{% url 'administrador:lista_carrera' %}" class="list-group-item ps-5">Carreras</a>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'lista_carrera' %}active{% endif %}"
+                    href="{% url 'administrador:lista_carrera' %}">
+                        <i class="bi bi-book-half"></i> Carreras
+                    </a>
+                </li>
                 {% endif %}
-            </div>
-            {% endif %}
-            {% if perms.administrador.manage_aula or perms.administrador.manage_tipo_aula or perms.administrador.manage_periodo or perms.administrador.manage_cargos %}
-            <a href="#submenu-recursos" data-bs-toggle="collapse" aria-expanded="false" class="list-group-item dropdown-toggle">
-                <i class="fas fa-box"></i>Recursos
-            </a>
-            <div class="collapse" id="submenu-recursos">
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if perms.administrador.manage_aula or perms.administrador.manage_tipo_aula or perms.administrador.manage_periodo or perms.administrador.manage_cargos %}
+        <a href="#submenu-recursos"
+        class="nav-link d-flex justify-content-between align-items-center"
+        data-bs-toggle="collapse"
+        aria-expanded="{% if request.resolver_match.url_name == 'lista_periodos' or request.resolver_match.url_name == 'lista_cargos' %}true{% else %}false{% endif %}"
+        aria-controls="submenu-recursos">
+            <span><i class="bi bi-box-seam"></i> Recursos</span>
+            <i class="bi bi-chevron-down collapse-icon {% if request.resolver_match.url_name == 'lista_periodos' or request.resolver_match.url_name == 'lista_cargos' %}rotate-180{% endif %}"></i>
+        </a>
+        <div class="collapse {% if request.resolver_match.url_name == 'lista_periodos' or request.resolver_match.url_name == 'lista_cargos' %}show{% endif %}" id="submenu-recursos">
+            <ul class="nav flex-column ms-3">
                 {% if perms.administrador.manage_periodo %}
-                <a href="{% url 'administrador:lista_periodos' %}" class="list-group-item ps-5">Períodos Académicos</a>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'lista_periodos' %}active{% endif %}"
+                    href="{% url 'administrador:lista_periodos' %}">
+                        <i class="bi bi-calendar-event-fill"></i> Períodos Académicos
+                    </a>
+                </li>
                 {% endif %}
                 {% if perms.administrador.manage_cargos %}
-                <a href="{% url 'administrador:lista_cargos' %}" class="list-group-item ps-5">Cargos</a>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'lista_cargos' %}active{% endif %}"
+                    href="{% url 'administrador:lista_cargos' %}">
+                        <i class="bi bi-person-badge"></i> Cargos
+                    </a>
+                </li>
                 {% endif %}
-            </div>
-            {% endif %}
+            </ul>
         </div>
+        {% endif %}
+
+        <a href="{% url 'home:panel_principal' %}"
+        class="nav-link {% if request.resolver_match.url_name == 'panel_principal' %}active{% endif %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
     </div>
     <!-- /#sidebar-wrapper -->
 
     <!-- Page Content -->
     <div id="page-content-wrapper">
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
-            <button class="btn btn-outline-primary" id="menu-toggle">
+        <nav class="top-navbar" id="topNavbar">
+            <button class="toggle-btn" id="sidebarToggle">
                 <i class="fas fa-bars"></i>
             </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
-                    <li class="nav-item active">
-                        <a class="nav-link" href="#">Inicio</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            {{ request.user.username }}
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <a class="dropdown-item" href="{% url 'perfiles:ver_perfil' %}">Perfil</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="{% url 'accounts:cerrar_sesion' %}">Cerrar Sesión</a>
-                        </div>
-                    </li>
-                </ul>
+
+            <div class="user-info">
+                <div class="user-greeting">
+                    Bienvenido/a, <strong>{{ user.get_full_name|default:user.username }}</strong>
+                </div>
+                <div class="dropdown">
+                    <a class="btn btn-outline-secondary dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i> {{ user.username }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:cerrar_sesion' %}">Cerrar Sesión</a></li>
+                    </ul>
+                </div>
             </div>
         </nav>
-        <div class="container-fluid">
-            <div class="card-admin">
-                <h2>Bienvenido al Panel de Administración</h2>
-                {% block content_admin_panel %}
-                <!-- Aquí va el contenido específico de cada página -->
-                {% endblock content_admin_panel %}
+
+        <main class="main-content-inner">
+            {# El contenido real de la página #}
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        {% block content_admin_panel %}{% endblock content_admin_panel %}
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
-{% endblock content %}
+        </main>
+    </div> {# Fin de #page-content-wrapper #}
+</div> {# Fin de #wrapper #}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    var el = document.getElementById("wrapper");
-    var toggleButton = document.getElementById("menu-toggle");
-    toggleButton.onclick = function () {
-        el.classList.toggle("toggled");
-    };
-
-    // Script para la rotación de íconos en los menús desplegables del sidebar (Gestión de Usuarios, Configuración, etc.)
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.list-group-item.dropdown-toggle').forEach(link => {
+        const wrapper = document.getElementById('wrapper');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        // Restaurar estado del sidebar desde localStorage
+        if (localStorage.getItem('sidebarToggled') === 'true') {
+            wrapper.classList.add('toggled');
+        } else {
+            wrapper.classList.remove('toggled');
+        }
+
+        if (sidebarToggle && wrapper) {
+            sidebarToggle.addEventListener('click', function() {
+                const isToggled = wrapper.classList.toggle('toggled');
+                localStorage.setItem('sidebarToggled', isToggled ? 'true' : 'false');
+            });
+        }
+
+        // Manejar la rotación de los íconos de los menús desplegables
+        document.querySelectorAll('.nav-link[data-bs-toggle="collapse"]').forEach(link => {
             link.addEventListener('click', function() {
-                // Selecciona el ícono Chevron (fas fa-chevron-down) dentro del enlace
-                const icon = this.querySelector('.fas.fa-chevron-down'); 
+                const icon = this.querySelector('.collapse-icon');
                 if (icon) {
                     icon.classList.toggle('rotate-180');
                 }
             });
         });
-
-        // Asegurarse de que el ícono rote correctamente al cargar la página si el menú ya está abierto
-        document.querySelectorAll('.list-group-item + .collapse.show').forEach(collapseEl => {
-            const link = document.querySelector(`[href="#${collapseEl.id}"]`);
-            if (link) {
-                const icon = link.querySelector('.fas.fa-chevron-down'); // Ajustar selector de ícono
-                if (icon) {
-                    icon.classList.add('rotate-180');
-                }
-            }
-        });
     });
 </script>
-{% endblock extra_js %}
+{% endblock %}
+</body>
+</html>

@@ -19,16 +19,6 @@
         {# El bloque de mensajes ya debería estar en interfaz.html / panel_administrador.html #}
         {# Así que lo eliminamos de aquí para evitar duplicación y asegurar que se muestre una vez #}
         {# Pero si NO lo tienes en tu base, descomenta este bloque: #}
-        {% if messages %}
-            <div class="messages-container mb-4">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
 
         <form method="post">
             {% csrf_token %}

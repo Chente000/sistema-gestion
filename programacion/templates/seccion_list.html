@@ -5,15 +5,6 @@
 <div class="container mt-5">
     <h2 class="mb-4">Gestión de Secciones</h2>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-
     <div class="d-flex justify-content-between align-items-center mb-3">
         {% if can_create_seccion %} {# Condición para el botón de Agregar #}
         <a href="{% url 'programacion:seccion_create' %}" class="btn btn-success">

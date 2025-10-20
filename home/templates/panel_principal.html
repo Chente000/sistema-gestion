@@ -13,35 +13,81 @@
         </div>
 
         <div class="row mt-4">
-            <div class="col-md-4 mb-3">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title"><i class="bi bi-calendar-check"></i> Prog. y Eval. Académica</h5>
-                        <p class="card-text small text-muted">Gestiona horarios, calificaciones...</p>
-                        <a href="" class="btn btn-primary btn-sm">Ir al módulo</a>
-                    </div>
-                </div>
+    <div class="col-sm-6 col-md-4 col-lg-3 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title"><i class="bi bi-calendar-check"></i> Prog. y Eval. Académica</h5>
+                <p class="card-text small text-muted">Gestiona horarios, evaluaciones y más.</p>
+                <a href="{% url 'programacion:evaluacion_docente_list' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
             </div>
-            <div class="col-md-4 mb-3">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title"><i class="bi bi-people-fill"></i> Servicio Social</h5>
-                        <p class="card-text small text-muted">Seguimiento de proyectos...</p>
-                        <a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
-                    </div>
-                </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-4 col-lg-3 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title"><i class="bi bi-people-fill"></i> Servicio Social</h5>
+                <p class="card-text small text-muted">Seguimiento de proyectos comunitarios.</p>
+                <a href="{% url 'servicio_social:servicio_list' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
             </div>
-            <div class="col-md-4 mb-3">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title"><i class="bi bi-mortarboard-fill"></i> Practicas profesionales</h5>
-                        <p class="card-text small text-muted">Registro de propuestas...</p>
-                        <a href="{% url 'practicas:practica_list' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
-                    </div>
-                </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-4 col-lg-3 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title"><i class="bi bi-briefcase-fill"></i> Prácticas Pro.</h5>
+                <p class="card-text small text-muted">Registro y seguimiento de prácticas.</p>
+                <a href="{% url 'practicas:practica_list' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
             </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-4 col-lg-3 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title"><i class="bi bi-building"></i> Aulario</h5>
+                <p class="card-text small text-muted">Gestión de aulas y espacios.</p>
+                <a href="{% url 'programacion:aulario_dashboard' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
             </div>
-    </div> </main>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-4 col-lg-3 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title"><i class="bi bi-person-badge"></i> Docentes</h5>
+                <p class="card-text small text-muted">Administración de datos de docentes.</p>
+                <a href="{% url 'programacion:docentes' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-4 col-lg-3 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title"><i class="bi bi-grid-3x3-gap"></i> Secciones</h5>
+                <p class="card-text small text-muted">Gestión de secciones y grupos.</p>
+                <a href="{% url 'programacion:seccion_list' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-4 col-lg-3 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title"><i class="bi bi-journal-bookmark"></i> Asignaturas</h5>
+                <p class="card-text small text-muted">Catálogo de asignaturas y planes.</p>
+                <a href="{% url 'programacion:asignaturas' %}" class="btn btn-primary btn-sm">Ir al módulo</a>
+            </div>
+        </div>
+    </div>
+</div>
+        </div>
+    </div> 
+
+
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
