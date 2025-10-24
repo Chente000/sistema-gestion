@@ -30,7 +30,7 @@ def inicio_sesion(request):
             # --- Redirección según el campo 'rol' del usuario personalizado ---
             # Si el usuario tiene el rol 'super_admin' o 'admin', o es is_superuser, ir al panel de admin
             if user.is_super_admin_rol or user.is_admin_rol: # Usa las propiedades de tu modelo Usuario
-                return redirect('administrador:panel_administrador')
+                return redirect('administrador:panel_administrador_principal')
             # Si no es admin, ir al panel principal por defecto
             return redirect('home:panel_principal')
         else:
