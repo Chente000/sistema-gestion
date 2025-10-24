@@ -16,4 +16,4 @@ if [[ "$CREATE_SUPERUSER" = "True" ]]; then
 fi
 
 # El "Start Command" en Render se encargará de ejecutar Gunicorn.
-# Este script solo se encarga de los pasos de build y setup.
+# Este script solo se encarga de los pasos de build y setup..
