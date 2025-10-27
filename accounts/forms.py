@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from .models import SolicitudUsuario
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import Permission
@@ -35,18 +36,69 @@ class CedulaEmailAuthenticationForm(forms.Form):
 class SolicitudUsuarioForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
     confirmar_password = forms.CharField(widget=forms.PasswordInput, label="Confirmar Contraseña")
-    
-    class meta:
+
+    class Meta:
         model = SolicitudUsuario
-        fields = ['cedula', 'email', 'first_name', 'last_name', 'telefono_movil', 'password', 'confirmar_password']
-    
+        fields = ['cedula', 'email', 'first_name', 'last_name', 'telefono_movil', 'password']
+
+    def _validate_nombre_apellido(self, value, field_label, min_len=2, max_len=50):
+        if value in (None, ''):
+            return value
+        v = value.strip()
+        if len(v) < min_len:
+            raise ValidationError(f"{field_label} debe tener al menos {min_len} caracteres.")
+        if len(v) > max_len:
+            raise ValidationError(f"{field_label} no puede tener más de {max_len} caracteres.")
+        # quitar separadores permitidos y verificar que el resto sean letras Unicode
+        import re
+        cleaned = re.sub(r"[ '\-’]", "", v)  # espacios, guion, apóstrofe (tipos)
+        if not cleaned.isalpha():
+            raise ValidationError(f"{field_label} solo puede contener letras, espacios, guiones o apóstrofes.")
+        return v
+
+    def clean_first_name(self):
+        return self._validate_nombre_apellido(
+            self.cleaned_data.get('first_name', ''), "Nombre", min_len=2, max_len=50
+        )
+
+    def clean_last_name(self):
+        return self._validate_nombre_apellido(
+            self.cleaned_data.get('last_name', ''), "Apellido", min_len=2, max_len=50
+        )
+
+    def clean_cedula(self):
+        cedula = self.cleaned_data.get('cedula', '')
+        if cedula is None:
+            return cedula
+        cedula = cedula.strip()
+        if not cedula.isdigit():
+            raise ValidationError("La cédula solo debe contener dígitos.")
+        if len(cedula) < 6:
+            raise ValidationError("La cédula debe tener al menos 6 dígitos.")
+        if len(cedula) > 20:
+            raise ValidationError("La cédula no puede tener más de 20 dígitos.")
+        return cedula
+
+    def clean_telefono_movil(self):
+        telefono = self.cleaned_data.get('telefono_movil')
+        if telefono in (None, ''):
+            return telefono
+        telefono = telefono.strip()
+        if not telefono.isdigit():
+            raise ValidationError("El teléfono solo debe contener dígitos.")
+        if len(telefono) < 7:
+            raise ValidationError("El teléfono debe tener al menos 7 dígitos.")
+        if len(telefono) > 15:
+            raise ValidationError("El teléfono no puede tener más de 15 dígitos.")
+        return telefono
+
     def clean(self):
         cleaned_data = super().clean()
         password = cleaned_data.get("password")
         confirmar_password = cleaned_data.get("confirmar_password")
 
         if password and confirmar_password and password != confirmar_password:
-            raise forms.ValidationError("Las contraseñas no coinciden.")
+            raise ValidationError("Las contraseñas no coinciden.")
 
         return cleaned_data
 
