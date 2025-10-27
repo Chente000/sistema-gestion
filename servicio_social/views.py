@@ -39,7 +39,7 @@ from django.conf import settings
 
 @login_required
 @user_passes_test(lambda u: u.has_permission(PERMISSIONS.VIEW_PROYECTO_SERVICIO_SOCIAL),
-    login_url='/no_autorizado/') 
+    login_url='/no-autorizado/')
 def servicio_list(request):
     servicios_qs = ServicioSocial.objects.all().order_by('-periodo_academico__fecha_inicio')
 
@@ -641,4 +641,4 @@ def servicio_delete(request, pk):
             messages.error(request, f"Error al eliminar el proyecto de servicio social: {e}")
             print(f"Error al eliminar el proyecto de servicio social: {e}")
         return redirect('servicio_social:servicio_list')
-    return render(request, 'servicio_confirm_delete.html', {'servicio': servicio}) 
+    return render(request, 'servicio_confirm_delete.html', {'servicio': servicio})
