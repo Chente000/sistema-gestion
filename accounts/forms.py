@@ -4,6 +4,7 @@ from .models import SolicitudUsuario
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import Permission
 from .models import Cargo
+from django.contrib.auth.password_validation import validate_password
 
 class CedulaEmailAuthenticationForm(forms.Form):
     identificador = forms.CharField(label="Cédula o Correo", max_length=150)
@@ -97,8 +98,20 @@ class SolicitudUsuarioForm(forms.ModelForm):
         password = cleaned_data.get("password")
         confirmar_password = cleaned_data.get("confirmar_password")
 
+        # Validación mínima de longitud
+        MIN_PASSWORD_LENGTH = 8
+        if password:
+            if len(password) < MIN_PASSWORD_LENGTH:
+                self.add_error('password', ValidationError(f"La contraseña debe tener al menos {MIN_PASSWORD_LENGTH} caracteres."))
+            # Validadores configurados en settings (complexidad, repetición, etc.)
+            try:
+                validate_password(password)
+            except ValidationError as e:
+                self.add_error('password', e)
+
+        # Confirmar contraseña
         if password and confirmar_password and password != confirmar_password:
-            raise ValidationError("Las contraseñas no coinciden.")
+            self.add_error('confirmar_password', ValidationError("Las contraseñas no coinciden."))
 
         return cleaned_data
 
